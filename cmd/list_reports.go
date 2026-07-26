@@ -4,13 +4,11 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"os"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
+	"github.com/otfabric/iec61850ctl/pkg/view"
 
 	"github.com/spf13/cobra"
 )
@@ -20,6 +18,7 @@ var (
 	reportsLnFlag       string
 	reportsDetailedFlag bool
 	reportsAllFlag      bool
+	reportsFormatFlag   string
 )
 
 // listReportsCmd represents the 'list reports' command for listing report control blocks.
@@ -48,9 +47,15 @@ func init() {
 	listReportsCmd.Flags().StringVar(&reportsLnFlag, "ln", "", "Logical node name (required unless --all)")
 	listReportsCmd.Flags().BoolVar(&reportsDetailedFlag, "detailed", false, "Show detailed report configuration")
 	listReportsCmd.Flags().BoolVar(&reportsAllFlag, "all", false, "List reports in all logical devices and logical nodes (mutually exclusive with --ld and --ln)")
+	listReportsCmd.Flags().StringVar(&reportsFormatFlag, "format", "text", "Output format: text, json")
 }
 
 func runListReports(cmd *cobra.Command, args []string) error {
+	format, err := parseCLIFormatFlag(reportsFormatFlag)
+	if err != nil {
+		return err
+	}
+
 	if reportsAllFlag {
 		if reportsLdFlag != "" || reportsLnFlag != "" {
 			return fmt.Errorf("--all cannot be combined with --ld or --ln")
@@ -61,22 +66,12 @@ func runListReports(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	finalHost, finalPort, err := getHostPort()
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
-
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
-	if err != nil {
-		return fmt.Errorf("connection failed: %w", err)
-	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 
@@ -85,42 +80,12 @@ func runListReports(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		if len(refs) == 0 {
-			fmt.Println("No reports found on the server.")
-			return nil
+		if format == formatter.OutputFormatJSON {
+			entries := make([]view.ReportControlBlockRef, 0, len(refs))
+			entries = append(entries, refs...)
+			return writeJSON(cmd, entries)
 		}
-		fmt.Printf("Found %d report(s) across all logical devices:\n\n", len(refs))
-
-		curLD, curLN := "", ""
-		for _, ref := range refs {
-			if ref.LD != curLD || ref.LN != curLN {
-				curLD, curLN = ref.LD, ref.LN
-				if reportsDetailedFlag {
-					fmt.Printf("\n--- %s/%s ---\n\n", ref.LD, ref.LN)
-				} else {
-					fmt.Printf("%s/%s:\n", ref.LD, ref.LN)
-				}
-			}
-			kind := "URCB"
-			if ref.Buffered {
-				kind = "BRCB"
-			}
-			fmt.Printf("  - %s (%s)\n", ref.Name, kind)
-
-			if reportsDetailedFlag {
-				result, err := a.GetReport(app.GetReportInput{LD: ref.LD, LN: ref.LN, Name: ref.Name})
-				if err != nil {
-					fmt.Printf("     Error reading configuration: %v\n\n", err)
-				} else {
-					renderer := formatter.NewRenderer(formatter.OutputFormatText)
-					_ = renderer.RenderReportControlBlock(&result.Report, os.Stdout)
-					fmt.Println()
-				}
-			}
-		}
-		if !reportsDetailedFlag {
-			fmt.Println("\nUse --detailed flag to see report configuration")
-		}
+		printAllReportsText(cmd, a, refs)
 		return nil
 	}
 
@@ -132,50 +97,118 @@ func runListReports(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if format == formatter.OutputFormatJSON {
+		entries := make([]view.ReportControlBlockRef, 0, len(unbuffered)+len(buffered))
+		for _, name := range unbuffered {
+			entries = append(entries, view.ReportControlBlockRef{
+				LD:       reportsLdFlag,
+				LN:       reportsLnFlag,
+				Name:     name,
+				Buffered: false,
+				Ref:      fmt.Sprintf("%s/%s.RP.%s", reportsLdFlag, reportsLnFlag, name),
+			})
+		}
+		for _, name := range buffered {
+			entries = append(entries, view.ReportControlBlockRef{
+				LD:       reportsLdFlag,
+				LN:       reportsLnFlag,
+				Name:     name,
+				Buffered: true,
+				Ref:      fmt.Sprintf("%s/%s.BR.%s", reportsLdFlag, reportsLnFlag, name),
+			})
+		}
+		return writeJSON(cmd, entries)
+	}
+
+	printScopedReportsText(cmd, a, unbuffered, buffered)
+	return nil
+}
+
+func printAllReportsText(cmd *cobra.Command, a *app.App, refs []view.ReportControlBlockRef) {
+	out := cmd.OutOrStdout()
+	if len(refs) == 0 {
+		_, _ = fmt.Fprintln(out, "No reports found on the server.")
+		return
+	}
+	_, _ = fmt.Fprintf(out, "Found %d report(s) across all logical devices:\n\n", len(refs))
+
+	curLD, curLN := "", ""
+	for _, ref := range refs {
+		if ref.LD != curLD || ref.LN != curLN {
+			curLD, curLN = ref.LD, ref.LN
+			if reportsDetailedFlag {
+				_, _ = fmt.Fprintf(out, "\n--- %s/%s ---\n\n", ref.LD, ref.LN)
+			} else {
+				_, _ = fmt.Fprintf(out, "%s/%s:\n", ref.LD, ref.LN)
+			}
+		}
+		kind := "URCB"
+		if ref.Buffered {
+			kind = "BRCB"
+		}
+		_, _ = fmt.Fprintf(out, "  - %s (%s)\n", ref.Name, kind)
+
+		if reportsDetailedFlag {
+			result, err := a.GetReport(app.GetReportInput{LD: ref.LD, LN: ref.LN, Name: ref.Name})
+			if err != nil {
+				_, _ = fmt.Fprintf(out, "     Error reading configuration: %v\n\n", err)
+			} else {
+				renderer := formatter.NewRenderer(formatter.OutputFormatText)
+				_ = renderer.RenderReportControlBlock(&result.Report, out)
+				_, _ = fmt.Fprintln(out)
+			}
+		}
+	}
+	if !reportsDetailedFlag {
+		_, _ = fmt.Fprintln(out, "\nUse --detailed flag to see report configuration")
+	}
+}
+
+func printScopedReportsText(cmd *cobra.Command, a *app.App, unbuffered, buffered []string) {
+	out := cmd.OutOrStdout()
 	total := len(unbuffered) + len(buffered)
 	if total == 0 {
-		fmt.Printf("No reports found in '%s/%s'\n", reportsLdFlag, reportsLnFlag)
-		return nil
+		_, _ = fmt.Fprintf(out, "No reports found in '%s/%s'\n", reportsLdFlag, reportsLnFlag)
+		return
 	}
-	fmt.Printf("Found %d report(s) in '%s/%s':\n\n", total, reportsLdFlag, reportsLnFlag)
+	_, _ = fmt.Fprintf(out, "Found %d report(s) in '%s/%s':\n\n", total, reportsLdFlag, reportsLnFlag)
 
 	if len(unbuffered) > 0 {
-		fmt.Printf("Unbuffered Reports (%d):\n", len(unbuffered))
+		_, _ = fmt.Fprintf(out, "Unbuffered Reports (%d):\n", len(unbuffered))
 		for i, name := range unbuffered {
-			fmt.Printf("  %d. %s\n", i+1, name)
+			_, _ = fmt.Fprintf(out, "  %d. %s\n", i+1, name)
 			if reportsDetailedFlag {
 				result, err := a.GetReport(app.GetReportInput{LD: reportsLdFlag, LN: reportsLnFlag, Name: name})
 				if err != nil {
-					fmt.Printf("     Error reading configuration: %v\n\n", err)
+					_, _ = fmt.Fprintf(out, "     Error reading configuration: %v\n\n", err)
 				} else {
 					renderer := formatter.NewRenderer(formatter.OutputFormatText)
-					_ = renderer.RenderReportControlBlock(&result.Report, os.Stdout)
-					fmt.Println()
+					_ = renderer.RenderReportControlBlock(&result.Report, out)
+					_, _ = fmt.Fprintln(out)
 				}
 			}
 		}
 		if !reportsDetailedFlag {
-			fmt.Println()
+			_, _ = fmt.Fprintln(out)
 		}
 	}
 	if len(buffered) > 0 {
-		fmt.Printf("Buffered Reports (%d):\n", len(buffered))
+		_, _ = fmt.Fprintf(out, "Buffered Reports (%d):\n", len(buffered))
 		for i, name := range buffered {
-			fmt.Printf("  %d. %s\n", i+1, name)
+			_, _ = fmt.Fprintf(out, "  %d. %s\n", i+1, name)
 			if reportsDetailedFlag {
 				result, err := a.GetReport(app.GetReportInput{LD: reportsLdFlag, LN: reportsLnFlag, Name: name})
 				if err != nil {
-					fmt.Printf("     Error reading configuration: %v\n\n", err)
+					_, _ = fmt.Fprintf(out, "     Error reading configuration: %v\n\n", err)
 				} else {
 					renderer := formatter.NewRenderer(formatter.OutputFormatText)
-					_ = renderer.RenderReportControlBlock(&result.Report, os.Stdout)
-					fmt.Println()
+					_ = renderer.RenderReportControlBlock(&result.Report, out)
+					_, _ = fmt.Fprintln(out)
 				}
 			}
 		}
 	}
 	if !reportsDetailedFlag {
-		fmt.Println("Use --detailed flag to see report configuration")
+		_, _ = fmt.Fprintln(out, "Use --detailed flag to see report configuration")
 	}
-	return nil
 }

@@ -22,6 +22,9 @@ type RunConfig struct {
 	Host           string // bind address (e.g. "0.0.0.0")
 	Port           int    // MMS port (typically 102)
 	MaxConnections int    // max MMS connections (reserved; not yet enforced by go-mms)
+	ReadyJSON      bool   // emit one JSON readiness event on stdout after bind
+	FixtureID      string // optional fixture identifier for readiness JSON
+	Version        string // build/version metadata for readiness JSON
 }
 
 // Run loads the model from an SCL file and starts the IEC 61850 MMS server until SIGINT/SIGTERM.
@@ -69,6 +72,11 @@ func Run(cfg RunConfig) error {
 		}
 	}
 
+	if err := registerInteropControls(srv); err != nil {
+		srv.Close()
+		return fmt.Errorf("register controls: %w", err)
+	}
+
 	srv.EnableReports()
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
@@ -86,6 +94,18 @@ func Run(cfg RunConfig) error {
 	}()
 
 	_, _ = fmt.Fprintf(os.Stderr, "IEC 61850 MMS server listening on %s (IED %s, Ctrl+C to stop)\n", addr, iedName)
+
+	if cfg.ReadyJSON {
+		line, err := EncodeReadyEvent(addr, cfg.FixtureID, cfg.Version, iedName)
+		if err != nil {
+			srv.Close()
+			return err
+		}
+		if _, err := os.Stdout.Write(line); err != nil {
+			srv.Close()
+			return fmt.Errorf("write ready event: %w", err)
+		}
+	}
 
 	<-ctx.Done()
 

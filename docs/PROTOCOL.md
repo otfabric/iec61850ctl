@@ -1,6 +1,6 @@
 # IEC 61850 data model (for iec61850ctl)
 
-This note summarizes the IEC 61850 object model as used by **iec61850ctl** over MMS (IEC 61850-8-1). For CLI usage see [README.md](README.md).
+This note summarizes the IEC 61850 object model as used by **iec61850ctl** over MMS (IEC 61850-8-1). For CLI usage see [../README.md](../README.md).
 
 ## Hierarchy
 
@@ -106,4 +106,6 @@ The SCL file defines the engineering model. The live MMS server may expose a sub
 ## Further reading
 
 - Server simulation and value seeding: [SERVER.md](SERVER.md)
+- Automation contract: [AUTOMATION.md](AUTOMATION.md)
+- Interoperability: [INTEROP.md](INTEROP.md)
 - Stack libraries: [go-iec61850](https://github.com/otfabric/go-iec61850), [go-mms](https://github.com/otfabric/go-mms)

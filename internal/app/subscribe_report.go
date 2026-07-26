@@ -19,6 +19,8 @@ type SubscribeReportInput struct {
 	Sync          bool
 	DatasetRef    string
 	Writer        io.Writer
+	ErrWriter     io.Writer
+	Format        string
 }
 
 // SubscribeReport runs a report subscription until duration/max/signal.
@@ -32,6 +34,8 @@ func (a *App) SubscribeReport(input SubscribeReportInput) (*service.Reporter, er
 		Sync:          input.Sync,
 		DatasetRef:    input.DatasetRef,
 		Writer:        input.Writer,
+		ErrWriter:     input.ErrWriter,
+		Format:        input.Format,
 	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err

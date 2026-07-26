@@ -1,0 +1,23 @@
+{
+  "source_repository": "otfabric/mms-interop",
+  "source_commit": "d38cac48eef49742ae865c0e3db8c055410c73c9",
+  "source_tag": "v0.1.2",
+  "fixture_revision": "iec61850-v2",
+  "files": {
+    "interop.icd": "sha256:33f84cd94f534e30e170ca3d2c824d35a160e9bce8a199859649f2296010ae37",
+    "expected-values.json": "sha256:30271ab7a20626e9174f640dc9e4168dd2530aed263099249ec84fe982de8feb",
+    "self-server-values.json": "sha256:7dd6161630b56a0d8d5037a2bdbcd5417ea7daa76b78038f763d4391ba5f262e"
+  },
+  "images": {
+    "libiec61850": "ghcr.io/otfabric/mms-interop-libiec61850@sha256:bbe651eea580acc3335de0d3587ccff1f4161126474234e446fb4f8bedea1e89",
+    "iec61850bean": "ghcr.io/otfabric/mms-interop-iec61850bean@sha256:708f559e0151e6a6580bf1ca95fea112b6c32eebbe4834a111198d00a5940f78"
+  },
+  "required_commands": {
+    "libiec61850-ied-server": true,
+    "libiec61850-ied-controller": true,
+    "libiec61850-ied-reporter": true,
+    "iec61850bean-ied-server": true,
+    "iec61850bean-ied-controller": true,
+    "iec61850bean-ied-reporter": true
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "Meta": {
+    "Generator": "iec61850ctl-e2e",
+    "SerializedAt": "2026-07-26T00:00:00Z"
+  },
+  "LogicalDevices": [],
+  "Leaves": [
+    {
+      "Ref": "InteropLD/LLN0.Mod.stVal",
+      "FC": "ST",
+      "Type": "INT",
+      "Value": {
+        "Raw": 1,
+        "Type": "INT"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPS1.stVal",
+      "FC": "ST",
+      "Type": "BOOL",
+      "Value": {
+        "Raw": false,
+        "Type": "BOOL"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPCSO1.stVal",
+      "FC": "ST",
+      "Type": "BOOL",
+      "Value": {
+        "Raw": false,
+        "Type": "BOOL"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPCSO1.ctlModel",
+      "FC": "CF",
+      "Type": "INT",
+      "Value": {
+        "Raw": 1,
+        "Type": "INT"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPCSO2.stVal",
+      "FC": "ST",
+      "Type": "BOOL",
+      "Value": {
+        "Raw": false,
+        "Type": "BOOL"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPCSO2.ctlModel",
+      "FC": "CF",
+      "Type": "INT",
+      "Value": {
+        "Raw": 2,
+        "Type": "INT"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPCSO3.stVal",
+      "FC": "ST",
+      "Type": "BOOL",
+      "Value": {
+        "Raw": false,
+        "Type": "BOOL"
+      }
+    },
+    {
+      "Ref": "InteropLD/GGIO1.SPCSO3.ctlModel",
+      "FC": "CF",
+      "Type": "INT",
+      "Value": {
+        "Raw": 4,
+        "Type": "INT"
+      }
+    },
+    {
+      "Ref": "InteropLD/MMXU1.TotW.mag.f",
+      "FC": "MX",
+      "Type": "FLOAT",
+      "Value": {
+        "Raw": 1234.5,
+        "Type": "FLOAT"
+      }
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "title": "iec61850ctl interoperability examples",
+  "fixture": "iec61850-v2",
+  "ied_name": "InteropIED",
+  "cases": [
+    {
+      "title": "List logical devices",
+      "notes": "Association + LD discovery. Against external adapters set IEC61850_IED_NAME=InteropIED so domains appear as InteropLD; against self-server leave IEC61850_IED_NAME unset.",
+      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "argv": ["list", "lds", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"contains_name": "InteropLD"},
+      "expected_output": "[{\"name\":\"InteropLD\"}]"
+    },
+    {
+      "title": "List logical nodes",
+      "notes": "LN names under InteropLD.",
+      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "argv": ["list", "lns", "--ld", "InteropLD", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"contains_names": ["LLN0", "GGIO1", "MMXU1", "MMTR1"]},
+      "expected_output": "[{\"name\":\"LLN0\"},{\"name\":\"GGIO1\"},…]"
+    },
+    {
+      "title": "Read MX float",
+      "notes": "Scalar float encoding (JSON number).",
+      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "argv": ["get", "object", "--object", "InteropLD/MMXU1.TotW.mag.f", "--fc", "MX", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"value": 1234.5},
+      "expected_output": "{\"object\":\"InteropLD/MMXU1.TotW.mag.f\",\"fc\":\"MX\",\"type\":\"float\",\"value\":1234.5}"
+    },
+    {
+      "title": "Read ST boolean",
+      "notes": "SPS1.stVal seeded false in expected-values / self-server-values.",
+      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "argv": ["get", "object", "--object", "InteropLD/GGIO1.SPS1.stVal", "--fc", "ST", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"value": false},
+      "expected_output": "{\"object\":\"InteropLD/GGIO1.SPS1.stVal\",\"fc\":\"ST\",\"type\":\"boolean\",\"value\":false}"
+    },
+    {
+      "title": "Get dataset",
+      "notes": "dsInterop has two members (SPS1.stVal, Mod.stVal).",
+      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "argv": ["get", "ds", "--ld", "InteropLD", "--ln", "LLN0", "--name", "dsInterop", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"name": "dsInterop", "member_count": 2}
+    },
+    {
+      "title": "Discover report instance names",
+      "notes": "SCL defines urcb01; some servers expand the instance to urcb0101. Always discover before subscribe — neither name is universally valid.",
+      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "argv": ["list", "reports", "--ld", "InteropLD", "--ln", "LLN0", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"contains_report_prefix": "urcb01"},
+      "expected_output": "[{\"ld\":\"InteropLD\",\"ln\":\"LLN0\",\"name\":\"urcb01…\",\"buffered\":false,\"ref\":\"…\"},…]"
+    },
+    {
+      "title": "URCB GI subscription (JSONL)",
+      "notes": "Replace REPORT_INSTANCE with the name returned by list reports (often urcb01 or urcb0101). Do not hard-code a single instance across stacks.",
+      "stacks": ["libiec61850", "iec61850bean"],
+      "argv": ["subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "REPORT_INSTANCE", "--type", "RP", "--interrogation", "--max-reports", "1", "--duration", "15s", "--show-values", "--format", "jsonl"],
+      "expected_exit": 0,
+      "expect_jsonl_events": ["report", "summary"],
+      "expected_output": "{\"event\":\"report\",…}\n{\"event\":\"summary\",\"reports_received\":1,\"clean_disable\":true,…}"
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/otfabric/iec61850ctl.svg)](https://pkg.go.dev/github.com/otfabric/iec61850ctl)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/otfabric/iec61850ctl/actions/workflows/ci.yml/badge.svg)](https://github.com/otfabric/iec61850ctl/actions/workflows/ci.yml)
+[![E2E](https://github.com/otfabric/iec61850ctl/actions/workflows/e2e.yml/badge.svg)](https://github.com/otfabric/iec61850ctl/actions/workflows/e2e.yml)
 [![Codecov](https://codecov.io/gh/otfabric/iec61850ctl/graph/badge.svg)](https://codecov.io/gh/otfabric/iec61850ctl)
 [![Release](https://img.shields.io/github/v/release/otfabric/iec61850ctl?label=release)](https://github.com/otfabric/iec61850ctl/releases)
 
@@ -12,6 +13,8 @@ A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850
 `iec61850ctl` gives operators and developers terminal access to IEC 61850 IEDs: browse the data model, read objects and datasets, subscribe to reports, transfer files, query journals, parse SCL offline, run a local MMS server from SCL, and optionally expose a small HTTP/JSON API.
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
+
+Black-box e2e exercises the built CLI independently against [libiec61850](https://libiec61850.com) and [IEC61850bean](https://www.beanit.com/iec-61850/) adapter servers from [mms-interop](https://github.com/otfabric/mms-interop), plus reverse controller/reporter journeys against `server start`. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
@@ -40,7 +43,7 @@ A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850
 - **Export** — generate libiec61850 `.cfg` from serialized JSON (**export-only**, not used by this tool’s runtime)
 - **HTTP** — REST JSON API over the same app layer as the CLI
 
-See [RELEASE.md](RELEASE.md) for the latest release notes. Protocol model primer: [PROTOCOL.md](PROTOCOL.md).
+See [RELEASE.md](RELEASE.md) for the latest release notes. Protocol model primer: [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ## Installation
 
@@ -101,7 +104,7 @@ iec61850ctl scl parse --input device.cid --flatten
 iec61850ctl server start --scl device.cid --host 0.0.0.0 --port 102
 ```
 
-Defaults: `--port 102`. Host can also come from `IEC61850_HOST` / `IEC61850_PORT`.
+Defaults: `--port 102`. Host/port/IED name can also come from `IEC61850_HOST` / `IEC61850_PORT` / `IEC61850_IED_NAME` (flags win).
 
 ## Command Reference
 
@@ -199,7 +202,7 @@ iec61850ctl tree --serialize --include all --output device.json
 iec61850ctl server start --scl device.cid --values device.json --port 102
 ```
 
-Details: [SERVER.md](SERVER.md).
+Details: [docs/SERVER.md](docs/SERVER.md).
 
 ### HTTP API
 
@@ -216,24 +219,38 @@ iec61850ctl http --iec-host 192.0.2.10 --iec-port 102 --listen :8080
 |------|-----|-------------|
 | `--host` | `IEC61850_HOST` | IED address (required for most client commands) |
 | `--port` | `IEC61850_PORT` | MMS port (default `102`) |
+| `--ied-name` | `IEC61850_IED_NAME` | IED name for dial (domain prefix) and `server start` SCL selection |
 | `--debug` | — | Log underlying IEC 61850 / MMS calls |
 
-`discover` / `scan` uses `--host` as a CIDR or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
+Flag values override environment variables. `discover` / `scan` uses `--host` as a CIDR or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
 
 ## Output Formats
 
-`list lds`, `list lns`, `list dos`, and `list das` accept `--format text|json|csv|table|yaml` (default `text`). Use JSON/CSV/table for scripting.
+| Commands | `--format` |
+|----------|------------|
+| `list lds`, `list lns`, `list dos`, `list das` | `text`, `json`, `csv`, `table`, `yaml` |
+| `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
+| `subscribe report` | `text`, `jsonl` |
+
+Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
 
 ## Development
 
 ```sh
-make check          # fmt, staticcheck, golangci-lint, vet, test, coverage
-make build-nocheck  # fast binary → bin/iec61850ctl
+make check                 # fmt, staticcheck, golangci-lint, vet, test, coverage
+make build-nocheck         # fast binary → bin/iec61850ctl
 make test
 make vet
+
+make e2e                   # black-box e2e (default: libiec61850, iec61850bean, self)
+make e2e-self              # self-server smoke only
+IEC61850CTL_E2E_STACKS=all make e2e   # all five CI directions (adds reverse stacks)
+make e2e-verify-fixtures   # check e2e/testdata hashes vs interop.lock.json
+make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
+make e2e-docs              # regenerate docs/interop-examples.md
 ```
 
-`CGO_ENABLED=0` for builds; race tests enable CGO temporarily. See `Makefile`.
+`CGO_ENABLED=0` for builds; race tests enable CGO temporarily. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Built With
 
@@ -247,8 +264,11 @@ make vet
 
 | Doc | Contents |
 |-----|----------|
-| [PROTOCOL.md](PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
-| [SERVER.md](SERVER.md) | SCL server, value seeding, `.cfg` export |
+| [docs/PROTOCOL.md](docs/PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
+| [docs/SERVER.md](docs/SERVER.md) | SCL server, readiness JSON, value seeding, `.cfg` export |
+| [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr and JSON/JSONL contract |
+| [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
+| [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |
 | [RELEASE.md](RELEASE.md) | Release notes |
 
 ## License

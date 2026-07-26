@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -30,7 +31,9 @@ type ReporterConfig struct {
 	Interrogation bool          // if true, trigger one GI after report is enabled
 	Sync          bool          // if true, read report dataset once for baseline snapshot (DatasetRef must be set)
 	DatasetRef    string        // dataset reference for --sync (e.g. from RCB DatSet attribute); empty skips sync
-	Writer        io.Writer     // default os.Stdout
+	Writer        io.Writer     // result stream (default os.Stdout)
+	ErrWriter     io.Writer     // diagnostics when Format is jsonl (default os.Stderr)
+	Format        string        // "text" (default) or "jsonl"
 }
 
 // Validate checks if the configuration is valid.
@@ -46,6 +49,11 @@ func (c ReporterConfig) Validate() error {
 	}
 	if c.MaxReports < 0 {
 		return fmt.Errorf("%w: MaxReports cannot be negative", ErrInvalidConfig)
+	}
+	switch strings.ToLower(strings.TrimSpace(c.Format)) {
+	case "", "text", "jsonl":
+	default:
+		return fmt.Errorf("%w: Format must be text or jsonl", ErrInvalidConfig)
 	}
 	return nil
 }
@@ -76,7 +84,24 @@ func (r *Reporter) WithConfig(config ReporterConfig) *Reporter {
 	if r.config.Writer == nil {
 		r.config.Writer = os.Stdout
 	}
+	if r.config.ErrWriter == nil {
+		r.config.ErrWriter = os.Stderr
+	}
+	if r.config.Format == "" {
+		r.config.Format = "text"
+	}
 	return r
+}
+
+func (r *Reporter) jsonl() bool {
+	return strings.EqualFold(r.config.Format, "jsonl")
+}
+
+func (r *Reporter) diag() io.Writer {
+	if r.jsonl() {
+		return r.config.ErrWriter
+	}
+	return r.config.Writer
 }
 
 // WithReportRef sets the report reference (fluent API).
@@ -170,21 +195,24 @@ func (r *Reporter) Run() error {
 	if err != nil {
 		return fmt.Errorf("subscribe report: %w", err)
 	}
-	defer func() { _ = sub.Close() }()
 
-	_, _ = fmt.Fprintf(w, "Subscribing to: %s (RptID=%s)\n", r.config.ReportRef, rcb.RptID)
-	_, _ = fmt.Fprintln(w, "Report enabled. Waiting for reports... (Press Ctrl+C to stop)")
+	diag := r.diag()
+	_, _ = fmt.Fprintf(diag, "Subscribing to: %s (RptID=%s)\n", r.config.ReportRef, rcb.RptID)
+	_, _ = fmt.Fprintln(diag, "Report enabled. Waiting for reports... (Press Ctrl+C to stop)")
 	if r.config.Interrogation {
-		_, _ = fmt.Fprintln(w, "GI triggered")
+		_, _ = fmt.Fprintln(diag, "GI triggered")
 	}
 
 	if r.config.Sync && r.config.DatasetRef != "" {
 		r.runBaselineSync(ctx, w)
 	}
-	_, _ = fmt.Fprintln(w)
+	if !r.jsonl() {
+		_, _ = fmt.Fprintln(w)
+	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 
 	if r.config.Duration > 0 {
 		time.AfterFunc(r.config.Duration, func() {
@@ -196,27 +224,46 @@ func (r *Reporter) Run() error {
 
 	select {
 	case <-sigChan:
-		_, _ = fmt.Fprintln(w, "\nShutting down gracefully...")
+		_, _ = fmt.Fprintln(diag, "\nShutting down gracefully...")
 	case <-r.doneChan:
 	}
 
 	r.stopOnce.Do(func() { close(r.doneChan) })
+
+	closeErr := sub.Close()
+	clean := closeErr == nil
+	if closeErr != nil {
+		_, _ = fmt.Fprintf(diag, "warning: subscription close: %v\n", closeErr)
+	}
+	if r.jsonl() {
+		_ = writeJSONLSummary(w, r.count.Load(), clean, time.Since(r.startTime))
+	}
 	return nil
 }
 
 func (r *Reporter) runBaselineSync(ctx context.Context, w io.Writer) {
 	ref := r.config.DatasetRef
-	_, _ = fmt.Fprintf(w, "Reading dataset for baseline sync: %s\n", ref)
+	diag := r.diag()
+	_, _ = fmt.Fprintf(diag, "Reading dataset for baseline sync: %s\n", ref)
 
 	ld, _, dsName, ok := domain.ParseDataSetRef(ref)
 	if !ok {
-		_, _ = fmt.Fprintf(w, "Warning: baseline sync failed (cannot parse dataset ref %q); continuing subscription.\n", ref)
+		_, _ = fmt.Fprintf(diag, "Warning: baseline sync failed (cannot parse dataset ref %q); continuing subscription.\n", ref)
 		return
 	}
 
 	values, err := r.conn.ReadDataSet(ctx, ld, dsName)
 	if err != nil {
-		_, _ = fmt.Fprintf(w, "Warning: baseline sync failed (%v); continuing subscription.\n", err)
+		_, _ = fmt.Fprintf(diag, "Warning: baseline sync failed (%v); continuing subscription.\n", err)
+		return
+	}
+
+	if r.jsonl() {
+		_ = writeJSONL(w, jsonlEvent{
+			Event:   "baseline",
+			DataSet: ref,
+			Values:  baselineValuesJSON(values, r.config.ShowValues),
+		})
 		return
 	}
 
@@ -255,8 +302,8 @@ func (r *Reporter) runReportReader(reports <-chan *iec61850.ReportIndication) {
 			}
 			r.printReport(w, report, showValues)
 			n := r.count.Add(1)
-			if n == 1 && r.config.Interrogation {
-				_, _ = fmt.Fprintln(w, "Initial state received (GI)")
+			if n == 1 && r.config.Interrogation && !r.jsonl() {
+				_, _ = fmt.Fprintln(r.diag(), "Initial state received (GI)")
 			}
 			if maxReports > 0 && int(n) >= maxReports {
 				r.stopOnce.Do(func() { close(r.doneChan) })
@@ -279,6 +326,18 @@ func (r *Reporter) printReport(w io.Writer, report *iec61850.ReportIndication, s
 	seqNum := int64(0)
 	if modelReport.SeqNum != nil {
 		seqNum = int64(*modelReport.SeqNum)
+	}
+
+	if r.jsonl() {
+		_ = writeJSONL(w, jsonlEvent{
+			Event:          "report",
+			RptID:          modelReport.RptID,
+			SequenceNumber: &seqNum,
+			DataSet:        modelReport.DatSet,
+			Values:         reportValuesJSON(modelReport, showValues),
+			Reasons:        reasonTokens(modelReport),
+		})
+		return
 	}
 
 	tsStr := "—"
@@ -312,7 +371,11 @@ func (r *Reporter) printReport(w io.Writer, report *iec61850.ReportIndication, s
 }
 
 // WriteStats writes subscription statistics to w. Call after Run() returns.
+// For jsonl format, the summary was already emitted at the end of Run.
 func (r *Reporter) WriteStats(w io.Writer) {
+	if r.jsonl() {
+		return
+	}
 	if w == nil {
 		w = os.Stdout
 	}

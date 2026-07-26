@@ -3,7 +3,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/service"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 )
 
 var (
@@ -38,7 +36,7 @@ with their functional constraints, types, and current values.`,
 func init() {
 	treeCmd.Flags().BoolVar(&treeFlatten, "flatten", false, "display output in flat format (LD/LN.DO.DA[FC]: value [type])")
 	treeCmd.Flags().StringVar(&treePath, "path", "", "limit traversal to specific path (e.g., MNSREF615LD0/FMMXU1 or MNSREF615LD0/FMMXU1.Hz)")
-	treeCmd.Flags().BoolVar(&treeSerialize, "serialize", false, "output JSON for server consumption (see SERVER.md); takes precedence over --flatten")
+	treeCmd.Flags().BoolVar(&treeSerialize, "serialize", false, "output JSON for server consumption (see docs/SERVER.md); takes precedence over --flatten")
 	treeCmd.Flags().StringVar(&treeOutput, "output", "", "write serialized JSON to file (default: stdout)")
 	treeCmd.Flags().StringVar(&treeInclude, "include", "", "comma-separated: data_sets, report_control_blocks, or all (only with --serialize)")
 	treeCmd.Flags().StringVar(&treeInterval, "interval", "0", "delay between each MMS call (e.g. 100ms, 1s); 0 = no delay")
@@ -46,22 +44,12 @@ func init() {
 }
 
 func runTree(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
-
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	d, err := time.ParseDuration(treeInterval)
 	if err != nil {
@@ -69,6 +57,11 @@ func runTree(cmd *cobra.Command, args []string) error {
 	}
 	if d < 0 {
 		return fmt.Errorf("--interval must be >= 0")
+	}
+
+	finalHost, finalPort, err := getHostPort()
+	if err != nil {
+		return err
 	}
 
 	a := app.New(conn)

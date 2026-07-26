@@ -4,11 +4,11 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
+	"github.com/otfabric/iec61850ctl/pkg/formatter"
+	"github.com/otfabric/iec61850ctl/pkg/view"
 
 	"github.com/spf13/cobra"
 )
@@ -17,6 +17,7 @@ var (
 	dssLdFlag       string
 	dssLnFlag       string
 	dssDetailedFlag bool
+	dssFormatFlag   string
 )
 
 // listDssCmd represents the 'list dss' command for listing data sets within a logical node.
@@ -38,66 +39,77 @@ func init() {
 	listDssCmd.Flags().StringVar(&dssLdFlag, "ld", "", "Logical device name (required)")
 	listDssCmd.Flags().StringVar(&dssLnFlag, "ln", "", "Logical node name (required)")
 	listDssCmd.Flags().BoolVar(&dssDetailedFlag, "detailed", false, "Show detailed information including DataSet members")
+	listDssCmd.Flags().StringVar(&dssFormatFlag, "format", "text", "Output format: text, json")
 	_ = listDssCmd.MarkFlagRequired("ld")
 	_ = listDssCmd.MarkFlagRequired("ln")
 }
 
 func runListDss(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
+	format, err := parseCLIFormatFlag(dssFormatFlag)
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
 
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
-		return fmt.Errorf("connection failed: %w", err)
+		return err
 	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 
-	// Simple listing
 	dataSets, err := a.ListDataSetNames(app.ListDataSetsInput{LD: dssLdFlag, LN: dssLnFlag})
 	if err != nil {
 		return err
 	}
 
+	if format == formatter.OutputFormatJSON {
+		entries := make([]view.DataSetName, 0, len(dataSets))
+		for _, name := range dataSets {
+			entry := view.DataSetName{Name: name}
+			if dssDetailedFlag {
+				dsView, err := a.GetDataSet(app.GetDataSetInput{LD: dssLdFlag, LN: dssLnFlag, Name: name})
+				if err == nil && dsView != nil {
+					entry.IsDeletable = dsView.IsDeletable
+					entry.MemberCount = dsView.MemberCount
+					entry.Members = dsView.Members
+				}
+			}
+			entries = append(entries, entry)
+		}
+		return writeJSON(cmd, entries)
+	}
+
+	out := cmd.OutOrStdout()
 	if len(dataSets) == 0 {
-		fmt.Printf("No data sets found in '%s/%s'\n", dssLdFlag, dssLnFlag)
+		_, _ = fmt.Fprintf(out, "No data sets found in '%s/%s'\n", dssLdFlag, dssLnFlag)
 		return nil
 	}
 
-	fmt.Printf("Found %d data set(s) in '%s/%s':\n", len(dataSets), dssLdFlag, dssLnFlag)
+	_, _ = fmt.Fprintf(out, "Found %d data set(s) in '%s/%s':\n", len(dataSets), dssLdFlag, dssLnFlag)
 
-	// Simple listing
 	if !dssDetailedFlag {
 		for i, ds := range dataSets {
-			fmt.Printf("  %d. %s\n", i+1, ds)
+			_, _ = fmt.Fprintf(out, "  %d. %s\n", i+1, ds)
 		}
-		fmt.Println("\nUse --detailed flag to see DataSet members")
+		_, _ = fmt.Fprintln(out, "\nUse --detailed flag to see DataSet members")
 		return nil
 	}
 
-	// Detailed listing with members
 	for i, ds := range dataSets {
-		fmt.Printf("\n  %d. %s\n", i+1, ds)
+		_, _ = fmt.Fprintf(out, "\n  %d. %s\n", i+1, ds)
 
 		dsView, err := a.GetDataSet(app.GetDataSetInput{LD: dssLdFlag, LN: dssLnFlag, Name: ds})
 		if err != nil {
-			fmt.Printf("     Error getting details: %v\n", err)
+			_, _ = fmt.Fprintf(out, "     Error getting details: %v\n", err)
 			continue
 		}
 
-		fmt.Printf("     Deletable: %t\n", dsView.IsDeletable)
-		fmt.Printf("     Members (%d):\n", dsView.MemberCount)
+		_, _ = fmt.Fprintf(out, "     Deletable: %t\n", dsView.IsDeletable)
+		_, _ = fmt.Fprintf(out, "     Members (%d):\n", dsView.MemberCount)
 		for j, member := range dsView.Members {
-			fmt.Printf("       %d. %s\n", j+1, member.Ref)
+			_, _ = fmt.Fprintf(out, "       %d. %s\n", j+1, member.Ref)
 		}
 	}
 

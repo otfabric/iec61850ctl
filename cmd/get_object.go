@@ -15,7 +15,7 @@ import (
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
 	"github.com/otfabric/iec61850ctl/pkg/service"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
+	"github.com/otfabric/iec61850ctl/pkg/view"
 )
 
 var (
@@ -23,6 +23,7 @@ var (
 	fcString           string
 	valType            string
 	objectDetailedFlag bool
+	objectFormatFlag   string
 )
 
 var getCmd = &cobra.Command{
@@ -44,6 +45,7 @@ func init() {
 	getObjectCmd.Flags().StringVar(&fcString, "fc", "MX", "functional constraint (ST, MX, SP, SV, CF, DC, SG, SE, SR, OR, BL, EX, CO, RP, BR, ALL)")
 	getObjectCmd.Flags().StringVar(&valType, "type", "???", "value type hint (unused; type is inferred from the server)")
 	getObjectCmd.Flags().BoolVar(&objectDetailedFlag, "detailed", false, "show detailed information including FC and Type")
+	getObjectCmd.Flags().StringVar(&objectFormatFlag, "format", "text", "Output format: text, json")
 	_ = getObjectCmd.MarkFlagRequired("object")
 
 	getCmd.AddCommand(getObjectCmd)
@@ -55,23 +57,17 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 	if !fcModel.IsValid() {
 		return fmt.Errorf("invalid functional constraint: %s", fcString)
 	}
-
-	finalHost, finalPort, err := getHostPort()
+	format, err := parseCLIFormatFlag(objectFormatFlag)
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
 
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 	obj, err := a.GetObject(app.GetObjectInput{Object: object, FC: fcModel})
@@ -79,11 +75,25 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if format == formatter.OutputFormatJSON {
+		val, err := formatter.ScalarJSONValue(obj.Value)
+		if err != nil {
+			return err
+		}
+		out := view.ObjectRead{
+			Object: object,
+			FC:     fcModel.String(),
+			Type:   formatter.JSONTypeName(obj.Type),
+			Value:  val,
+		}
+		return writeJSON(cmd, out)
+	}
+
 	if !objectDetailedFlag {
 		if obj.Value != nil {
-			fmt.Printf("Value: %s\n", obj.Value.String())
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Value: %s\n", obj.Value.String())
 		} else {
-			fmt.Println("Value: <nil>")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Value: <nil>")
 		}
 		return nil
 	}
@@ -102,10 +112,11 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 		typeStr = formatter.FormatTypeSpec(spec)
 	}
 
-	fmt.Printf("Object: %s\n", object)
-	fmt.Printf("FC: %s\n", fcModel.String())
+	out := cmd.OutOrStdout()
+	_, _ = fmt.Fprintf(out, "Object: %s\n", object)
+	_, _ = fmt.Fprintf(out, "FC: %s\n", fcModel.String())
 	if typeStr != "" {
-		fmt.Printf("Type: %s\n", typeStr)
+		_, _ = fmt.Fprintf(out, "Type: %s\n", typeStr)
 	}
 
 	if obj.Type == domain.TypeStructure || strings.Contains(strings.ToLower(typeStr), "structure") {
@@ -118,7 +129,7 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 				Detailed:      true,
 			})
 			if listErr == nil {
-				fmt.Println("Value:")
+				_, _ = fmt.Fprintln(out, "Value:")
 				lastSegment := ""
 				if lastDot := strings.LastIndex(object, "."); lastDot >= 0 {
 					lastSegment = object[lastDot+1:]
@@ -143,7 +154,7 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 							fcAttr = attr.FC.String()
 						}
 						valueStr := formatter.FormatDataAttributeValue(&attr)
-						fmt.Printf("  %s [FC=%s] Type: %s Value: %s\n", daPath, fcAttr, attr.Type.String(), valueStr)
+						_, _ = fmt.Fprintf(out, "  %s [FC=%s] Type: %s Value: %s\n", daPath, fcAttr, attr.Type.String(), valueStr)
 					}
 				}
 				return nil
@@ -152,9 +163,9 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 	}
 
 	if obj.Value != nil {
-		fmt.Printf("Value: %s\n", obj.Value.String())
+		_, _ = fmt.Fprintf(out, "Value: %s\n", obj.Value.String())
 	} else {
-		fmt.Println("Value: <nil>")
+		_, _ = fmt.Fprintln(out, "Value: <nil>")
 	}
 	return nil
 }

@@ -19,6 +19,7 @@ type ConnectionInput struct {
 	Port           int    // Server port (typically 102)
 	ConnectTimeout int    // Connection timeout in seconds
 	RequestTimeout int    // Request timeout in seconds (reserved for future dial options)
+	IEDName        string // Optional IED name for MMS domain normalisation
 }
 
 // NewConnection dials an IEC 61850 MMS server and returns a service connection adapter.
@@ -31,7 +32,7 @@ func NewConnection(input ConnectionInput) (service.IEC61850Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(connectSec)*time.Second)
 	defer cancel()
 
-	c, err := iec61850.Dial(ctx, addr, iec61850.DialOptions{})
+	c, err := iec61850.Dial(ctx, addr, iec61850.DialOptions{IEDName: input.IEDName})
 	if err != nil {
 		return nil, fmt.Errorf("dial %s: %w", addr, err)
 	}

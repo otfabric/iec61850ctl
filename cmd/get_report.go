@@ -6,13 +6,11 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"os"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
+	"github.com/otfabric/iec61850ctl/pkg/view"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +20,7 @@ var (
 	reportLnFlag       string
 	reportNameFlag     string
 	reportDetailedFlag bool
+	reportFormatFlag   string
 )
 
 var getReportCmd = &cobra.Command{
@@ -32,13 +31,6 @@ var getReportCmd = &cobra.Command{
 Reports can be either:
 - Unbuffered Reports (URCB): Real-time reports sent immediately when data changes
 - Buffered Reports (BRCB): Reports stored in a buffer and sent based on trigger conditions
-
-The report configuration includes:
-- Report ID and associated DataSet
-- Enabled status and configuration revision
-- Trigger options (data change, quality change, periodic, etc.)
-- Optional fields included in reports
-- Timing parameters (integrity period, buffer time)
 
 Example:
   iec61850ctl get report --host <server> --ld ZS1REF620A1LD0 --ln LLN0 --report rcbMeasFltA01
@@ -52,28 +44,24 @@ func init() {
 	getReportCmd.Flags().StringVar(&reportLnFlag, "ln", "", "Logical node name (required)")
 	getReportCmd.Flags().StringVar(&reportNameFlag, "report", "", "Report name (required)")
 	getReportCmd.Flags().BoolVar(&reportDetailedFlag, "detailed", false, "Fetch and print the report's dataset (members and current values)")
+	getReportCmd.Flags().StringVar(&reportFormatFlag, "format", "text", "Output format: text, json")
 	_ = getReportCmd.MarkFlagRequired("ld")
 	_ = getReportCmd.MarkFlagRequired("ln")
 	_ = getReportCmd.MarkFlagRequired("report")
 }
 
 func runGetReport(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
+	format, err := parseCLIFormatFlag(reportFormatFlag)
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
 
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
-		return fmt.Errorf("connection failed: %w", err)
+		return err
 	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 
@@ -86,14 +74,25 @@ func runGetReport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read report configuration: %w", err)
 	}
 
+	if format == formatter.OutputFormatJSON {
+		envelope := view.ReportDetails{
+			Report:  result.Report,
+			DataSet: nil,
+		}
+		if reportDetailedFlag {
+			envelope.DataSet = result.DataSet
+		}
+		return writeJSON(cmd, envelope)
+	}
+
 	renderer := formatter.NewRenderer(formatter.OutputFormatText)
-	if err := renderer.RenderReportControlBlock(&result.Report, os.Stdout); err != nil {
+	if err := renderer.RenderReportControlBlock(&result.Report, cmd.OutOrStdout()); err != nil {
 		return err
 	}
 
 	if reportDetailedFlag && result.DataSet != nil {
-		fmt.Println()
-		if err := renderer.RenderDataSet(result.DataSet, os.Stdout); err != nil {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		if err := renderer.RenderDataSet(result.DataSet, cmd.OutOrStdout()); err != nil {
 			return err
 		}
 	}

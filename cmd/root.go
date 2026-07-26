@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	host  string
-	port  int
-	debug bool
+	host    string
+	port    int
+	debug   bool
+	iedName string
 )
 
 var rootCmd = &cobra.Command{
@@ -29,8 +30,11 @@ the data model, subscribe to reports, transfer files, query journals, parse SCL
 offline, run a local MMS server from SCL, and optionally expose an HTTP/JSON API.
 
 Environment Variables:
-  IEC61850_HOST    Default host address (overridden by --host flag)
-  IEC61850_PORT    Default port number (overridden by --port flag)`,
+  IEC61850_HOST       Default host address (overridden by --host flag)
+  IEC61850_PORT       Default port number (overridden by --port flag)
+  IEC61850_IED_NAME   Default IED name for MMS domain normalisation (overridden by --ied-name)`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 // Execute runs the root command and handles any execution errors.
@@ -67,9 +71,12 @@ func getHostPort() (string, int, error) {
 	return finalHost, finalPort, nil
 }
 
-// printConnectionTarget prints the host:port being connected to.
-func printConnectionTarget(h string, p int) {
-	fmt.Printf("Connecting to %s:%d\n", h, p)
+// getIEDName returns the IED name from --ied-name, else IEC61850_IED_NAME, else empty.
+func getIEDName() string {
+	if iedName != "" {
+		return iedName
+	}
+	return os.Getenv("IEC61850_IED_NAME")
 }
 
 func init() {
@@ -81,5 +88,6 @@ func init() {
 	// Global flags for all subcommands
 	rootCmd.PersistentFlags().StringVar(&host, "host", "", "host address of the IEC 61850 server (env: IEC61850_HOST)")
 	rootCmd.PersistentFlags().IntVar(&port, "port", 102, "port of the IEC 61850 server (env: IEC61850_PORT)")
+	rootCmd.PersistentFlags().StringVar(&iedName, "ied-name", "", "IED name for MMS domain normalisation / SCL IED selection (env: IEC61850_IED_NAME)")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging of IEC 61850 calls")
 }

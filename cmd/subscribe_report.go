@@ -3,16 +3,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
+	"github.com/otfabric/iec61850ctl/pkg/formatter"
 )
 
 var (
@@ -25,12 +23,15 @@ var (
 	subscribeReportValues        bool
 	subscribeReportInterrogation bool
 	subscribeReportSync          bool
+	subscribeReportFormat        string
 )
 
 var subscribeReportCmd = &cobra.Command{
 	Use:   "report",
 	Short: "Subscribe to RCB notifications with auto-cleanup",
 	Long: `Subscribe to a report control block (RCB). The RCB reference must include the functional constraint (FC): use --type BR for buffered reports (BRCB) or --type RP for unbuffered reports (URCB). Exits on Ctrl+C, or after --duration (e.g. 30s, 5m, 1h), or after --max-reports. Always disables the report before disconnect.
+
+Use --format jsonl for machine-readable JSON Lines on stdout (diagnostics on stderr).
 
 Difference:
   --interrogation: GI → initial report (may be empty). Best for: SCADA-like event stream + report snapshot.
@@ -39,7 +40,7 @@ Difference:
 Examples:
   iec61850ctl subscribe report ... --interrogation
   iec61850ctl subscribe report ... --sync
-  iec61850ctl subscribe report ... --interrogation --sync`,
+  iec61850ctl subscribe report ... --interrogation --format jsonl`,
 	RunE: runSubscribeReport,
 }
 
@@ -54,15 +55,19 @@ func init() {
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportValues, "show-values", false, "Show data set values in each report")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportInterrogation, "interrogation", false, "Trigger General Interrogation (GI) on the RCB after enabling to request an immediate report (may include 0 items)")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportSync, "sync", false, "Read the report dataset once to obtain a full baseline snapshot (one-shot state sync)")
+	subscribeReportCmd.Flags().StringVar(&subscribeReportFormat, "format", "text", "Output format: text, jsonl")
 	_ = subscribeReportCmd.MarkFlagRequired("ld")
 	_ = subscribeReportCmd.MarkFlagRequired("ln")
 	_ = subscribeReportCmd.MarkFlagRequired("report")
 }
 
 func runSubscribeReport(cmd *cobra.Command, args []string) error {
+	streamFmt, err := formatter.ParseStreamFormat(subscribeReportFormat)
+	if err != nil {
+		return err
+	}
 	var duration time.Duration
 	if subscribeReportDuration != "" {
-		var err error
 		duration, err = time.ParseDuration(subscribeReportDuration)
 		if err != nil {
 			return fmt.Errorf("--duration: %w (e.g. 30s, 5m, 1h)", err)
@@ -79,22 +84,16 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("--type must be BR (buffered) or RP (unbuffered), got %q", subscribeReportType)
 	}
 
-	finalHost, finalPort, err := getHostPort()
+	session, err := openClientSession(cmd, clientSessionOptions{RequestTimeout: 30 * time.Second})
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
-
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 30,
-	})
-	if err != nil {
-		return fmt.Errorf("connection failed: %w", err)
-	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer func() {
+		if cerr := session.CloseStrict(); cerr != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: session cleanup: %v\n", cerr)
+		}
+	}()
+	conn := session.Conn()
 
 	a := app.New(conn)
 	reportRef := fmt.Sprintf("%s/%s.%s.%s", subscribeReportLd, subscribeReportLn, fc, subscribeReportName)
@@ -105,9 +104,9 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		details, err := a.ReportService().GetReportDetails(subscribeReportLd, subscribeReportLn, subscribeReportName, buffered)
 		switch {
 		case err != nil:
-			_, _ = fmt.Fprintf(os.Stderr, "Warning: --sync requested but could not read report details (%v); skipping baseline sync.\n", err)
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Warning: --sync requested but could not read report details (%v); skipping baseline sync.\n", err)
 		case details.DatSet == "":
-			_, _ = fmt.Fprintln(os.Stderr, "Warning: --sync requested but report has no dataset reference; skipping baseline sync.")
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "Warning: --sync requested but report has no dataset reference; skipping baseline sync.")
 		default:
 			datasetRef = details.DatSet
 		}
@@ -121,12 +120,16 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		Interrogation: subscribeReportInterrogation,
 		Sync:          subscribeReportSync,
 		DatasetRef:    datasetRef,
-		Writer:        os.Stdout,
+		Writer:        cmd.OutOrStdout(),
+		ErrWriter:     cmd.ErrOrStderr(),
+		Format:        string(streamFmt),
 	})
 	if err != nil {
 		return err
 	}
-	reporter.WriteStats(os.Stdout)
-	_, _ = fmt.Fprintln(os.Stdout, "Connection closed.")
+	reporter.WriteStats(cmd.OutOrStdout())
+	if streamFmt != formatter.StreamFormatJSONL {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Connection closed.")
+	}
 	return nil
 }

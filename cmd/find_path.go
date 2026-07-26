@@ -6,14 +6,12 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 )
 
 var (
@@ -61,12 +59,6 @@ func init() {
 // runFindPath executes the 'find path' command to search for matching paths.
 // It delegates all business logic to the explorer service and formats the output.
 func runFindPath(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
-	if err != nil {
-		return err
-	}
-	printConnectionTarget(finalHost, finalPort)
-
 	// Parse path to extract DO and DA parts
 	// Format: "DO" or "DO.DA" or "DO.DA.nested"
 	pathParts := strings.SplitN(findPathPath, ".", 2)
@@ -76,16 +68,12 @@ func runFindPath(cmd *cobra.Command, args []string) error {
 		daName = pathParts[1]
 	}
 
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 	result, err := a.FindPath(app.FindPathInput{

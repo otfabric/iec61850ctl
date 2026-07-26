@@ -1,4 +1,4 @@
-.PHONY: help all run fmt lint lint-ci vet test coverage cover check build build-nocheck build-all release-all install clean
+.PHONY: help all run fmt lint lint-ci vet test coverage cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -122,3 +122,22 @@ clean: ## Clean the build artifacts
 	@rm -rf $(BIN_DIR)
 	@rm -rf $(RELEASE_DIR)
 	@rm -f coverage.out
+
+e2e-verify-fixtures: ## Verify e2e/testdata hashes against interop.lock.json
+	@./scripts/verify-e2e-fixtures.sh
+
+e2e-update-fixtures: ## Copy fixtures from MMS_INTEROP_DIR and refresh interop.lock.json
+	@./scripts/update-e2e-fixtures.sh
+
+e2e: build-nocheck e2e-verify-fixtures ## Black-box CLI e2e against selected stacks
+	@echo "Running e2e (IEC61850CTL_E2E_STACKS=$${IEC61850CTL_E2E_STACKS:-libiec61850,iec61850bean,self})"
+	@IEC61850CTL_BIN=$(CURDIR)/$(BIN) \
+		go test -count=1 -tags=e2e ./e2e/... -timeout 12m
+
+e2e-self: build-nocheck e2e-verify-fixtures ## Self-server smoke only
+	@IEC61850CTL_BIN=$(CURDIR)/$(BIN) \
+		IEC61850CTL_E2E_STACKS=self \
+		go test -count=1 -tags=e2e ./e2e/... -timeout 3m
+
+e2e-docs: ## Generate docs/interop-examples.md from e2e/testdata/examples.json
+	@./scripts/generate-interop-examples.sh

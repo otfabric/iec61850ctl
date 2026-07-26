@@ -252,6 +252,7 @@ func TestSubscribeReport(t *testing.T) {
 		ReportRef: "LD0/LLN0.BR.rcb1",
 		Duration:  10 * time.Millisecond,
 		Writer:    &buf,
+		Format:    "text",
 	})
 	if err == nil {
 		t.Fatal("expected subscribe error from mock")

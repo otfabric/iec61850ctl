@@ -12,7 +12,6 @@ import (
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 )
 
 var (
@@ -35,22 +34,12 @@ func init() {
 }
 
 func runListLds(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
-
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 

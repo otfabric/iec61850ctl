@@ -4,16 +4,15 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 )
 
 var (
@@ -40,22 +39,12 @@ func init() {
 }
 
 func runGetFile(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
+	session, err := openClientSession(cmd, clientSessionOptions{RequestTimeout: 60 * time.Second})
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
-
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 60,
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	var buf bytes.Buffer
 	entry, err := app.New(conn).DownloadFile(fileName, &buf)

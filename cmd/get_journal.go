@@ -3,12 +3,11 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
+	"time"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 
 	"github.com/spf13/cobra"
 )
@@ -57,22 +56,12 @@ func runGetJournal(cmd *cobra.Command, args []string) error {
 		toMs = &t
 	}
 
-	finalHost, finalPort, err := getHostPort()
+	session, err := openClientSession(cmd, clientSessionOptions{RequestTimeout: 30 * time.Second})
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
-
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 30,
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 	result, err := a.GetJournalEntries(app.GetJournalEntriesInput{

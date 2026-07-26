@@ -5,11 +5,10 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
+	"github.com/otfabric/iec61850ctl/pkg/formatter"
 
 	"github.com/spf13/cobra"
 )
@@ -19,6 +18,7 @@ var (
 	getDsLnFlag       string
 	getDsNameFlag     string
 	getDsDetailedFlag bool
+	getDsFormatFlag   string
 )
 
 var getDsCmd = &cobra.Command{
@@ -40,28 +40,24 @@ func init() {
 	getDsCmd.Flags().StringVar(&getDsLnFlag, "ln", "", "Logical node name (required)")
 	getDsCmd.Flags().StringVar(&getDsNameFlag, "name", "", "Data set name (required)")
 	getDsCmd.Flags().BoolVar(&getDsDetailedFlag, "detailed", false, "Read and show current values for each member")
+	getDsCmd.Flags().StringVar(&getDsFormatFlag, "format", "text", "Output format: text, json")
 	_ = getDsCmd.MarkFlagRequired("ld")
 	_ = getDsCmd.MarkFlagRequired("ln")
 	_ = getDsCmd.MarkFlagRequired("name")
 }
 
 func runGetDs(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
+	format, err := parseCLIFormatFlag(getDsFormatFlag)
 	if err != nil {
 		return err
 	}
-	printConnectionTarget(finalHost, finalPort)
 
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
-		return fmt.Errorf("connection failed: %w", err)
+		return err
 	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 
@@ -75,16 +71,21 @@ func runGetDs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get data set: %w", err)
 	}
 
+	if format == formatter.OutputFormatJSON {
+		return writeJSON(cmd, dsView)
+	}
+
+	out := cmd.OutOrStdout()
 	dsRef := fmt.Sprintf("%s/%s.%s", getDsLdFlag, getDsLnFlag, getDsNameFlag)
-	fmt.Printf("Data set: %s\n", dsRef)
-	fmt.Printf("Deletable: %t\n", dsView.IsDeletable)
-	fmt.Printf("Members (%d):\n", dsView.MemberCount)
+	_, _ = fmt.Fprintf(out, "Data set: %s\n", dsRef)
+	_, _ = fmt.Fprintf(out, "Deletable: %t\n", dsView.IsDeletable)
+	_, _ = fmt.Fprintf(out, "Members (%d):\n", dsView.MemberCount)
 
 	for i, member := range dsView.Members {
 		if getDsDetailedFlag && member.Value != "" {
-			fmt.Printf("  %d. %s = %s\n", i+1, member.Ref, member.Value)
+			_, _ = fmt.Fprintf(out, "  %d. %s = %s\n", i+1, member.Ref, member.Value)
 		} else {
-			fmt.Printf("  %d. %s\n", i+1, member.Ref)
+			_, _ = fmt.Fprintf(out, "  %d. %s\n", i+1, member.Ref)
 		}
 	}
 

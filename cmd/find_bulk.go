@@ -5,14 +5,12 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/service"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 
 	"github.com/spf13/cobra"
 )
@@ -54,12 +52,6 @@ func init() {
 }
 
 func runFindBulk(cmd *cobra.Command, args []string) error {
-	finalHost, finalPort, err := getHostPort()
-	if err != nil {
-		return err
-	}
-	printConnectionTarget(finalHost, finalPort)
-
 	data, err := os.ReadFile(findBulkMappingFile)
 	if err != nil {
 		return fmt.Errorf("read mapping file: %w", err)
@@ -81,16 +73,12 @@ func runFindBulk(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           finalHost,
-		Port:           finalPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
-	defer func() { _ = conn.Close(context.Background()) }()
+	defer session.Close()
+	conn := session.Conn()
 
 	a := app.New(conn)
 	result, err := a.BulkFind(app.BulkFindInput{Mappings: mapping})

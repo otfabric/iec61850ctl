@@ -3,14 +3,12 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/otfabric/iec61850ctl/pkg/network"
-	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 
 	"github.com/spf13/cobra"
 )
@@ -129,20 +127,18 @@ func scanTarget(ip string, port int, resolveMac bool) network.Target {
 		return target
 	}
 
-	// Test IEC 61850 connection
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           ip,
-		Port:           port,
-		ConnectTimeout: 5,
-		RequestTimeout: 5,
+	// Test IEC 61850 connection via shared session helper.
+	session, err := openClientSessionTo(nil, ip, port, clientSessionOptions{
+		ConnectTimeout: 5 * time.Second,
+		RequestTimeout: 5 * time.Second,
+		Quiet:          true,
 	})
-
 	if err != nil {
 		target.IEC61850OK = false
 		target.Error = err.Error()
 	} else {
 		target.IEC61850OK = true
-		_ = conn.Close(context.Background())
+		session.Close()
 	}
 
 	// Resolve MAC address if requested
