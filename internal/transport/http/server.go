@@ -41,21 +41,24 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to connect to IEC 61850 device: %w", err)
 	}
 
-	a := app.New(conn)
+	return NewServerWithApp(cfg.ListenAddr, app.New(conn)), nil
+}
+
+// NewServerWithApp creates an HTTP server backed by an existing App (for tests and custom wiring).
+func NewServerWithApp(listenAddr string, a *app.App) *Server {
 	s := &Server{
 		app:    a,
 		router: http.NewServeMux(),
 	}
 	s.registerRoutes()
-
 	s.httpServer = &http.Server{
-		Addr:         cfg.ListenAddr,
+		Addr:         listenAddr,
 		Handler:      s.router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	return s, nil
+	return s
 }
 
 // Start starts the HTTP server (blocking).

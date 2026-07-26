@@ -49,13 +49,17 @@ vet: ## Run go vet on project packages
 	@echo "Running go vet"
 	@go vet ./...
 
+# Library packages under coverage (CLI cmd/ wiring excluded; see .codecov.yml).
+COVERPKGS := ./pkg/... ./internal/...
+
 test: ## Run unit tests with race detector
 	@echo "Running unit tests (race detector)"
 	@CGO_ENABLED=1 go test -count=1 -race ./...
 
-coverage: ## Run tests with coverage (writes coverage.out)
-	@echo "Running coverage"
-	@CGO_ENABLED=1 go test -count=1 -race -coverprofile=coverage.out -covermode=atomic ./...
+coverage: ## Run tests with coverage for pkg/ and internal/ (writes coverage.out)
+	@echo "Running coverage ($(COVERPKGS))"
+	@CGO_ENABLED=1 go test -count=1 -race -coverprofile=coverage.out -covermode=atomic $(COVERPKGS)
+	@go tool cover -func=coverage.out | tail -1
 
 cover: coverage ## Open coverage report in browser
 	@echo "Opening coverage report"

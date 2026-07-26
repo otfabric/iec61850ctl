@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: 70%
+
+# CLI Cobra wiring is thin I/O glue; library coverage is measured under pkg/ and internal/.
+ignore:
+  - "main.go"
+  - "cmd/**/*"

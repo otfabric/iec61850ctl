@@ -20,7 +20,33 @@ import (
 // mockConnection is a mock implementation of IEC61850Connection for testing.
 type mockConnection struct {
 	logicalDevices []string
-	readFunc       func(ref iec61850.Ref) (*iec61850.Value, error)
+	logicalNodes   []string
+	dataObjects    []string
+	dataSets       []string
+	reports        []string
+	journals       []string
+
+	readFunc            func(ref iec61850.Ref) (*iec61850.Value, error)
+	getVariableTypeFunc func(ref iec61850.Ref) (*mms.TypeSpec, error)
+	listChildrenFunc    func(ref iec61850.Ref) ([]iec61850.BrowseNode, error)
+
+	dataSet               *iec61850.DataSet
+	dataSetValues         []iec61850.DataSetValue
+	getDataSetErr         error
+	readDataSetErr        error
+	listDataSetsErr       error
+	listReportsErr        error
+	rcb                   *iec61850.ReportControlBlock
+	getRCBErr             error
+	getRCBByItemID        map[string]*iec61850.ReportControlBlock
+	getRCBErrByItemID     map[string]error
+	listJournalsErr       error
+	journalResult         *iec61850.JournalReadResult
+	journalAfterResult    *iec61850.JournalReadResult
+	readJournalErr        error
+	readJournalAfterErr   error
+	readJournalCalls      int
+	readJournalAfterCalls int
 }
 
 func (m *mockConnection) ListLogicalDevices(_ context.Context) ([]iec61850.LogicalDevice, error) {
@@ -35,14 +61,31 @@ func (m *mockConnection) ListLogicalDevices(_ context.Context) ([]iec61850.Logic
 }
 
 func (m *mockConnection) ListLogicalNodes(_ context.Context, _ string) ([]iec61850.LogicalNode, error) {
+	if m.logicalNodes != nil {
+		out := make([]iec61850.LogicalNode, len(m.logicalNodes))
+		for i, name := range m.logicalNodes {
+			out[i] = iec61850.LogicalNode{Name: name}
+		}
+		return out, nil
+	}
 	return []iec61850.LogicalNode{{Name: "LLN0"}, {Name: "MMXU1"}}, nil
 }
 
 func (m *mockConnection) ListDataObjects(_ context.Context, _, _ string) ([]iec61850.DataObject, error) {
+	if m.dataObjects != nil {
+		out := make([]iec61850.DataObject, len(m.dataObjects))
+		for i, name := range m.dataObjects {
+			out[i] = iec61850.DataObject{Name: name}
+		}
+		return out, nil
+	}
 	return []iec61850.DataObject{{Name: "DO1"}, {Name: "DO2"}}, nil
 }
 
 func (m *mockConnection) ListChildren(_ context.Context, ref iec61850.Ref) ([]iec61850.BrowseNode, error) {
+	if m.listChildrenFunc != nil {
+		return m.listChildrenFunc(ref)
+	}
 	magRef, _ := ref.Child("mag")
 	qRef, _ := ref.Child("q")
 	return []iec61850.BrowseNode{
@@ -70,28 +113,96 @@ func (m *mockConnection) ReadMultiple(_ context.Context, _ []iec61850.Ref) ([]ie
 	return nil, nil
 }
 
-func (m *mockConnection) GetVariableType(_ context.Context, _ iec61850.Ref) (*mms.TypeSpec, error) {
+func (m *mockConnection) GetVariableType(_ context.Context, ref iec61850.Ref) (*mms.TypeSpec, error) {
+	if m.getVariableTypeFunc != nil {
+		return m.getVariableTypeFunc(ref)
+	}
+	// DO-level refs (single path component) behave as structures so
+	// Explorer/BulkFind can walk into mag/q children by default.
+	if len(ref.Path) <= 1 {
+		return &mms.TypeSpec{Type: mms.ValueTypeStructure}, nil
+	}
 	return &mms.TypeSpec{Type: mms.ValueTypeFloat}, nil
 }
 
 func (m *mockConnection) ListDataSets(_ context.Context, _ string) ([]string, error) {
-	return []string{"LLN0$ds1"}, nil
+	if m.listDataSetsErr != nil {
+		return nil, m.listDataSetsErr
+	}
+	if m.dataSets != nil {
+		return append([]string(nil), m.dataSets...), nil
+	}
+	return []string{"LLN0$ds1", "LLN0$ds2", "MMXU1$meas"}, nil
 }
 
-func (m *mockConnection) GetDataSet(_ context.Context, _, _ string) (*iec61850.DataSet, error) {
-	return &iec61850.DataSet{}, nil
+func (m *mockConnection) GetDataSet(_ context.Context, _, dsName string) (*iec61850.DataSet, error) {
+	if m.getDataSetErr != nil {
+		return nil, m.getDataSetErr
+	}
+	if m.dataSet != nil {
+		return m.dataSet, nil
+	}
+	ref, _ := iec61850.ParseRef("LD0/LLN0.DO1.mag.f")
+	return &iec61850.DataSet{
+		Reference: "LD0/LLN0." + dsName,
+		Deletable: false,
+		Members: []iec61850.DataSetMember{
+			{Ref: ref, DomainID: "LD0", ItemID: "LLN0$MX$DO1$mag$f"},
+		},
+	}, nil
 }
 
 func (m *mockConnection) ReadDataSet(_ context.Context, _, _ string) ([]iec61850.DataSetValue, error) {
-	return []iec61850.DataSetValue{}, nil
+	if m.readDataSetErr != nil {
+		return nil, m.readDataSetErr
+	}
+	if m.dataSetValues != nil {
+		return m.dataSetValues, nil
+	}
+	return []iec61850.DataSetValue{
+		{Value: iec61850.NewValue(mms.NewFloat(12.5))},
+	}, nil
 }
 
 func (m *mockConnection) ListReports(_ context.Context, _ string) ([]string, error) {
-	return []string{"LLN0$BR$rcb1"}, nil
+	if m.listReportsErr != nil {
+		return nil, m.listReportsErr
+	}
+	if m.reports != nil {
+		return append([]string(nil), m.reports...), nil
+	}
+	return []string{"LLN0$BR$rcb1", "LLN0$RP$urcb1", "MMXU1$BR$brcb01"}, nil
 }
 
-func (m *mockConnection) GetReportControlBlock(_ context.Context, _, _ string) (*iec61850.ReportControlBlock, error) {
-	return &iec61850.ReportControlBlock{RptID: "test-rpt"}, nil
+func (m *mockConnection) GetReportControlBlock(_ context.Context, _, itemID string) (*iec61850.ReportControlBlock, error) {
+	if m.getRCBErrByItemID != nil {
+		if err, ok := m.getRCBErrByItemID[itemID]; ok {
+			return nil, err
+		}
+	}
+	if m.getRCBByItemID != nil {
+		if rcb, ok := m.getRCBByItemID[itemID]; ok {
+			return rcb, nil
+		}
+	}
+	if m.getRCBErr != nil {
+		return nil, m.getRCBErr
+	}
+	if m.rcb != nil {
+		return m.rcb, nil
+	}
+	return &iec61850.ReportControlBlock{
+		RptID:   "test-rpt",
+		DatSet:  "LD0/LLN0$ds1",
+		RptEna:  true,
+		ConfRev: 1,
+		BufTm:   100,
+		SqNum:   7,
+		IntgPd:  1000,
+		Resv:    true,
+		TrgOps:  iec61850.TrgOpDataChanged | iec61850.TrgOpGI,
+		OptFlds: iec61850.OptFldSeqNum | iec61850.OptFldTimeStamp,
+	}, nil
 }
 
 func (m *mockConnection) SetReportControlBlock(_ context.Context, _, _ string, _ iec61850.RCBUpdate) error {
@@ -119,15 +230,57 @@ func (m *mockConnection) GetFileAttributes(_ context.Context, _ string) (*iec618
 }
 
 func (m *mockConnection) ListJournals(_ context.Context, _ string) ([]string, error) {
-	return nil, nil
+	if m.listJournalsErr != nil {
+		return nil, m.listJournalsErr
+	}
+	if m.journals != nil {
+		return append([]string(nil), m.journals...), nil
+	}
+	return []string{"LLN0$EventLog", "LLN0.GeneralLog"}, nil
 }
 
 func (m *mockConnection) ReadJournal(_ context.Context, _, _ string, _, _ time.Time) (*iec61850.JournalReadResult, error) {
-	return nil, nil
+	m.readJournalCalls++
+	if m.readJournalErr != nil {
+		return nil, m.readJournalErr
+	}
+	if m.journalResult != nil {
+		return m.journalResult, nil
+	}
+	return &iec61850.JournalReadResult{
+		Entries: []iec61850.JournalEntry{
+			{
+				EntryID:        []byte{0x01},
+				OccurrenceTime: time.UnixMilli(1_700_000_000_000).UTC(),
+				Variables: []iec61850.JournalVariable{
+					{Tag: "tag1", Value: iec61850.NewValue(mms.NewBoolean(true))},
+				},
+			},
+		},
+		MoreFollows: false,
+	}, nil
 }
 
 func (m *mockConnection) ReadJournalAfter(_ context.Context, _, _ string, _ time.Time, _ []byte) (*iec61850.JournalReadResult, error) {
-	return nil, nil
+	m.readJournalAfterCalls++
+	if m.readJournalAfterErr != nil {
+		return nil, m.readJournalAfterErr
+	}
+	if m.journalAfterResult != nil {
+		return m.journalAfterResult, nil
+	}
+	return &iec61850.JournalReadResult{
+		Entries: []iec61850.JournalEntry{
+			{
+				EntryID:        []byte{0x02},
+				OccurrenceTime: time.UnixMilli(1_700_000_000_500).UTC(),
+				Variables: []iec61850.JournalVariable{
+					{Tag: "tag2", Value: iec61850.NewValue(mms.NewInteger(42))},
+				},
+			},
+		},
+		MoreFollows: false,
+	}, nil
 }
 
 func (m *mockConnection) Close(_ context.Context) error { return nil }
@@ -206,4 +359,14 @@ func TestFormatterService(t *testing.T) {
 			t.Errorf("Expected '2020-01-01T00:00:00Z', got %q", result)
 		}
 	})
+}
+
+func TestNewClientAdapter(t *testing.T) {
+	conn := NewClientAdapter(nil)
+	if conn == nil {
+		t.Fatal("NewClientAdapter(nil) returned nil")
+	}
+	if _, ok := conn.(*ClientAdapter); !ok {
+		t.Fatalf("expected *ClientAdapter, got %T", conn)
+	}
 }
