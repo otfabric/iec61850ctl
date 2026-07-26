@@ -87,10 +87,17 @@ Common FCs used with `get object --fc` and shown by `list das`:
 
 Reporting and control blocks are not ordinary process data: list them with `list reports` / `get report`, and subscribe with `subscribe report --type BR|RP`.
 
+Controllable objects use FC **CO** under the hood, but the CLI must not bypass the control model with `set object --fc CO`. Use:
+
+- `control inspect` — read `ctlModel` / controllability
+- `control operate` — atomic select/operate on one association (`--mode auto` by default)
+
+Scalar settings (e.g. ING `setVal`) use `set object --fc SP` (or other non-CO FCs).
+
 ## Reports and journals
 
 - **URCB** (`--type RP`): unbuffered reports; typically require reservation before enable.
-- **BRCB** (`--type BR`): buffered reports; may include entry ID / buffer overflow fields.
+- **BRCB** (`--type BR`): buffered reports; may include entry ID / buffer overflow fields. Pre-enable: `--purge-buf`, `--entry-id HEX`, `--resv-tms`.
 - **GI** (`--interrogation` on subscribe): general interrogation — requests a snapshot report (may be empty).
 - **Journals**: list with `list journals --ld …`, read with `get journal` (time range or start-after).
 
@@ -98,7 +105,7 @@ Reporting and control blocks are not ordinary process data: list them with `list
 
 | Source | Commands |
 |--------|----------|
-| Online IED (MMS) | `list`, `get`, `tree`, `subscribe`, `find`, `http` |
+| Online IED (MMS) | `list`, `get`, `set`, `control`, `tree`, `subscribe`, `find`, `http` |
 | Offline SCL (CID/ICD/SCD) | `scl parse`, `scl convert`, `server start --scl` |
 
 The SCL file defines the engineering model. The live MMS server may expose a subset or different naming; always verify with `list` / `tree` against the device.

@@ -21,7 +21,7 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
 - **HTTP API**: `internal/transport/http/` — optional REST wrapper
 - **Black-box e2e**: `e2e/` (`//go:build e2e`) — treats the built binary as an external process
 - **External dependencies**:
-  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.5 — IEC 61850 client/server, SCL, directory discovery
+  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.6 — IEC 61850 client/server, SCL, directory discovery
   - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.0.5 — MMS encoding and ISO transport
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
 - **Go version**: 1.24+ (see `go.mod`)
@@ -122,8 +122,9 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 ## Automation & interop docs
 
 - [docs/AUTOMATION.md](../docs/AUTOMATION.md) — stdout/stderr, JSON/JSONL contracts
-- [docs/INTEROP.md](../docs/INTEROP.md) — five CI e2e directions; Phase 3A vs 3B
+- [docs/INTEROP.md](../docs/INTEROP.md) — seven CI e2e stacks (client, self, reverse control/report/reader); Phases 3–6
 - [docs/SERVER.md](../docs/SERVER.md) — readiness JSON, value seeding
+- [RELEASE.md](../RELEASE.md) — v0.2.0 control/write/BRCB notes
 
 ## Error Handling
 

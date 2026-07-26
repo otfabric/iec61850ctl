@@ -27,6 +27,7 @@ type Report struct {
 	DatSet       string
 	ConfRev      *uint32
 	BufOvfl      *bool
+	EntryID      []byte // BRCB entry identifier when present
 	Timestamp    *Timestamp
 	Elements     []ReportElement
 }
@@ -62,6 +63,9 @@ func FromReportIndication(ind *iec61850.ReportIndication, includeValues bool) *R
 	if ind.BufOvfl {
 		b := true
 		r.BufOvfl = &b
+	}
+	if len(ind.EntryID) > 0 {
+		r.EntryID = append([]byte(nil), ind.EntryID...)
 	}
 	if !ind.Timestamp.IsZero() {
 		ts := Timestamp{UnixMs: uint64(ind.Timestamp.UnixMilli())}

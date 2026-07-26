@@ -10,11 +10,11 @@
 
 A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) and [otfabric/go-mms](https://github.com/otfabric/go-mms).
 
-`iec61850ctl` gives operators and developers terminal access to IEC 61850 IEDs: browse the data model, read objects and datasets, subscribe to reports, transfer files, query journals, parse SCL offline, run a local MMS server from SCL, and optionally expose a small HTTP/JSON API.
+`iec61850ctl` gives operators and developers terminal access to IEC 61850 IEDs: browse the data model, read and write scalar objects, operate controllable objects, subscribe to reports (including BRCB purge/resume), transfer files, query journals, parse SCL offline, run a local MMS server from SCL, and optionally expose a small read-only HTTP/JSON API.
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e exercises the built CLI independently against [libiec61850](https://libiec61850.com) and [IEC61850bean](https://www.beanit.com/iec-61850/) adapter servers from [mms-interop](https://github.com/otfabric/mms-interop), plus reverse controller/reporter journeys against `server start`. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e exercises the built CLI independently against [libiec61850](https://libiec61850.com) and [IEC61850bean](https://www.beanit.com/iec-61850/) adapter servers from [mms-interop](https://github.com/otfabric/mms-interop), plus reverse controller/reporter/client journeys against `server start`. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
@@ -37,11 +37,13 @@ Black-box e2e exercises the built CLI independently against [libiec61850](https:
 - **Read** — objects (with FC), datasets, report configuration, journal entries, file download
 - **Tree** — hierarchical or flat model walk; `--serialize` JSON for value seeding
 - **Find** — path search by LN pattern + DO/DA path; bulk mapping file support
-- **Subscribe** — report control blocks (BR/RP) with GI, optional dataset sync, clean disable on exit
+- **Subscribe** — report control blocks (BR/RP) with GI, optional dataset sync, BRCB purge/resume EntryID, clean disable on exit
+- **Control** — atomic `control inspect` / `control operate` (auto/direct/SBO/SBOw on one association)
+- **Write** — `set object` for scalar MMS attributes (rejects `FC=CO`; use control for CO)
 - **SCL** — offline parse/flatten and CSV convert (no device connection)
 - **Server** — run an MMS server from ICD/CID/SCD (`--scl`); optional value seed from serialized JSON
 - **Export** — generate libiec61850 `.cfg` from serialized JSON (**export-only**, not used by this tool’s runtime)
-- **HTTP** — REST JSON API over the same app layer as the CLI
+- **HTTP** — REST JSON API for browse/read/find (**no** control or write over HTTP)
 
 See [RELEASE.md](RELEASE.md) for the latest release notes. Protocol model primer: [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
@@ -131,7 +133,12 @@ iec61850ctl
 │   ├── path            Find LN/DO paths by pattern
 │   └── bulk            Bulk path resolve from a mapping file
 ├── subscribe
-│   └── report          Subscribe to URCB/BRCB (--type RP|BR)
+│   └── report          Subscribe to URCB/BRCB (--type RP|BR; BRCB --purge-buf/--entry-id)
+├── control
+│   ├── inspect         Read ctlModel / controllability
+│   └── operate         Atomic select/operate journey (one association)
+├── set
+│   └── object          Write a scalar attribute (--fc; rejects CO)
 ├── scl
 │   ├── parse           Parse SCL to tree or flat paths
 │   └── convert         Convert SCL to CSV
@@ -169,9 +176,35 @@ iec61850ctl get report --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01
 iec61850ctl subscribe report \
   --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01 --type BR \
   --show-values --interrogation --sync --duration 30s
+
+# BRCB: purge buffer or resume from EntryID (hex) before enable
+iec61850ctl subscribe report \
+  --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01 --type BR \
+  --purge-buf --interrogation --max-reports 1 --format jsonl
 ```
 
-`--interrogation` triggers GI after enable. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB).
+`--interrogation` triggers GI after enable. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
+
+### Control and scalar write
+
+```sh
+# Inspect ctlModel
+iec61850ctl control inspect --object InteropLD/GGIO1.SPCSO2 --format json
+
+# Atomic operate (select when required; one association; optional confirm-ref)
+iec61850ctl control operate \
+  --object InteropLD/GGIO1.SPCSO2 \
+  --value true --type bool --mode auto \
+  --confirm-ref 'InteropLD/GGIO1.SPCSO2.stVal[ST]' \
+  --format json
+
+# Scalar write (not a control bypass; FC=CO rejected)
+iec61850ctl set object \
+  --object InteropLD/GGIO1.SetInt1.setVal --fc SP \
+  --value 5 --type int --verify --format json
+```
+
+Selection cannot survive across CLI processes. Prefer `--mode auto`. Confirmation is off unless `--confirm-ref` is set.
 
 ### Files and journals
 
@@ -230,9 +263,10 @@ Flag values override environment variables. `discover` / `scan` uses `--host` as
 |----------|------------|
 | `list lds`, `list lns`, `list dos`, `list das` | `text`, `json`, `csv`, `table`, `yaml` |
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
+| `control inspect`, `control operate`, `set object` | `text`, `json` |
 | `subscribe report` | `text`, `jsonl` |
 
-Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
+Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-failure, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
 
 ## Development
 
@@ -244,7 +278,7 @@ make vet
 
 make e2e                   # black-box e2e (default: libiec61850, iec61850bean, self)
 make e2e-self              # self-server smoke only
-IEC61850CTL_E2E_STACKS=all make e2e   # all five CI directions (adds reverse stacks)
+IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader)
 make e2e-verify-fixtures   # check e2e/testdata hashes vs interop.lock.json
 make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md

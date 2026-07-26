@@ -11,6 +11,7 @@ Authoritative machine-facing contract for scripting `iec61850ctl`. Human-oriente
 
 - Successful commands exit `0`.
 - Invalid flags, validation failures, connection failures, and remote errors exit non-zero.
+- For `control operate` / `set object` with `--format json`, protocol outcomes that reach execution still print one JSON document; non-zero exit is driven by `status` / `write_ok` (see below), not by omitting JSON.
 - Runtime errors are printed once to stderr (usage is not appended).
 - `--help` still prints help to stdout and exits `0`.
 
@@ -45,9 +46,14 @@ The same `--ied-name` flag selects an IED from SCL for `server start` (server-si
 |----------------|----------------------|
 | `list lds`, `list lns`, `list dos`, `list das` | `text`, `json`, `csv`, `table`, `yaml` |
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
+| `control inspect`, `control operate`, `set object` | `text`, `json` |
 | `subscribe report` | `text`, `jsonl` |
 
 Unknown formats exit non-zero (no silent fallback to text) for the restricted families above.
+
+### JSON on failure (control / set)
+
+With `--format json`, validation and protocol journeys that reach execution emit **exactly one** JSON document on stdout even when exiting non-zero. Flag parsing / malformed-input errors may emit no JSON. Diagnostics remain on stderr.
 
 ## JSON shapes
 
@@ -149,6 +155,59 @@ Single envelope (never two consecutive documents). Nested `report` always includ
 
 With `--detailed`, `data_set` holds the dataset view when available.
 
+For **buffered** RCBs, the nested `report` may also include BRCB runtime fields when the server exposes them: `purge_buf` (bool), `entry_id_value` (hex string), `resv_tms` (int). These are distinct from `optional_fields.entry_id` (OptFlds bit).
+
+### `control inspect --format json`
+
+```json
+{
+  "object": "InteropLD/GGIO1.SPCSO2",
+  "control_model": {"code": 2, "name": "sbo-with-normal-security"},
+  "controllable": true,
+  "requires_select": true,
+  "enhanced_security": false
+}
+```
+
+### `control operate --format json`
+
+```json
+{
+  "object": "InteropLD/GGIO1.SPCSO2",
+  "control_model": {"code": 2, "name": "sbo-with-normal-security"},
+  "controllable": true,
+  "requires_select": true,
+  "mode": "sbo",
+  "ctl_num": 7,
+  "status": "confirmed",
+  "operations": [
+    {"operation": "select", "ok": true},
+    {"operation": "operate", "ok": true}
+  ],
+  "confirmation": {"attempted": true, "matched": true, "value": true}
+}
+```
+
+Status values: `planned` | `operated` | `confirmed` | `operated-unconfirmed` | `confirmation-mismatch` | `failed`.  
+Non-zero exit: `failed`, `operated-unconfirmed`, `confirmation-mismatch`.
+
+Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[ST]`). `--test` / `--no-confirm` → status `operated` (not `operated-unconfirmed`). Best-effort `cleanup` after select-without-complete-operate is **not** a rollback. Optional `last_appl_error` appears only when the control-object reference matches the failed target.
+
+### `set object --format json`
+
+```json
+{
+  "object": "InteropLD/GGIO1.SetInt1.setVal",
+  "fc": "SP",
+  "type": "int",
+  "requested_value": 5,
+  "write_ok": true,
+  "verification": {"attempted": true, "matched": true, "value": 5}
+}
+```
+
+`FC=CO` is rejected client-side before dial (`use control operate`). Types are never inferred: `--type` is required (`bool|int|uint|float|enum|string`).
+
 ## Report subscription JSONL
 
 `subscribe report --format jsonl` emits one JSON object per stdout line. Diagnostics remain on stderr.
@@ -157,11 +216,13 @@ Suggested events:
 
 ```json
 {"event":"baseline","data_set":"…","values":[…]}
-{"event":"report","rpt_id":"interop_urcb01","sequence_number":1,"values":[…],"reasons":["gi"]}
+{"event":"report","rpt_id":"interop_brcb01","sequence_number":1,"entry_id":"0000000000000001","values":[…],"reasons":["gi"]}
 {"event":"summary","reports_received":1,"clean_disable":true,"duration_ms":1234}
 ```
 
 - `--show-values` controls inclusion of `values`.
+- BRCB `entry_id` is hex when the indication includes EntryID.
+- BRCB pre-enable: `--purge-buf`, `--entry-id HEX`, `--resv-tms N` (require `--type BR`); written before `RptEna`.
 - The `summary` event is emitted only after subscription cleanup completes.
 - Reason tokens include `gi`, `dchg`, `qchg`, `dupd`, `integrity`.
 

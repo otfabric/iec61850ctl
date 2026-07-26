@@ -35,6 +35,9 @@ const (
 	// IEC61850CTL_E2E_STACKS; they are not part of the default set.
 	stackServerLib  = "server-libiec61850"
 	stackServerBean = "server-iec61850bean"
+	// Reverse general-reader stacks (Phase 3B).
+	stackServerReaderLib  = "server-reader-libiec61850"
+	stackServerReaderBean = "server-reader-iec61850bean"
 
 	defaultLibIECImage    = "mms-interop-libiec61850:local"
 	defaultBeanImage      = "mms-interop-iec61850bean:local"
@@ -126,7 +129,8 @@ func TestMain(m *testing.M) {
 	ctlBin = strings.TrimSpace(os.Getenv("IEC61850CTL_BIN"))
 
 	needsBin := selectedStacks[stackLibIEC61850] || selectedStacks[stackIEC61850Bean] ||
-		selectedStacks[stackSelf] || selectedStacks[stackServerLib] || selectedStacks[stackServerBean]
+		selectedStacks[stackSelf] || selectedStacks[stackServerLib] || selectedStacks[stackServerBean] ||
+		selectedStacks[stackServerReaderLib] || selectedStacks[stackServerReaderBean]
 	if needsBin && ctlBin == "" {
 		fmt.Fprintf(os.Stderr, "e2e: IEC61850CTL_BIN is required when stacks include libiec61850, iec61850bean, self, or server-*\n")
 		os.Exit(1)
@@ -245,7 +249,10 @@ func parseStacks(raw string) map[string]bool {
 			out[stackSelf] = true
 			out[stackServerLib] = true
 			out[stackServerBean] = true
-		case stackLibIEC61850, stackIEC61850Bean, stackSelf, stackServerLib, stackServerBean:
+			out[stackServerReaderLib] = true
+			out[stackServerReaderBean] = true
+		case stackLibIEC61850, stackIEC61850Bean, stackSelf,
+			stackServerLib, stackServerBean, stackServerReaderLib, stackServerReaderBean:
 			out[name] = true
 		case "":
 			continue
@@ -779,6 +786,26 @@ func asFloat64(v any) (float64, bool) {
 	case json.Number:
 		f, err := x.Float64()
 		return f, err == nil
+	default:
+		return 0, false
+	}
+}
+
+func asInt64(v any) (int64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return int64(x), true
+	case float32:
+		return int64(x), true
+	case int:
+		return int64(x), true
+	case int64:
+		return x, true
+	case uint64:
+		return int64(x), true
+	case json.Number:
+		i, err := x.Int64()
+		return i, err == nil
 	default:
 		return 0, false
 	}

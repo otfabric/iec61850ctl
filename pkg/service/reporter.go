@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -34,6 +35,11 @@ type ReporterConfig struct {
 	Writer        io.Writer     // result stream (default os.Stdout)
 	ErrWriter     io.Writer     // diagnostics when Format is jsonl (default os.Stderr)
 	Format        string        // "text" (default) or "jsonl"
+
+	// BRCB pre-enable configuration (ignored for URCB).
+	PurgeBuf bool   // write PurgeBuf=true before enable
+	EntryID  []byte // write resume EntryID before enable (nil = omit)
+	ResvTms  *int32 // write ResvTms before enable when non-nil
 }
 
 // Validate checks if the configuration is valid.
@@ -178,6 +184,14 @@ func (r *Reporter) Run() error {
 		return fmt.Errorf("get RCB values: empty RptID")
 	}
 
+	if buffered {
+		if err := r.applyBRCBPreEnable(ctx, ld, rcbItemID); err != nil {
+			return err
+		}
+	} else if r.config.PurgeBuf || len(r.config.EntryID) > 0 || r.config.ResvTms != nil {
+		return fmt.Errorf("%w: --purge-buf/--entry-id/--resv-tms require --type BR", ErrInvalidConfig)
+	}
+
 	opts := iec61850.SubscribeReportOptions{
 		QueueSize:  reportChanBuffer,
 		AutoEnable: true,
@@ -237,6 +251,44 @@ func (r *Reporter) Run() error {
 	}
 	if r.jsonl() {
 		_ = writeJSONLSummary(w, r.count.Load(), clean, time.Since(r.startTime))
+	}
+	return nil
+}
+
+// applyBRCBPreEnable writes PurgeBuf / EntryID / ResvTms before RptEna.
+// Callers must invoke this before SubscribeReport AutoEnable so resume/purge
+// take effect on the subsequent enable (IEC 61850 BRCB semantics).
+func (r *Reporter) applyBRCBPreEnable(ctx context.Context, ld, rcbItemID string) error {
+	var fields iec61850.RCBFieldMask
+	update := iec61850.RCBUpdate{}
+	if r.config.PurgeBuf {
+		fields |= iec61850.RCBFieldPurgeBuf
+		update.PurgeBuf = true
+	}
+	if len(r.config.EntryID) > 0 {
+		fields |= iec61850.RCBFieldEntryID
+		update.EntryID = append([]byte(nil), r.config.EntryID...)
+	}
+	if r.config.ResvTms != nil {
+		fields |= iec61850.RCBFieldResvTms
+		update.ResvTms = *r.config.ResvTms
+	}
+	if fields == 0 {
+		return nil
+	}
+	update.Fields = fields
+	if err := r.conn.SetReportControlBlock(ctx, ld, rcbItemID, update); err != nil {
+		return fmt.Errorf("BRCB pre-enable configure: %w", err)
+	}
+	diag := r.diag()
+	if r.config.PurgeBuf {
+		_, _ = fmt.Fprintln(diag, "BRCB PurgeBuf written")
+	}
+	if len(r.config.EntryID) > 0 {
+		_, _ = fmt.Fprintf(diag, "BRCB EntryID resume set (%d bytes)\n", len(r.config.EntryID))
+	}
+	if r.config.ResvTms != nil {
+		_, _ = fmt.Fprintf(diag, "BRCB ResvTms=%d\n", *r.config.ResvTms)
 	}
 	return nil
 }
@@ -329,14 +381,18 @@ func (r *Reporter) printReport(w io.Writer, report *iec61850.ReportIndication, s
 	}
 
 	if r.jsonl() {
-		_ = writeJSONL(w, jsonlEvent{
+		ev := jsonlEvent{
 			Event:          "report",
 			RptID:          modelReport.RptID,
 			SequenceNumber: &seqNum,
 			DataSet:        modelReport.DatSet,
 			Values:         reportValuesJSON(modelReport, showValues),
 			Reasons:        reasonTokens(modelReport),
-		})
+		}
+		if len(modelReport.EntryID) > 0 {
+			ev.EntryID = hex.EncodeToString(modelReport.EntryID)
+		}
+		_ = writeJSONL(w, ev)
 		return
 	}
 

@@ -15,6 +15,24 @@
       }
     },
     {
+      "Ref": "InteropLD/LLN0.Mod.ctlModel",
+      "FC": "CF",
+      "Type": "INT",
+      "Value": {
+        "Raw": 1,
+        "Type": "INT"
+      }
+    },
+    {
+      "Ref": "InteropLD/LLN0.Mod.d",
+      "FC": "DC",
+      "Type": "STRING",
+      "Value": {
+        "Raw": "mode",
+        "Type": "STRING"
+      }
+    },
+    {
       "Ref": "InteropLD/GGIO1.SPS1.stVal",
       "FC": "ST",
       "Type": "BOOL",

@@ -74,16 +74,19 @@ func TestReportService_GetAllReports(t *testing.T) {
 func TestReportService_GetReportDetails(t *testing.T) {
 	mock := &mockConnection{
 		rcb: &iec61850.ReportControlBlock{
-			RptID:   "id1",
-			DatSet:  "LD0/LLN0$ds1",
-			RptEna:  true,
-			ConfRev: 2,
-			BufTm:   50,
-			SqNum:   3,
-			IntgPd:  500,
-			Resv:    false,
-			TrgOps:  iec61850.TrgOpDataChanged | iec61850.TrgOpQualityChanged | iec61850.TrgOpIntegrity,
-			OptFlds: iec61850.OptFldSeqNum | iec61850.OptFldDataSet | iec61850.OptFldEntryID,
+			RptID:    "id1",
+			DatSet:   "LD0/LLN0$ds1",
+			RptEna:   true,
+			ConfRev:  2,
+			BufTm:    50,
+			SqNum:    3,
+			IntgPd:   500,
+			Resv:     false,
+			PurgeBuf: false,
+			EntryID:  []byte{0, 0, 0, 0, 0, 0, 0, 9},
+			ResvTms:  15,
+			TrgOps:   iec61850.TrgOpDataChanged | iec61850.TrgOpQualityChanged | iec61850.TrgOpIntegrity,
+			OptFlds:  iec61850.OptFldSeqNum | iec61850.OptFldDataSet | iec61850.OptFldEntryID,
 		},
 	}
 	svc := NewReportService(mock)
@@ -96,6 +99,13 @@ func TestReportService_GetReportDetails(t *testing.T) {
 	}
 	if !rcb.TriggerOptions.DataChange || !rcb.OptionalFields.SequenceNumber {
 		t.Fatalf("flags=%+v %+v", rcb.TriggerOptions, rcb.OptionalFields)
+	}
+	if rcb.PurgeBuf == nil || *rcb.PurgeBuf || len(rcb.EntryID) != 8 || rcb.ResvTms == nil || *rcb.ResvTms != 15 {
+		t.Fatalf("BRCB fields=%+v", rcb)
+	}
+	view := ProjectReportControlBlock(*rcb)
+	if view.EntryID == "" || view.ResvTms == nil {
+		t.Fatalf("projected BRCB=%+v", view)
 	}
 
 	mockErr := &mockConnection{getRCBErr: errors.New("missing")}

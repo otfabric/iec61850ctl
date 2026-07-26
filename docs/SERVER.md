@@ -74,7 +74,7 @@ Black-box e2e (Phase 3A) drives mms-interop **controller** and **reporter** adap
 - Controllers: direct (`SPCSO1`), SBO (`SPCSO2`), SBOw (`SPCSO3`)
 - Reporters: URCB data-change (enable → write → report → disable → conclude)
 
-See [INTEROP.md](INTEROP.md). General external browse/read (Phase 3B) is deferred until generic reader adapters exist in mms-interop capabilities.
+See [INTEROP.md](INTEROP.md). Phase 3B also exercises capability-declared `*-ied-client` adapters for browse/read/write/dataset against `server start`. Forward client control/write against **external** adapter servers (`control operate`, `set object` to `SetInt1.setVal[SP]`) is covered separately on the client matrix (Phase 4).
 
 ### Interop control registration
 

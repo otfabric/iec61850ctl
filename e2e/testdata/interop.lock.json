@@ -1,22 +1,24 @@
 {
   "source_repository": "otfabric/mms-interop",
-  "source_commit": "d38cac48eef49742ae865c0e3db8c055410c73c9",
-  "source_tag": "v0.1.2",
+  "source_commit": "803e783616510396b6a7e38d79eb6c140428032f",
+  "source_tag": "v0.1.4",
   "fixture_revision": "iec61850-v2",
   "files": {
-    "interop.icd": "sha256:33f84cd94f534e30e170ca3d2c824d35a160e9bce8a199859649f2296010ae37",
-    "expected-values.json": "sha256:30271ab7a20626e9174f640dc9e4168dd2530aed263099249ec84fe982de8feb",
-    "self-server-values.json": "sha256:7dd6161630b56a0d8d5037a2bdbcd5417ea7daa76b78038f763d4391ba5f262e"
+    "interop.icd": "sha256:0977b43b7e221deeda1f7f5402f2fac9008bff48256a5fab3fa9541ed6b940c1",
+    "expected-values.json": "sha256:5a54be4d8cb95ff555fa9546dd89f1c49a239599180a20c298fd9e56171734d9",
+    "self-server-values.json": "sha256:5ecf3ae8d29b72e15419256a01b5c115e7329cb65a9bec6af73e1d242b169ab0"
   },
   "images": {
-    "libiec61850": "ghcr.io/otfabric/mms-interop-libiec61850@sha256:bbe651eea580acc3335de0d3587ccff1f4161126474234e446fb4f8bedea1e89",
-    "iec61850bean": "ghcr.io/otfabric/mms-interop-iec61850bean@sha256:708f559e0151e6a6580bf1ca95fea112b6c32eebbe4834a111198d00a5940f78"
+    "libiec61850": "ghcr.io/otfabric/mms-interop-libiec61850@sha256:9c29847dbd0523002b113a2fd1806cfb523bdd1610ae2e47f53b6156ec15fde7",
+    "iec61850bean": "ghcr.io/otfabric/mms-interop-iec61850bean@sha256:d95a64e2cb801db24ce9836e9dacc1035bf5131056802e241e9de6546861c611"
   },
   "required_commands": {
     "libiec61850-ied-server": true,
+    "libiec61850-ied-client": true,
     "libiec61850-ied-controller": true,
     "libiec61850-ied-reporter": true,
     "iec61850bean-ied-server": true,
+    "iec61850bean-ied-client": true,
     "iec61850bean-ied-controller": true,
     "iec61850bean-ied-reporter": true
   }

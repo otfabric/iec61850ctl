@@ -191,6 +191,12 @@ func (h *ctlServerHandle) stop() {
 type adapterOpResult struct {
 	Operation string `json:"operation"`
 	OK        bool   `json:"ok"`
+	Target    string `json:"target,omitempty"`
+	Names     []string
+	Value     any
+	Values    []any
+	Error     string `json:"error,omitempty"`
+	Raw       []byte
 }
 
 type adapterRunResult struct {
@@ -217,18 +223,33 @@ func parseAdapterOpLine(line []byte) (adapterOpResult, bool) {
 	if op == "" {
 		return adapterOpResult{}, false
 	}
-	var okVal bool
+	res := adapterOpResult{Operation: op, Raw: append([]byte(nil), trimmed...)}
 	if v, ok := raw["ok"]; ok {
-		_ = json.Unmarshal(v, &okVal)
+		_ = json.Unmarshal(v, &res.OK)
 	}
-	return adapterOpResult{Operation: op, OK: okVal}, true
+	if v, ok := raw["target"]; ok {
+		_ = json.Unmarshal(v, &res.Target)
+	}
+	if v, ok := raw["error"]; ok {
+		_ = json.Unmarshal(v, &res.Error)
+	}
+	if v, ok := raw["names"]; ok {
+		_ = json.Unmarshal(v, &res.Names)
+	}
+	if v, ok := raw["value"]; ok {
+		_ = json.Unmarshal(v, &res.Value)
+	}
+	if v, ok := raw["values"]; ok {
+		_ = json.Unmarshal(v, &res.Values)
+	}
+	return res, true
 }
 
 func resolveImageForReverseStack(stack string) string {
 	switch stack {
-	case stackServerLib:
+	case stackServerLib, stackServerReaderLib:
 		return resolveImage(stackLibIEC61850)
-	case stackServerBean:
+	case stackServerBean, stackServerReaderBean:
 		return resolveImage(stackIEC61850Bean)
 	default:
 		return ""

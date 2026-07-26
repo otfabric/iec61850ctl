@@ -21,6 +21,10 @@ type SubscribeReportInput struct {
 	Writer        io.Writer
 	ErrWriter     io.Writer
 	Format        string
+
+	PurgeBuf bool
+	EntryID  []byte
+	ResvTms  *int32
 }
 
 // SubscribeReport runs a report subscription until duration/max/signal.
@@ -36,6 +40,9 @@ func (a *App) SubscribeReport(input SubscribeReportInput) (*service.Reporter, er
 		Writer:        input.Writer,
 		ErrWriter:     input.ErrWriter,
 		Format:        input.Format,
+		PurgeBuf:      input.PurgeBuf,
+		EntryID:       input.EntryID,
+		ResvTms:       input.ResvTms,
 	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err

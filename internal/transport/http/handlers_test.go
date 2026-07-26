@@ -54,6 +54,27 @@ func (m *httpMockConn) FindPaths(_ context.Context, _ iec61850.FindQuery) ([]iec
 func (m *httpMockConn) Read(_ context.Context, _ iec61850.Ref) (*iec61850.Value, error) {
 	return iec61850.NewValue(mms.NewFloat(1)), nil
 }
+func (m *httpMockConn) Write(_ context.Context, _ iec61850.Ref, _ *mms.Value) error {
+	return nil
+}
+func (m *httpMockConn) ReadCtlModel(_ context.Context, _ iec61850.Ref) (iec61850.CtlModel, error) {
+	return iec61850.CtlModelStatusOnly, nil
+}
+func (m *httpMockConn) Select(_ context.Context, _ iec61850.Ref) (string, error) {
+	return "", nil
+}
+func (m *httpMockConn) SelectWithValue(_ context.Context, _ iec61850.Ref, _ iec61850.OperateParams) error {
+	return nil
+}
+func (m *httpMockConn) Operate(_ context.Context, _ iec61850.Ref, _ iec61850.OperateParams) error {
+	return nil
+}
+func (m *httpMockConn) Cancel(_ context.Context, _ iec61850.Ref, _ iec61850.CancelParams) error {
+	return nil
+}
+func (m *httpMockConn) ReadLastApplError(_ context.Context, _ iec61850.Ref) (*iec61850.LastApplError, error) {
+	return nil, nil
+}
 func (m *httpMockConn) ReadMultiple(_ context.Context, _ []iec61850.Ref) ([]iec61850.ReadResult, error) {
 	return nil, nil
 }

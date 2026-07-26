@@ -46,6 +46,16 @@ func (a *App) Reader() *service.Reader {
 	return service.NewReader(a.conn)
 }
 
+// Controller returns a configured Controller service.
+func (a *App) Controller() *service.Controller {
+	return service.NewController(a.conn)
+}
+
+// Writer returns a configured Writer service.
+func (a *App) Writer() *service.Writer {
+	return service.NewWriter(a.conn)
+}
+
 // Connection returns the underlying IEC 61850 connection for operations
 // that need direct protocol access (e.g., file transfer, raw reads).
 func (a *App) Connection() service.IEC61850Connection {

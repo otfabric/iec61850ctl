@@ -21,6 +21,11 @@ type ReportControlBlock struct {
 
 	TriggerOptions TriggerOptions `json:"trigger_options"`
 	OptionalFields OptionalFields `json:"optional_fields"`
+
+	// BRCB fields (hex entry_id when present).
+	PurgeBuf *bool  `json:"purge_buf,omitempty"`
+	EntryID  string `json:"entry_id_value,omitempty"` // hex-encoded
+	ResvTms  *int32 `json:"resv_tms,omitempty"`
 }
 
 // TriggerOptions describes the trigger conditions for a report.

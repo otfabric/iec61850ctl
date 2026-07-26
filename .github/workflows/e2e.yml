@@ -33,6 +33,10 @@ jobs:
             timeout: 25
           - stack: server-iec61850bean
             timeout: 35
+          - stack: server-reader-libiec61850
+            timeout: 25
+          - stack: server-reader-iec61850bean
+            timeout: 35
     timeout-minutes: ${{ matrix.timeout }}
 
     steps:

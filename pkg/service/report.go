@@ -146,5 +146,16 @@ func mapRCB(ld, ln, name string, buffered bool, rcb *iec61850.ReportControlBlock
 		EntryID:        rcb.OptFlds.Has(iec61850.OptFldEntryID),
 		ConfigRevision: rcb.OptFlds.Has(iec61850.OptFldConfRev),
 	}
+	if buffered {
+		pb := rcb.PurgeBuf
+		out.PurgeBuf = &pb
+		if len(rcb.EntryID) > 0 {
+			out.EntryID = append([]byte(nil), rcb.EntryID...)
+		}
+		if rcb.ResvTms != 0 {
+			rt := rcb.ResvTms
+			out.ResvTms = &rt
+		}
+	}
 	return out
 }

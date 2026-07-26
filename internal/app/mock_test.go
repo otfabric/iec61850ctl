@@ -27,6 +27,11 @@ type mockConn struct {
 	readVal      *iec61850.Value
 	subscribeErr error
 	err          error
+
+	// Optional control/write support for Phase 4 app tests.
+	ctlModel    iec61850.CtlModel
+	ctlModelSet bool
+	allowWrite  bool
 }
 
 func (m *mockConn) ListLogicalDevices(_ context.Context) ([]iec61850.LogicalDevice, error) {
@@ -182,6 +187,49 @@ func (m *mockConn) ReadJournal(_ context.Context, _, _ string, _, _ time.Time) (
 
 func (m *mockConn) ReadJournalAfter(_ context.Context, _, _ string, _ time.Time, _ []byte) (*iec61850.JournalReadResult, error) {
 	return &iec61850.JournalReadResult{}, nil
+}
+
+func (m *mockConn) Write(_ context.Context, _ iec61850.Ref, _ *mms.Value) error {
+	if m.allowWrite {
+		return nil
+	}
+	return fmt.Errorf("unexpected Write")
+}
+func (m *mockConn) ReadCtlModel(_ context.Context, _ iec61850.Ref) (iec61850.CtlModel, error) {
+	if m.ctlModelSet {
+		return m.ctlModel, nil
+	}
+	return 0, fmt.Errorf("unexpected ReadCtlModel")
+}
+func (m *mockConn) Select(_ context.Context, _ iec61850.Ref) (string, error) {
+	if m.ctlModelSet {
+		return "selected", nil
+	}
+	return "", fmt.Errorf("unexpected Select")
+}
+func (m *mockConn) SelectWithValue(_ context.Context, _ iec61850.Ref, _ iec61850.OperateParams) error {
+	if m.ctlModelSet {
+		return nil
+	}
+	return fmt.Errorf("unexpected SelectWithValue")
+}
+func (m *mockConn) Operate(_ context.Context, _ iec61850.Ref, _ iec61850.OperateParams) error {
+	if m.ctlModelSet {
+		return nil
+	}
+	return fmt.Errorf("unexpected Operate")
+}
+func (m *mockConn) Cancel(_ context.Context, _ iec61850.Ref, _ iec61850.CancelParams) error {
+	if m.ctlModelSet {
+		return nil
+	}
+	return fmt.Errorf("unexpected Cancel")
+}
+func (m *mockConn) ReadLastApplError(_ context.Context, _ iec61850.Ref) (*iec61850.LastApplError, error) {
+	if m.ctlModelSet {
+		return nil, nil
+	}
+	return nil, fmt.Errorf("unexpected ReadLastApplError")
 }
 
 func (m *mockConn) Close(_ context.Context) error { return nil }

@@ -15,6 +15,8 @@ import (
 func TestFixtures_SelfServerValuesAgreeWithExpected(t *testing.T) {
 	keys := []string{
 		"InteropLD/LLN0.Mod.stVal",
+		"InteropLD/LLN0.Mod.ctlModel",
+		"InteropLD/LLN0.Mod.d",
 		"InteropLD/GGIO1.SPS1.stVal",
 		"InteropLD/GGIO1.SPCSO1.stVal",
 		"InteropLD/GGIO1.SPCSO1.ctlModel",

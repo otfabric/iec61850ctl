@@ -19,6 +19,7 @@ type jsonlEvent struct {
 	DataSet         string   `json:"data_set,omitempty"`
 	RptID           string   `json:"rpt_id,omitempty"`
 	SequenceNumber  *int64   `json:"sequence_number,omitempty"`
+	EntryID         string   `json:"entry_id,omitempty"` // hex
 	Values          []any    `json:"values,omitempty"`
 	Reasons         []string `json:"reasons,omitempty"`
 	ReportsReceived int64    `json:"reports_received,omitempty"`

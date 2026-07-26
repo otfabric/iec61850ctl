@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -24,6 +25,9 @@ var (
 	subscribeReportInterrogation bool
 	subscribeReportSync          bool
 	subscribeReportFormat        string
+	subscribeReportPurgeBuf      bool
+	subscribeReportEntryID       string
+	subscribeReportResvTms       int
 )
 
 var subscribeReportCmd = &cobra.Command{
@@ -33,13 +37,19 @@ var subscribeReportCmd = &cobra.Command{
 
 Use --format jsonl for machine-readable JSON Lines on stdout (diagnostics on stderr).
 
+BRCB-only pre-enable flags (written before RptEna):
+  --purge-buf     Purge the report buffer
+  --entry-id HEX  Resume from EntryID (hex octets, e.g. 0000000000000001)
+  --resv-tms N    Write ResvTms when the server supports it
+
 Difference:
   --interrogation: GI → initial report (may be empty). Best for: SCADA-like event stream + report snapshot.
   --sync: ReadDataSet → full baseline snapshot (deterministic). Best for: operational consumers that must know state at startup/reconnect.
 
 Examples:
-  iec61850ctl subscribe report ... --interrogation
-  iec61850ctl subscribe report ... --sync
+  iec61850ctl subscribe report ... --type BR --interrogation
+  iec61850ctl subscribe report ... --type BR --purge-buf --interrogation
+  iec61850ctl subscribe report ... --type BR --entry-id 0000000000000001
   iec61850ctl subscribe report ... --interrogation --format jsonl`,
 	RunE: runSubscribeReport,
 }
@@ -56,6 +66,9 @@ func init() {
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportInterrogation, "interrogation", false, "Trigger General Interrogation (GI) on the RCB after enabling to request an immediate report (may include 0 items)")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportSync, "sync", false, "Read the report dataset once to obtain a full baseline snapshot (one-shot state sync)")
 	subscribeReportCmd.Flags().StringVar(&subscribeReportFormat, "format", "text", "Output format: text, jsonl")
+	subscribeReportCmd.Flags().BoolVar(&subscribeReportPurgeBuf, "purge-buf", false, "BRCB: purge buffer before enable")
+	subscribeReportCmd.Flags().StringVar(&subscribeReportEntryID, "entry-id", "", "BRCB: resume EntryID as hex octets")
+	subscribeReportCmd.Flags().IntVar(&subscribeReportResvTms, "resv-tms", 0, "BRCB: write ResvTms before enable")
 	_ = subscribeReportCmd.MarkFlagRequired("ld")
 	_ = subscribeReportCmd.MarkFlagRequired("ln")
 	_ = subscribeReportCmd.MarkFlagRequired("report")
@@ -82,6 +95,23 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 	fc := strings.ToUpper(strings.TrimSpace(subscribeReportType))
 	if fc != "BR" && fc != "RP" {
 		return fmt.Errorf("--type must be BR (buffered) or RP (unbuffered), got %q", subscribeReportType)
+	}
+
+	var entryID []byte
+	if subscribeReportEntryID != "" {
+		raw := strings.ReplaceAll(strings.TrimSpace(subscribeReportEntryID), " ", "")
+		entryID, err = hex.DecodeString(raw)
+		if err != nil {
+			return fmt.Errorf("--entry-id: %w (expect hex octets)", err)
+		}
+	}
+	var resvTms *int32
+	if cmd.Flags().Changed("resv-tms") {
+		v := int32(subscribeReportResvTms)
+		resvTms = &v
+	}
+	if fc != "BR" && (subscribeReportPurgeBuf || len(entryID) > 0 || resvTms != nil) {
+		return fmt.Errorf("--purge-buf/--entry-id/--resv-tms require --type BR")
 	}
 
 	session, err := openClientSession(cmd, clientSessionOptions{RequestTimeout: 30 * time.Second})
@@ -123,6 +153,9 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		Writer:        cmd.OutOrStdout(),
 		ErrWriter:     cmd.ErrOrStderr(),
 		Format:        string(streamFmt),
+		PurgeBuf:      subscribeReportPurgeBuf,
+		EntryID:       entryID,
+		ResvTms:       resvTms,
 	})
 	if err != nil {
 		return err

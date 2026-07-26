@@ -3,6 +3,7 @@
 package service
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
@@ -129,7 +130,7 @@ func ProjectDataSet(ds domain.DataSet) view.DataSet {
 
 // ProjectReportControlBlock maps a domain.ReportControlBlock to its view projection.
 func ProjectReportControlBlock(rcb domain.ReportControlBlock) view.ReportControlBlock {
-	return view.ReportControlBlock{
+	out := view.ReportControlBlock{
 		Name:     rcb.Name,
 		LD:       rcb.LD,
 		LN:       rcb.LN,
@@ -161,7 +162,13 @@ func ProjectReportControlBlock(rcb domain.ReportControlBlock) view.ReportControl
 			EntryID:        rcb.OptionalFields.EntryID,
 			ConfigRevision: rcb.OptionalFields.ConfigRevision,
 		},
+		PurgeBuf: rcb.PurgeBuf,
+		ResvTms:  rcb.ResvTms,
 	}
+	if len(rcb.EntryID) > 0 {
+		out.EntryID = hex.EncodeToString(rcb.EntryID)
+	}
+	return out
 }
 
 // ProjectReportControlBlockRef maps a domain.ReportControlBlockRef to its view projection.

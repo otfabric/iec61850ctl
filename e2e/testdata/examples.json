@@ -64,6 +64,38 @@
       "expected_exit": 0,
       "expect_jsonl_events": ["report", "summary"],
       "expected_output": "{\"event\":\"report\",…}\n{\"event\":\"summary\",\"reports_received\":1,\"clean_disable\":true,…}"
+    },
+    {
+      "title": "Control inspect",
+      "notes": "Atomic control journeys require a single association; inspect ctlModel before operate.",
+      "stacks": ["libiec61850", "iec61850bean"],
+      "argv": ["control", "inspect", "--object", "InteropLD/GGIO1.SPCSO2", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"controllable": true, "requires_select": true}
+    },
+    {
+      "title": "Control operate (atomic SBO)",
+      "notes": "One association: select → operate → optional confirm-ref. No cross-process select.",
+      "stacks": ["libiec61850", "iec61850bean"],
+      "argv": ["control", "operate", "--object", "InteropLD/GGIO1.SPCSO2", "--value", "true", "--type", "bool", "--mode", "auto", "--confirm-ref", "InteropLD/GGIO1.SPCSO2.stVal[ST]", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"status": "confirmed"}
+    },
+    {
+      "title": "Set scalar object (ING)",
+      "notes": "Writable fixture InteropLD/GGIO1.SetInt1.setVal[SP]. FC=CO is rejected — use control operate.",
+      "stacks": ["libiec61850", "iec61850bean"],
+      "argv": ["set", "object", "--object", "InteropLD/GGIO1.SetInt1.setVal", "--fc", "SP", "--value", "5", "--type", "int", "--verify", "--format", "json"],
+      "expected_exit": 0,
+      "expect_json_fields": {"write_ok": true}
+    },
+    {
+      "title": "BRCB subscribe with purge",
+      "notes": "Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.",
+      "stacks": ["libiec61850", "iec61850bean"],
+      "argv": ["subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "REPORT_INSTANCE", "--type", "BR", "--purge-buf", "--interrogation", "--max-reports", "1", "--duration", "15s", "--format", "jsonl"],
+      "expected_exit": 0,
+      "expect_jsonl_events": ["report", "summary"]
     }
   ]
 }

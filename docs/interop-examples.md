@@ -35,8 +35,8 @@ docker run --rm -p 1102:1102 --entrypoint iec61850bean-ied-server \
 ### Digest-pinned images (CI / reproducible)
 
 ```bash
-LIBIEC61850_IMAGE=ghcr.io/otfabric/mms-interop-libiec61850@sha256:bbe651eea580acc3335de0d3587ccff1f4161126474234e446fb4f8bedea1e89
-IEC61850BEAN_IMAGE=ghcr.io/otfabric/mms-interop-iec61850bean@sha256:708f559e0151e6a6580bf1ca95fea112b6c32eebbe4834a111198d00a5940f78
+LIBIEC61850_IMAGE=ghcr.io/otfabric/mms-interop-libiec61850@sha256:9c29847dbd0523002b113a2fd1806cfb523bdd1610ae2e47f53b6156ec15fde7
+IEC61850BEAN_IMAGE=ghcr.io/otfabric/mms-interop-iec61850bean@sha256:d95a64e2cb801db24ce9836e9dacc1035bf5131056802e241e9de6546861c611
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
   "$LIBIEC61850_IMAGE" --port 1102
 ```
@@ -160,6 +160,53 @@ Example stdout (illustrative):
 ```
 {"event":"report",…}
 {"event":"summary","reports_received":1,"clean_disable":true,…}
+```
+
+Discover the instance name first:
+
+```bash
+iec61850ctl list reports --ld InteropLD --ln LLN0 --format json
+# then substitute --report <name> from the JSON `name` field
+```
+
+### Control inspect
+
+Stacks: `libiec61850`, `iec61850bean`
+
+Atomic control journeys require a single association; inspect ctlModel before operate.
+
+```bash
+iec61850ctl control inspect --object InteropLD/GGIO1.SPCSO2 --format json
+```
+
+### Control operate (atomic SBO)
+
+Stacks: `libiec61850`, `iec61850bean`
+
+One association: select → operate → optional confirm-ref. No cross-process select.
+
+```bash
+iec61850ctl control operate --object InteropLD/GGIO1.SPCSO2 --value true --type bool --mode auto --confirm-ref InteropLD/GGIO1.SPCSO2.stVal[ST] --format json
+```
+
+### Set scalar object (ING)
+
+Stacks: `libiec61850`, `iec61850bean`
+
+Writable fixture InteropLD/GGIO1.SetInt1.setVal[SP]. FC=CO is rejected — use control operate.
+
+```bash
+iec61850ctl set object --object InteropLD/GGIO1.SetInt1.setVal --fc SP --value 5 --type int --verify --format json
+```
+
+### BRCB subscribe with purge
+
+Stacks: `libiec61850`, `iec61850bean`
+
+Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.
+
+```bash
+iec61850ctl subscribe report --ld InteropLD --ln LLN0 --report REPORT_INSTANCE --type BR --purge-buf --interrogation --max-reports 1 --duration 15s --format jsonl
 ```
 
 Discover the instance name first:

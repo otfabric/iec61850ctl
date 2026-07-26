@@ -33,6 +33,11 @@ type ReportControlBlock struct {
 
 	TriggerOptions TriggerOptions
 	OptionalFields OptionalFields
+
+	// BRCB runtime attributes (present when the server exposes them).
+	PurgeBuf *bool
+	EntryID  []byte // raw EntryID octets
+	ResvTms  *int32 // reservation time (ms); BRCB edition-2 optional
 }
 
 // TriggerOptions represents the trigger conditions for a report control block.

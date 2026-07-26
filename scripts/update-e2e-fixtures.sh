@@ -67,7 +67,13 @@ lock = {
   },
   "required_commands": {
     "libiec61850-ied-server": True,
+    "libiec61850-ied-client": True,
+    "libiec61850-ied-controller": True,
+    "libiec61850-ied-reporter": True,
     "iec61850bean-ied-server": True,
+    "iec61850bean-ied-client": True,
+    "iec61850bean-ied-controller": True,
+    "iec61850bean-ied-reporter": True,
   },
 }
 with open("$LOCK", "w") as f:

@@ -7,6 +7,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -281,6 +282,28 @@ func (m *mockConnection) ReadJournalAfter(_ context.Context, _, _ string, _ time
 		},
 		MoreFollows: false,
 	}, nil
+}
+
+func (m *mockConnection) Write(_ context.Context, _ iec61850.Ref, _ *mms.Value) error {
+	return fmt.Errorf("unexpected Write")
+}
+func (m *mockConnection) ReadCtlModel(_ context.Context, _ iec61850.Ref) (iec61850.CtlModel, error) {
+	return 0, fmt.Errorf("unexpected ReadCtlModel")
+}
+func (m *mockConnection) Select(_ context.Context, _ iec61850.Ref) (string, error) {
+	return "", fmt.Errorf("unexpected Select")
+}
+func (m *mockConnection) SelectWithValue(_ context.Context, _ iec61850.Ref, _ iec61850.OperateParams) error {
+	return fmt.Errorf("unexpected SelectWithValue")
+}
+func (m *mockConnection) Operate(_ context.Context, _ iec61850.Ref, _ iec61850.OperateParams) error {
+	return fmt.Errorf("unexpected Operate")
+}
+func (m *mockConnection) Cancel(_ context.Context, _ iec61850.Ref, _ iec61850.CancelParams) error {
+	return fmt.Errorf("unexpected Cancel")
+}
+func (m *mockConnection) ReadLastApplError(_ context.Context, _ iec61850.Ref) (*iec61850.LastApplError, error) {
+	return nil, fmt.Errorf("unexpected ReadLastApplError")
 }
 
 func (m *mockConnection) Close(_ context.Context) error { return nil }

@@ -12,8 +12,29 @@ import (
 	"github.com/otfabric/go-mms"
 )
 
-// IEC61850Connection is the client boundary used by services and the app layer.
+// ControlConnection is the narrow client boundary used by Controller.
+type ControlConnection interface {
+	ReadCtlModel(ctx context.Context, ref iec61850.Ref) (iec61850.CtlModel, error)
+	Select(ctx context.Context, ref iec61850.Ref) (string, error)
+	SelectWithValue(ctx context.Context, ref iec61850.Ref, params iec61850.OperateParams) error
+	Operate(ctx context.Context, ref iec61850.Ref, params iec61850.OperateParams) error
+	Cancel(ctx context.Context, ref iec61850.Ref, params iec61850.CancelParams) error
+	ReadLastApplError(ctx context.Context, ref iec61850.Ref) (*iec61850.LastApplError, error)
+	Read(ctx context.Context, ref iec61850.Ref) (*iec61850.Value, error)
+}
+
+// WriteConnection is the narrow client boundary used by Writer.
+type WriteConnection interface {
+	Write(ctx context.Context, ref iec61850.Ref, value *mms.Value) error
+	Read(ctx context.Context, ref iec61850.Ref) (*iec61850.Value, error)
+}
+
+// IEC61850Connection is the aggregate client boundary used by browse/read services.
+// It embeds ControlConnection and WriteConnection so ClientAdapter satisfies all three.
 type IEC61850Connection interface {
+	ControlConnection
+	WriteConnection
+
 	ListLogicalDevices(ctx context.Context) ([]iec61850.LogicalDevice, error)
 	ListLogicalNodes(ctx context.Context, ld string) ([]iec61850.LogicalNode, error)
 	ListDataObjects(ctx context.Context, ld, ln string) ([]iec61850.DataObject, error)
@@ -21,7 +42,6 @@ type IEC61850Connection interface {
 	TreeWithOptions(ctx context.Context, opts iec61850.TreeOptions) (*iec61850.ModelNode, error)
 	FindPaths(ctx context.Context, query iec61850.FindQuery) ([]iec61850.Ref, error)
 
-	Read(ctx context.Context, ref iec61850.Ref) (*iec61850.Value, error)
 	ReadMultiple(ctx context.Context, refs []iec61850.Ref) ([]iec61850.ReadResult, error)
 	GetVariableType(ctx context.Context, ref iec61850.Ref) (*mms.TypeSpec, error)
 
@@ -59,3 +79,5 @@ func NewClientAdapter(c *iec61850.Client) IEC61850Connection {
 }
 
 var _ IEC61850Connection = (*ClientAdapter)(nil)
+var _ ControlConnection = (*ClientAdapter)(nil)
+var _ WriteConnection = (*ClientAdapter)(nil)

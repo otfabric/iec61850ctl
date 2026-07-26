@@ -98,6 +98,15 @@ func (r *textRenderer) RenderReportControlBlock(rcb *view.ReportControlBlock, w 
 	if rcb.Reserved != nil {
 		_, _ = fmt.Fprintf(w, "Reserved: %v\n", *rcb.Reserved)
 	}
+	if rcb.PurgeBuf != nil {
+		_, _ = fmt.Fprintf(w, "PurgeBuf: %v\n", *rcb.PurgeBuf)
+	}
+	if rcb.EntryID != "" {
+		_, _ = fmt.Fprintf(w, "EntryID: %s\n", rcb.EntryID)
+	}
+	if rcb.ResvTms != nil {
+		_, _ = fmt.Fprintf(w, "ResvTms: %d\n", *rcb.ResvTms)
+	}
 	_, _ = fmt.Fprintf(w, "\nTrigger Options:\n")
 	printBoolOpt(w, "  Data Change", rcb.TriggerOptions.DataChange)
 	printBoolOpt(w, "  Quality Change", rcb.TriggerOptions.QualityChange)
