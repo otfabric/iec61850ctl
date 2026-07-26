@@ -1,0 +1,595 @@
+{
+  "iec61850Results": [
+    {
+      "controlledPropertyId": "current.l1",
+      "paths": [
+        "ZS1550REX640LD0/CAVMMXU1.A.phsA",
+        "ZS1550REX640LD0/CMAMMXU1.A.phsA",
+        "ZS1550REX640LD0/CMIMMXU1.A.phsA",
+        "ZS1550REX640LD0/CMMXU1.A.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.l2",
+      "paths": [
+        "ZS1550REX640LD0/CAVMMXU1.A.phsB",
+        "ZS1550REX640LD0/CMAMMXU1.A.phsB",
+        "ZS1550REX640LD0/CMIMMXU1.A.phsB",
+        "ZS1550REX640LD0/CMMXU1.A.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.l3",
+      "paths": [
+        "ZS1550REX640LD0/CAVMMXU1.A.phsC",
+        "ZS1550REX640LD0/CMAMMXU1.A.phsC",
+        "ZS1550REX640LD0/CMIMMXU1.A.phsC",
+        "ZS1550REX640LD0/CMMXU1.A.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.residual.iii",
+      "paths": [
+        "ZS1550REX640LD0/RCAVMMXU1.A.res",
+        "ZS1550REX640LD0/RCMAMMXU1.A.res",
+        "ZS1550REX640LD0/RCMIMMXU1.A.res",
+        "ZS1550REX640LD0/RESCMMXU1.A.res"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.l1",
+      "paths": [
+        "ZS1550REX640LD0/VAVMMXU1.PhV.phsA",
+        "ZS1550REX640LD0/VMMXU1.PhV.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.l2",
+      "paths": [
+        "ZS1550REX640LD0/VAVMMXU1.PhV.phsB",
+        "ZS1550REX640LD0/VMMXU1.PhV.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.l3",
+      "paths": [
+        "ZS1550REX640LD0/VAVMMXU1.PhV.phsC",
+        "ZS1550REX640LD0/VMMXU1.PhV.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.residual.iii",
+      "paths": [
+        "ZS1550REX640LD0/RESVMMXU1.PhV.res",
+        "ZS1550REX640LD0/RVAVMMXU1.PhV.res",
+        "ZS1550REX640LD0/RVMAMMXU1.PhV.res",
+        "ZS1550REX640LD0/RVMIMMXU1.PhV.res"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.l1l2",
+      "paths": [
+        "ZS1550REX640LD0/VAVMMXU1.PPV.phsAB",
+        "ZS1550REX640LD0/VMMXU1.PPV.phsAB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.l2l3",
+      "paths": [
+        "ZS1550REX640LD0/VAVMMXU1.PPV.phsBC",
+        "ZS1550REX640LD0/VMMXU1.PPV.phsBC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.l3l1",
+      "paths": [
+        "ZS1550REX640LD0/VAVMMXU1.PPV.phsCA",
+        "ZS1550REX640LD0/VMMXU1.PPV.phsCA"
+      ]
+    },
+    {
+      "controlledPropertyId": "frequency",
+      "paths": ["ZS1550REX640LD0/FMMXU1.Hz"]
+    },
+    {
+      "controlledPropertyId": "powerfactor.iii",
+      "paths": [
+        "ZS1550REX640LD0/PEAVMMXU1.TotPF",
+        "ZS1550REX640LD0/PEMMXU1.TotPF"
+      ]
+    },
+    {
+      "controlledPropertyId": "power.iii.active",
+      "paths": [
+        "ZS1550REX640LD0/DOPMMXU1.TotW",
+        "ZS1550REX640LD0/DPMMXU1.TotW",
+        "ZS1550REX640LD0/PEAVMMXU1.TotW",
+        "ZS1550REX640LD0/PEMAMMXU1.TotW",
+        "ZS1550REX640LD0/PEMIMMXU1.TotW",
+        "ZS1550REX640LD0/PEMMXU1.TotW"
+      ]
+    },
+    {
+      "controlledPropertyId": "power.iii.reactive",
+      "paths": [
+        "ZS1550REX640LD0/DOPMMXU1.TotVAr",
+        "ZS1550REX640LD0/DPMMXU1.TotVAr",
+        "ZS1550REX640LD0/PEAVMMXU1.TotVAr",
+        "ZS1550REX640LD0/PEMAMMXU1.TotVAr",
+        "ZS1550REX640LD0/PEMIMMXU1.TotVAr",
+        "ZS1550REX640LD0/PEMMXU1.TotVAr"
+      ]
+    },
+    {
+      "controlledPropertyId": "power.iii.apparent",
+      "paths": [
+        "ZS1550REX640LD0/DOPMMXU1.TotVA",
+        "ZS1550REX640LD0/DPMMXU1.TotVA",
+        "ZS1550REX640LD0/PEAVMMXU1.TotVA",
+        "ZS1550REX640LD0/PEMAMMXU1.TotVA",
+        "ZS1550REX640LD0/PEMIMMXU1.TotVA",
+        "ZS1550REX640LD0/PEMMXU1.TotVA"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.thd.l1",
+      "paths": [
+        "ZS1550REX640LD0/CHLMHAI1.ThdA.phsA",
+        "ZS1550REX640LD0/CHMHAI1.ThdA.phsA",
+        "ZS1550REX640LD0/CHSMHAI1.ThdA.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.thd.l2",
+      "paths": [
+        "ZS1550REX640LD0/CHLMHAI1.ThdA.phsB",
+        "ZS1550REX640LD0/CHMHAI1.ThdA.phsB",
+        "ZS1550REX640LD0/CHSMHAI1.ThdA.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.thd.l3",
+      "paths": [
+        "ZS1550REX640LD0/CHLMHAI1.ThdA.phsC",
+        "ZS1550REX640LD0/CHMHAI1.ThdA.phsC",
+        "ZS1550REX640LD0/CHSMHAI1.ThdA.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.tdd.l1",
+      "paths": [
+        "ZS1550REX640LD0/CHLMHAI1.TddA.phsA",
+        "ZS1550REX640LD0/CHMHAI1.TddA.phsA",
+        "ZS1550REX640LD0/CHSMHAI1.TddA.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.tdd.l2",
+      "paths": [
+        "ZS1550REX640LD0/CHLMHAI1.TddA.phsB",
+        "ZS1550REX640LD0/CHMHAI1.TddA.phsB",
+        "ZS1550REX640LD0/CHSMHAI1.TddA.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "current.tdd.l3",
+      "paths": [
+        "ZS1550REX640LD0/CHLMHAI1.TddA.phsC",
+        "ZS1550REX640LD0/CHMHAI1.TddA.phsC",
+        "ZS1550REX640LD0/CHSMHAI1.TddA.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.thd.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.ThdPhV.phsA",
+        "ZS1550REX640LD0/VHMHAI1.ThdPhV.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.ThdPhV.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.thd.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.ThdPhV.phsB",
+        "ZS1550REX640LD0/VHMHAI1.ThdPhV.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.ThdPhV.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.thd.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.ThdPhV.phsC",
+        "ZS1550REX640LD0/VHMHAI1.ThdPhV.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.ThdPhV.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h0.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV00.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV00.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h0.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV00.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV00.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h0.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV00.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV00.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h1.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV01.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV01.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h1.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV01.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV01.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h1.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV01.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV01.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h2.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV02.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV02.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h2.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV02.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV02.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h2.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV02.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV02.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h3.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV03.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV03.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h3.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV03.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV03.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h3.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV03.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV03.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h4.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV04.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV04.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h4.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV04.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV04.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h4.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV04.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV04.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h5.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV05.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV05.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h5.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV05.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV05.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h5.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV05.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV05.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h6.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV06.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV06.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h6.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV06.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV06.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h6.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV06.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV06.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h7.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV07.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV07.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h7.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV07.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV07.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h7.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV07.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV07.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h8.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV08.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV08.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h8.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV08.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV08.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h8.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV08.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV08.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h9.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV09.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV09.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h9.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV09.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV09.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h9.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV09.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV09.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h10.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV10.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV10.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h10.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV10.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV10.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h10.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV10.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV10.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h11.l1",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV11.phsA",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV11.phsA"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h11.l2",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV11.phsB",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV11.phsB"
+      ]
+    },
+    {
+      "controlledPropertyId": "voltage.harmonics.h11.l3",
+      "paths": [
+        "ZS1550REX640LD0/VHLMHAI1.HPhV11.phsC",
+        "ZS1550REX640LD0/VHSMHAI1.HPhV11.phsC"
+      ]
+    },
+    {
+      "controlledPropertyId": "temperature.object",
+      "paths": ["ZS1550REX640LD0/T1PTTR1.Tmp"]
+    },
+    {
+      "controlledPropertyId": "temperature.ambient",
+      "paths": ["ZS1550REX640LD0/T1PTTR1.TmpAmb"]
+    },
+    {
+      "controlledPropertyId": "temperature.relative",
+      "paths": ["ZS1550REX640LD0/T1PTTR1.TmpRl"]
+    },
+    {
+      "controlledPropertyId": "voltage.dips.instant",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.DipInstCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.dips.max_duration",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.DipMaxCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.dips.momentary",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.DipMomCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.dips.temporary",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.DipTmpCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.interrupts.max_duration",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.IntrMaxCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.interrupts.momentary",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.IntrMomCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.interrupts.sustained",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.IntrSstCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.interrupts.temporary",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.IntrTmpCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.swells.instant",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.SwlInstCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.swells.max_duration",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.SwlMaxCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.swells.momentary",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.SwlMomCnt"]
+    },
+    {
+      "controlledPropertyId": "voltage.swells.temporary",
+      "paths": ["ZS1550REX640LD0/PH1QVVR1.SwlTmpCnt"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.local",
+      "paths": [
+        "ZS1550REX640CTRL/CBCSWI1.Loc",
+        "ZS1550REX640CTRL/DCCSWI1.Loc",
+        "ZS1550REX640CTRL/ESCSWI1.Loc"
+      ]
+    },
+    {
+      "controlledPropertyId": "breaker.open",
+      "paths": ["ZS1550REX640CTRL/CBXCBR1.Pos"]
+    },
+    {
+      "controlledPropertyId": "breaker.behaviormode.on",
+      "paths": ["ZS1550REX640CTRL/CBXCBR1.Beh"]
+    },
+    {
+      "controlledPropertyId": "breaker.totaloperations",
+      "paths": ["ZS1550REX640CTRL/CBXCBR1.OpCnt"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.openinig.time",
+      "paths": ["ZS1550REX640LD0/SSCBR1.OpTmOpn"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.closing.time",
+      "paths": ["ZS1550REX640LD0/SSCBR1.OpTmCls"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.openinig.time.alarm",
+      "paths": ["ZS1550REX640LD0/SSCBR1.OpnAlm"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.closing.time.alarm",
+      "paths": ["ZS1550REX640LD0/SSCBR1.ClsAlm"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.openinig.time.set",
+      "paths": ["ZS1550REX640LD0/SSCBR1.OpnAlmTmms"]
+    },
+    {
+      "controlledPropertyId": "breaker.operating.closing.time.set",
+      "paths": ["ZS1550REX640LD0/SSCBR1.ClsAlmTmms"]
+    },
+    {
+      "controlledPropertyId": "breaker.spring.charging.time",
+      "paths": ["ZS1550REX640LD0/SSOPM1.TmsSprCha"]
+    },
+    {
+      "controlledPropertyId": "asset.variant",
+      "paths": ["ZS1550REX640LD0/LINF1.CfgNam"]
+    },
+    {
+      "controlledPropertyId": "asset.manufacturer.model",
+      "paths": ["ZS1550REX640LD0/LPHD1.PhyNam.model"]
+    },
+    {
+      "controlledPropertyId": "asset.nameplate",
+      "paths": ["ZS1550REX640LD0/LPHD1.PhyNam.name"]
+    },
+    {
+      "controlledPropertyId": "asset.serialnumber",
+      "paths": ["ZS1550REX640LD0/LPHD1.PhyNam.serNum"]
+    },
+    {
+      "controlledPropertyId": "asset.version.firmware",
+      "paths": ["ZS1550REX640LD0/LPHD1.PhyNam.swRev"]
+    },
+    {
+      "controlledPropertyId": "asset.manufacturer",
+      "paths": [
+        "ZS1550REX640CTRL/LPHD1.PhyNam.vendor",
+        "ZS1550REX640DR/LPHD1.PhyNam.vendor",
+        "ZS1550REX640LD0/LPHD1.PhyNam.vendor"
+      ]
+    }
+  ]
+}

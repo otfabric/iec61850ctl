@@ -1,0 +1,35 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # go vet checks (printf, unusedwrite, etc.)
+    - ineffassign    # assigned but never used
+    - staticcheck    # comprehensive static analysis (includes gosimple + unused)
+    - misspell       # common spelling mistakes
+    - godot          # comment punctuation
+    - nilerr         # return nil instead of err
+    - exhaustive     # exhaustive switch on enums
+    - unparam        # unused function parameters
+    - gocritic       # unusedWrite and other diagnostics
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    govet:
+      # unusedwrite is off in go vet / golangci defaults; enable so CI matches gopls.
+      enable:
+        - unusedwrite
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  # Do not truncate findings — surface every issue.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 5m
