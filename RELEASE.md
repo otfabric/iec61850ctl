@@ -6,7 +6,7 @@
 
 ### Summary
 
-Initial public OT Fabric release of **iec61850ctl**: a pure-Go IEC 61850 MMS CLI and local SCL-driven server on [go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.4 and [go-mms](https://github.com/otfabric/go-mms) v1.0.4.
+Initial public OT Fabric release of **iec61850ctl**: a pure-Go IEC 61850 MMS CLI and local SCL-driven server on [go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.5 and [go-mms](https://github.com/otfabric/go-mms) v1.0.5.
 
 ### Highlights
 
@@ -20,8 +20,8 @@ Initial public OT Fabric release of **iec61850ctl**: a pure-Go IEC 61850 MMS CLI
 
 ### Dependencies
 
-- `github.com/otfabric/go-iec61850` **v1.0.4**
-- `github.com/otfabric/go-mms` **v1.0.4**
+- `github.com/otfabric/go-iec61850` **v1.0.5**
+- `github.com/otfabric/go-mms` **v1.0.5** (armv7 / 32-bit build fix)
 - Go **1.24+**
 
 ### Scope

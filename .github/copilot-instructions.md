@@ -18,8 +18,8 @@ Command-line tool for IEC 61850 MMS protocol communication (industrial automatio
 - **Formatting**: `pkg/formatter/` — text, JSON, YAML, CSV output
 - **HTTP API**: `internal/transport/http/` — optional REST wrapper
 - **External dependencies**:
-  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.4 — IEC 61850 client/server, SCL, directory discovery
-  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.0.4 — MMS encoding and ISO transport
+  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.5 — IEC 61850 client/server, SCL, directory discovery
+  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.0.5 — MMS encoding and ISO transport
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
 - **Go version**: 1.24+ (see `go.mod`)
 
