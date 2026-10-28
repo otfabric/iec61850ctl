@@ -10,7 +10,7 @@ set -euo pipefail
 min="${COVERAGE_MIN:-90}"
 export GOWORK=off
 
-out="$(CGO_ENABLED="${CGO_ENABLED:-1}" go test -count=1 -race -covermode=atomic \
+out="$(CGO_ENABLED=1 go test -count=1 -race -covermode=atomic \
 	-coverprofile=coverage.out ./... 2>&1)" || { echo "$out"; exit 1; }
 echo "$out"
 
