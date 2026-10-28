@@ -39,10 +39,7 @@ var gooseFlags struct {
 	acceptSim  bool
 
 	values     []string
-	test       bool
-	live       bool
 	simulation bool
-	yes        bool
 	src        string
 	changes    int
 	interval   time.Duration
@@ -97,6 +94,9 @@ var gooseGocbCmd = &cobra.Command{
 	Use:   "gocb",
 	Short: "Read or write a GOOSE control block over MMS",
 }
+
+// goosePublishSafety guards goose publish; frames are marked with the test flag.
+var goosePublishSafety = publishSafety{protocol: "GOOSE", iface: &gooseFlags.iface, marker: "test"}
 
 var gooseGocbFlags struct {
 	ld      string
@@ -154,10 +154,8 @@ func init() {
 	f.StringVar(&gooseFlags.scl, "scl", "", "SCL file with the control block (required)")
 	f.StringVar(&gooseFlags.gocb, "gocb", "", "control block: name, LD/name, IED/LD/name or gocbRef (required)")
 	f.StringArrayVar(&gooseFlags.values, "value", nil, "dataset value as INDEX=VALUE or MEMBER=VALUE (repeatable; others are zero)")
-	f.BoolVar(&gooseFlags.test, "test", true, "set the test flag in every frame; --test=false requires --live")
-	f.BoolVar(&gooseFlags.live, "live", false, "allow test=false frames that subscribers act on")
+	goosePublishSafety.register(goosePublishCmd, "set the test flag in every frame")
 	f.BoolVar(&gooseFlags.simulation, "simulation", false, "set the Edition 2 simulation bit")
-	f.BoolVar(&gooseFlags.yes, "yes", false, "confirm that frames may be sent on --iface (required)")
 	f.StringVar(&gooseFlags.src, "src", "", "source MAC (default: the interface address)")
 	f.BoolVar(&gooseFlags.bareDomain, "bare-domain", false, "publish references with the bare LD as MMS domain")
 	f.IntVar(&gooseFlags.changes, "changes", 0, "additional state changes to publish after the initial state")
@@ -351,23 +349,8 @@ func runGooseSubscribe(cmd *cobra.Command, _ []string) error {
 	return err
 }
 
-// checkPublishSafety enforces the guard rails of goose publish: an explicit
-// interface, an explicit confirmation, and test frames unless --live.
-func checkPublishSafety(cmd *cobra.Command) error {
-	if !cmd.Flags().Changed("iface") || strings.TrimSpace(gooseFlags.iface) == "" {
-		return errs.Invalidf("goose publish needs an explicit --iface")
-	}
-	if !gooseFlags.yes {
-		return errs.Invalidf("refusing to publish GOOSE on %s without --yes: frames reach every subscriber on that LAN", gooseFlags.iface)
-	}
-	if !gooseFlags.test && !gooseFlags.live {
-		return errs.Invalidf("refusing to publish with test=false without --live: subscribers would act on these frames")
-	}
-	return nil
-}
-
 func runGoosePublish(cmd *cobra.Command, _ []string) error {
-	if err := checkPublishSafety(cmd); err != nil {
+	if err := goosePublishSafety.check(cmd); err != nil {
 		return err
 	}
 	if gooseFlags.changes < 0 || gooseFlags.interval < 0 || gooseFlags.duration < 0 {
@@ -397,7 +380,7 @@ func runGoosePublish(cmd *cobra.Command, _ []string) error {
 		pc.GocbRef = gooseops.BareRef(pc.GocbRef, cb.IEDName)
 		pc.DatSet = gooseops.BareRef(pc.DatSet, cb.IEDName)
 	}
-	pc.Test, pc.Simulation, pc.Logger = gooseFlags.test, gooseFlags.simulation, cmdLogger()
+	pc.Test, pc.Simulation, pc.Logger = goosePublishSafety.marked, gooseFlags.simulation, cmdLogger()
 
 	tr, err := openGooseTransport(gooseFlags.iface, goose.TransportOptions{})
 	if err != nil {
@@ -405,9 +388,7 @@ func runGoosePublish(cmd *cobra.Command, _ []string) error {
 	}
 	defer func() { _ = tr.Close() }()
 	diag := cmd.ErrOrStderr()
-	if !pc.Test {
-		_, _ = fmt.Fprintf(diag, "WARNING: publishing LIVE GOOSE (test=false) on %s\n", gooseFlags.iface)
-	}
+	goosePublishSafety.warnLive(diag)
 	_, _ = fmt.Fprintf(diag, "Publishing %s on %s -> %s appid %s test=%t (Ctrl+C to stop)\n",
 		pc.GocbRef, gooseFlags.iface, pc.Dst, gooseops.FormatAppID(pc.AppID), pc.Test)
 	_, err = gooseops.Publish(cmd.Context(), gooseops.PublishConfig{

@@ -43,7 +43,10 @@ lint: ## Run staticcheck
 
 lint-ci: ## Run golangci-lint (see .golangci.yml; unusedwrite enabled)
 	@echo "Running golangci-lint"
-	@golangci-lint run ./...
+	@# golangci-lint takes a machine-wide lock; without this flag a second
+	@# concurrent run (another checkout or repository) fails at once with
+	@# "parallel golangci-lint is running" instead of waiting its turn.
+	@golangci-lint run --allow-serial-runners ./...
 
 vet: ## Run go vet on project packages
 	@echo "Running go vet"

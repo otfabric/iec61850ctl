@@ -254,7 +254,7 @@ func (r *Reporter) Run() error {
 	readerDone := make(chan struct{})
 	go func() {
 		defer close(readerDone)
-		r.runReportReader(sub.Reports())
+		r.runReportReader(ctx, sub.Reports())
 	}()
 	keepAliveDone := make(chan struct{})
 	go func() {
@@ -418,7 +418,7 @@ func (r *Reporter) runBaselineSync(ctx context.Context, w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Baseline sync complete")
 }
 
-func (r *Reporter) runReportReader(reports <-chan *iec61850.ReportIndication) {
+func (r *Reporter) runReportReader(ctx context.Context, reports <-chan *iec61850.ReportIndication) {
 	w := r.config.Writer
 	maxReports := r.config.MaxReports
 	showValues := r.config.ShowValues
@@ -429,8 +429,11 @@ func (r *Reporter) runReportReader(reports <-chan *iec61850.ReportIndication) {
 			return
 		case report, ok := <-reports:
 			if !ok {
+				// A stream closed by our own stop or by the caller's
+				// cancel is a normal end, not a lost connection.
 				select {
 				case <-r.doneChan:
+				case <-ctx.Done():
 				default:
 					r.lost.Store(true)
 				}
