@@ -19,6 +19,12 @@ import (
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
 
+// MMS TimeOfDay (BinaryTime) range accepted by go-mms v1.1.0.
+var (
+	binaryTimeMinMs = time.Date(1984, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	binaryTimeMaxMs = time.Date(2163, 6, 5, 23, 59, 59, 999000000, time.UTC).UnixMilli()
+)
+
 // utcTimeValue is the JSON shape for UTC_TIME in serialized IED (value.v).
 type utcTimeValue struct {
 	Seconds      int64  `json:"seconds"`
@@ -138,6 +144,12 @@ func domainValueToMMS(v *domain.Value) (*mms.Value, bool) {
 		ms, ok := asInt64(v.Raw)
 		if !ok {
 			return nil, false
+		}
+		// go-mms v1.1.0 rejects BinaryTime outside 1984-01-01…2163-06-05.
+		if ms < binaryTimeMinMs {
+			ms = binaryTimeMinMs
+		} else if ms > binaryTimeMaxMs {
+			ms = binaryTimeMaxMs
 		}
 		return mms.NewBinaryTime(ms), true
 

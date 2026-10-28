@@ -1,5 +1,32 @@
 # iec61850ctl Releases
 
+## v0.2.1
+
+**Date:** 2026-10-28
+
+### Summary
+
+Bump the MMS stack to [go-mms v1.1.0](https://github.com/otfabric/go-mms/releases/tag/v1.1.0)
+and [go-iec61850 v1.0.9](https://github.com/otfabric/go-iec61850/releases/tag/v1.0.9).
+No CLI flags or output schema change.
+
+### Dependencies
+
+- `github.com/otfabric/go-iec61850` **v1.0.6** → **v1.0.9**
+- `github.com/otfabric/go-mms` **v1.0.5** → **v1.1.0**
+
+### Changed
+
+- Seeded `BinaryTime` values outside 1984-01-01…2163-06-05 are clamped
+  to that range so the local server can still encode them (go-mms v1.1.0
+  rejects Unix 0 and other out-of-range instants).
+- `list files --detailed` already omitted a missing `lastModified`; that
+  matches the optional field on the v1.1.0 wire.
+- Unused BRCB `TimeOfEntry` on the bundled server is 1984-01-01 (from
+  go-iec61850 v1.0.9), so a read of an empty buffer no longer fails.
+
+---
+
 ## v0.2.0
 
 **Date:** 2026-07-27

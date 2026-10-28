@@ -21,8 +21,8 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
 - **HTTP API**: `internal/transport/http/` — optional REST wrapper
 - **Black-box e2e**: `e2e/` (`//go:build e2e`) — treats the built binary as an external process
 - **External dependencies**:
-  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.6 — IEC 61850 client/server, SCL, directory discovery
-  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.0.5 — MMS encoding and ISO transport
+  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.9 — IEC 61850 client/server, SCL, directory discovery
+  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.1.0 — MMS encoding and ISO transport
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
 - **Go version**: 1.24+ (see `go.mod`)
 
