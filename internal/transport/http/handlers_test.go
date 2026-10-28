@@ -505,6 +505,14 @@ func TestFindPath(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("with DAName status=%d body=%s", rr.Code, rr.Body.String())
 	}
+
+	// Documented snake_case body and the deprecated PascalCase body.
+	for _, body := range []string{`{"ln_pattern":"MMXU","do_name":"Hz"}`, `{"LNPattern":"MMXU","DOName":"Hz"}`} {
+		rr = doReq(t, s, http.MethodPost, "/api/find/path", []byte(body))
+		if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"matches"`) {
+			t.Fatalf("%s: status=%d body=%s", body, rr.Code, rr.Body.String())
+		}
+	}
 }
 
 func TestBulkFind(t *testing.T) {

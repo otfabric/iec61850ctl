@@ -120,6 +120,8 @@ func TestStatusForError(t *testing.T) {
 		{"invalid reference", fmt.Errorf("parse: %w", errs.ErrInvalidReference), http.StatusBadRequest, codeInvalidInput},
 		{"not found", fmt.Errorf("ld: %w", errs.ErrNotFound), http.StatusNotFound, codeNotFound},
 		{"lib not found", iec61850.ErrNotFound, http.StatusNotFound, codeNotFound},
+		{"object non-existent", fmt.Errorf("read: %w", &mms.DataAccessError{Code: mms.DataAccessErrorObjectNonExistent}), http.StatusNotFound, codeNotFound},
+		{"object access denied", fmt.Errorf("read: %w", &mms.DataAccessError{Code: mms.DataAccessErrorObjectAccessDenied}), http.StatusForbidden, codeRejected},
 		{"rejected", errs.ErrRejected, http.StatusForbidden, codeRejected},
 		{"permission denied", errs.ErrPermissionDenied, http.StatusForbidden, codeRejected},
 		{"unsupported", errs.ErrUnsupported, http.StatusNotImplemented, codeUnsupported},
@@ -182,7 +184,7 @@ var errorRoutes = []struct {
 	{http.MethodGet, "/api/reports/details?ld=LD0&ln=LLN0&name=rcb1", ""},
 	{http.MethodGet, "/api/journals?ld=LD0", ""},
 	{http.MethodGet, "/api/journals/entries?domain=LD0&journal=LLN0$EventLog&from=1000", ""},
-	{http.MethodPost, "/api/find/path", `{"LNPattern":"MMXU","DOName":"Hz"}`},
+	{http.MethodPost, "/api/find/path", `{"ln_pattern":"MMXU","do_name":"Hz"}`},
 	{http.MethodPost, "/api/find/bulk", `{"mappings":[{"controlledPropertyId":"f","baseLn":"MMXU","DoDaPath":"Hz.mag.f"}]}`},
 }
 

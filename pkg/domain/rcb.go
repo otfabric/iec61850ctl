@@ -4,13 +4,23 @@ package domain
 
 // ReportControlBlockRef identifies a report control block (URCB or BRCB) by location and name.
 // Used for listing and as the identity portion of ReportControlBlock.
-// Ref is "LD/LN.Name" when LD and LN are set; empty in tree context when only Name+Buffered are known.
+// Ref is "LD/LN.RP.Name" or "LD/LN.BR.Name" (see RCBRef).
 type ReportControlBlockRef struct {
 	LD       string
 	LN       string
 	Name     string
 	Buffered bool
-	Ref      string // LD/LN.Name when LD and LN are set
+	Ref      string // RCBRef(LD, LN, Name, Buffered)
+}
+
+// RCBRef returns the RCB reference "LD/LN.FC.Name" (see ReportRef), with FC
+// "BR" for a buffered and "RP" for an unbuffered report control block.
+func RCBRef(ld, ln, name string, buffered bool) string {
+	fc := FC_RP
+	if buffered {
+		fc = FC_BR
+	}
+	return ReportRef(ld, ln, fc, name)
 }
 
 // ReportControlBlock represents an IEC 61850 report control block (URCB or BRCB).

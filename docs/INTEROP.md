@@ -160,7 +160,7 @@ IEC61850CTL_E2E_STACKS=server-reader-dscsystems make e2e
 IEC61850CTL_E2E_STACKS=goose-libiec61850 make e2e     # GOOSE both directions
 IEC61850CTL_E2E_STACKS=sv-dscsystems make e2e         # Sampled Values both directions, both streams
 make e2e                                              # default: the four client stacks + self
-IEC61850CTL_E2E_STACKS=all make e2e                   # all 23 CI jobs' stacks
+IEC61850CTL_E2E_STACKS=all make e2e                   # all 19 CI jobs' stacks
 ```
 
 Images come from `<STACK>_IMAGE` (`LIBIEC61850_IMAGE`, `IEC61850BEAN_IMAGE`, `DSCSYSTEMS_IMAGE`, `IEC61850RUST_IMAGE`), else the lock digest when `CI` is set, else `mms-interop-<stack>:local`.

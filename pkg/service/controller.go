@@ -35,15 +35,29 @@ func nextCtlNum() uint8 {
 	return uint8(n)
 }
 
+// readCtlModel reads ctlModel for ref. A DO without a ctlModel attribute
+// (status-only, such as an SPS) is reported as iec61850.ErrNotControllable,
+// so it exits 6 (rejected) rather than 5 (not found).
+func (c *Controller) readCtlModel(ctx context.Context, ref iec61850.Ref) (iec61850.CtlModel, error) {
+	model, err := c.conn.ReadCtlModel(ctx, ref)
+	if errs.IsObjectNonExistent(err) {
+		return model, fmt.Errorf("read ctlModel: %w (%v)", iec61850.ErrNotControllable, err)
+	}
+	if err != nil {
+		return model, fmt.Errorf("read ctlModel: %w", err)
+	}
+	return model, nil
+}
+
 // Inspect reads ctlModel for a controllable DO reference (no FC).
 func (c *Controller) Inspect(ctx context.Context, object string) (*domain.ControlResult, error) {
 	ref, err := parseControlObjectRef(object)
 	if err != nil {
 		return nil, err
 	}
-	model, err := c.conn.ReadCtlModel(ctx, ref)
+	model, err := c.readCtlModel(ctx, ref)
 	if err != nil {
-		return nil, fmt.Errorf("read ctlModel: %w", err)
+		return nil, err
 	}
 	return &domain.ControlResult{
 		Object: object,
@@ -68,9 +82,9 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 		return nil, err
 	}
 
-	model, err := c.conn.ReadCtlModel(ctx, ref)
+	model, err := c.readCtlModel(ctx, ref)
 	if err != nil {
-		return nil, fmt.Errorf("read ctlModel: %w", err)
+		return nil, err
 	}
 
 	result := &domain.ControlResult{

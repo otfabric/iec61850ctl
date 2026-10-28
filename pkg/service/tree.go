@@ -320,7 +320,7 @@ func (t *Tree) BuildSerializableModel(host string, port int, path string, includ
 					for _, n := range br {
 						node.ReportControlBlocks = append(node.ReportControlBlocks, domain.ReportControlBlockRef{
 							LD: ld, LN: ln, Name: n, Buffered: true,
-							Ref: fmt.Sprintf("%s/%s.%s", ld, ln, n),
+							Ref: domain.RCBRef(ld, ln, n, true),
 						})
 					}
 				}
@@ -328,7 +328,7 @@ func (t *Tree) BuildSerializableModel(host string, port int, path string, includ
 					for _, n := range ur {
 						node.ReportControlBlocks = append(node.ReportControlBlocks, domain.ReportControlBlockRef{
 							LD: ld, LN: ln, Name: n, Buffered: false,
-							Ref: fmt.Sprintf("%s/%s.%s", ld, ln, n),
+							Ref: domain.RCBRef(ld, ln, n, false),
 						})
 					}
 				}

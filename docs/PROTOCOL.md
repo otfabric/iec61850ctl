@@ -1,6 +1,6 @@
 # IEC 61850 data model (for iec61850ctl)
 
-This note summarizes the IEC 61850 object model as used by **iec61850ctl** over MMS (IEC 61850-8-1). For CLI usage see [../README.md](../README.md).
+This note summarizes the IEC 61850 object model as used by **iec61850ctl**: over MMS (IEC 61850-8-1) for the client and server commands, and on raw Ethernet for GOOSE (IEC 61850-8-1) and Sampled Values (IEC 61850-9-2). For CLI usage see [../README.md](../README.md).
 
 ## Hierarchy
 
@@ -20,6 +20,8 @@ IED (Intelligent Electronic Device)
     │   ├── Data Set (DS) — e.g. "MeasFlt"
     │   ├── Report Control Block (RCB) — URCB (RP) or BRCB (BR)
     │   ├── Log Control Block (LCB)
+    │   ├── GOOSE Control Block (GoCB) — publishes a data set as GOOSE
+    │   ├── Sampled Value Control Block (MSVCB) — publishes a data set as SV
     │   └── Log / Journal — e.g. "EventLog"
     │
     └── Files (MMS file service)
@@ -35,6 +37,8 @@ IED (Intelligent Electronic Device)
 | **FC** | Functional constraint — scopes how a DA is accessed (see below) |
 | **Data set** | Named list of member references, often used by reports |
 | **RCB** | Report control block — buffered (`BR`) or unbuffered (`RP`) |
+| **GoCB** | GOOSE control block (`GO`): enables publishing of a data set as multicast GOOSE frames |
+| **MSVCB** | Multicast sampled value control block (`MS`): enables publishing of a data set as SV frames |
 | **Journal** | Persistent log read via MMS journal services |
 
 ## Object references
@@ -84,8 +88,17 @@ Common FCs used with `get object --fc` and shown by `list das`:
 | **RP** | Unbuffered report control |
 | **BR** | Buffered report control |
 | **LG** | Log control |
+| **GO** | GOOSE control (`goose gocb`) |
+| **MS** | Multicast sampled value control (`sv svcb`) |
+| **SR**, **OR**, **BL**, **EX**, **US** | Service response, operate received, blocking, extended definition, unicast SV control |
 
-Reporting and control blocks are not ordinary process data: list them with `list reports` / `get report`, and subscribe with `subscribe report --type BR|RP`.
+`get object --fc` accepts ST, MX, SP, SV, CF, DC, SG, SE, SR, OR, BL, EX, CO, RP, BR and ALL. Note that FC **SV** (substitution) is unrelated to Sampled Values.
+
+Control blocks are not ordinary process data:
+
+- RCBs: `list reports` / `get report`, and `subscribe report --type BR|RP`.
+- GoCBs: `goose gocb get|set` over MMS; `goose list --scl` from SCL.
+- MSVCBs: `sv svcb get|set` over MMS; `sv list --scl` from SCL.
 
 Controllable objects use FC **CO** under the hood, but the CLI must not bypass the control model with `set object --fc CO`. Use:
 
@@ -101,18 +114,35 @@ Scalar settings (e.g. ING `setVal`) use `set object --fc SP` (or other non-CO FC
 - **GI** (`--interrogation` on subscribe): general interrogation — requests a snapshot report (may be empty).
 - **Journals**: list with `list journals --ld …`, read with `get journal` (time range or start-after).
 
+## GOOSE and Sampled Values
+
+GOOSE and SV frames do not use MMS. They are Ethernet multicast frames (EtherType `0x88B8` for GOOSE, `0x88BA` for SV) identified by destination MAC, APPID and the control block's `gocbRef` / `svID`. The SCL file (GSE/SMV address and data set) is what tells a subscriber how to decode them, which is why `goose subscribe`, `goose publish`, `sv subscribe` and `sv publish` take `--scl`.
+
+| Term | Meaning |
+|------|---------|
+| **stNum / sqNum** | GOOSE state number (increments on change) and sequence number (increments on retransmission) |
+| **timeAllowedToLive** | GOOSE supervision timeout carried in each frame |
+| **smpCnt** | SV sample counter, wraps at the sample rate (or `smpCntWrap`) |
+| **smpSynch** | SV synchronisation source: 0 none, 1 local, 2 global |
+| **9-2LE** | UCA implementation guideline profile: 4 currents + 4 voltages with quality, 80 or 256 samples per cycle |
+| **test / simulation** | flags that tell subscribers not to act on a frame; `publish` sets them by default |
+
+Details: [GOOSE.md](GOOSE.md), [SV.md](SV.md).
+
 ## SCL vs online model
 
 | Source | Commands |
 |--------|----------|
-| Online IED (MMS) | `list`, `get`, `set`, `control`, `tree`, `subscribe`, `find`, `http` |
-| Offline SCL (CID/ICD/SCD) | `scl parse`, `scl convert`, `server start --scl` |
+| Online IED (MMS) | `list`, `get`, `set`, `control`, `tree`, `subscribe`, `find`, `http`, `goose gocb`, `sv svcb` |
+| Station bus (raw Ethernet) | `goose sniff`, `goose subscribe`, `goose publish`, `sv sniff`, `sv subscribe`, `sv publish` |
+| Offline SCL (CID/ICD/SCD) | `scl parse`, `scl convert`, `server start --scl`, `goose list`, `sv list` |
 
 The SCL file defines the engineering model. The live MMS server may expose a subset or different naming; always verify with `list` / `tree` against the device.
 
 ## Further reading
 
 - Server simulation and value seeding: [SERVER.md](SERVER.md)
+- GOOSE and Sampled Values: [GOOSE.md](GOOSE.md), [SV.md](SV.md)
 - Automation contract: [AUTOMATION.md](AUTOMATION.md)
 - Interoperability: [INTEROP.md](INTEROP.md)
 - Stack libraries: [go-iec61850](https://github.com/otfabric/go-iec61850), [go-mms](https://github.com/otfabric/go-mms)

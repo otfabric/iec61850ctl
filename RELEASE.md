@@ -1,5 +1,17 @@
 # iec61850ctl Releases
 
+## Unreleased
+
+### Fixes
+
+- **Missing objects exit `5`.** A server answer of MMS *object-non-existent* (the data-access result, or the access-class service error) now exits `5` (not found) instead of `6`. This covers `get object`, `get report` and the other reads of a nonexistent object. Other data-access errors (access denied, temporarily unavailable, …) still exit `6`. The HTTP API returns `404 not_found` for the same errors, where it returned `403 rejected`. `control` on a DO without a `ctlModel` (status-only) still exits `6`, now reported as not controllable.
+- **`get report` ref.** `report.ref` in `get report --format json` is now `LD/LN.RP.name` / `LD/LN.BR.name`, the same form as `list reports`. `list reports --all` and `tree` use it too.
+- **`goose gocb set` / `sv svcb set` verify enable.** With `--enable` or `--disable`, a GoEna/SvEna that reads back the other value now exits `7` (verification mismatch) instead of `0`. The read-back is still printed. This happens with `server start`, which accepts the write but does not publish.
+
+### HTTP API
+
+- **`POST /api/find/path` body keys are snake_case**: `ln_pattern`, `do_name`, `da_name`, `include_das`, `detailed`. The v0.4.0 PascalCase keys (`LNPattern`, `DOName`, `DAName`, `IncludeDAs`, `Detailed`) are still accepted but deprecated, and will be removed in a later release. When a body has both forms of a key, the snake_case one wins.
+
 ## v0.4.0
 
 **Date:** 2026-10-28

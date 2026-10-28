@@ -14,17 +14,22 @@ import json, sys
 src, lock_path, out = sys.argv[1], sys.argv[2], sys.argv[3]
 data = json.load(open(src))
 lock = json.load(open(lock_path))
-lib_img = lock.get("images", {}).get("libiec61850", "ghcr.io/otfabric/mms-interop-libiec61850@sha256:<digest>")
-bean_img = lock.get("images", {}).get("iec61850bean", "ghcr.io/otfabric/mms-interop-iec61850bean@sha256:<digest>")
+images = lock.get("images", {})
+stacks = [
+    ("libiec61850", "LIBIEC61850_IMAGE", "libiec61850-ied-server"),
+    ("iec61850bean", "IEC61850BEAN_IMAGE", "iec61850bean-ied-server"),
+    ("dscsystems", "DSCSYSTEMS_IMAGE", "dscsystems-ied-server"),
+    ("iec61850-rust", "IEC61850RUST_IMAGE", "iec61850-rust-ied-server"),
+]
 
 lines = []
 lines.append(f"# {data['title']}\n")
 lines.append("Generated from `e2e/testdata/examples.json`. Do not edit by hand; run `make e2e-docs`.\n")
-lines.append(f"Fixture: `{data['fixture']}` · IED name: `{data['ied_name']}`\n")
+lines.append(f"mms-interop: `{lock.get('source_tag', '?')}` · IED fixture: `{data['fixture']}` · IED name: `{data['ied_name']}`\n")
 lines.append("See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).\n")
 
 lines.append("## Environment\n")
-lines.append("Against **external** adapter servers (libiec61850 / Bean):\n")
+lines.append("Against **external** adapter servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust):\n")
 lines.append("```bash")
 lines.append("export IEC61850_HOST=127.0.0.1")
 lines.append("export IEC61850_PORT=1102")
@@ -35,18 +40,17 @@ lines.append("Against **`iec61850ctl server start` (self-server)**, leave `IEC61
 lines.append("## Starting adapters\n")
 lines.append("### Local images\n")
 lines.append("```bash")
-lines.append("# libiec61850")
-lines.append("docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \\")
-lines.append("  mms-interop-libiec61850:local --port 1102")
-lines.append("")
-lines.append("# IEC61850bean")
-lines.append("docker run --rm -p 1102:1102 --entrypoint iec61850bean-ied-server \\")
-lines.append("  mms-interop-iec61850bean:local --port 1102")
+for i, (name, _, entry) in enumerate(stacks):
+    if i:
+        lines.append("")
+    lines.append(f"# {name}")
+    lines.append(f"docker run --rm -p 1102:1102 --entrypoint {entry} \\")
+    lines.append(f"  mms-interop-{name}:local --port 1102")
 lines.append("```\n")
 lines.append("### Digest-pinned images (CI / reproducible)\n")
 lines.append("```bash")
-lines.append(f"LIBIEC61850_IMAGE={lib_img}")
-lines.append(f"IEC61850BEAN_IMAGE={bean_img}")
+for name, var, _ in stacks:
+    lines.append(f"{var}={images.get(name, 'ghcr.io/otfabric/mms-interop-' + name + '@sha256:<digest>')}")
 lines.append("docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \\")
 lines.append("  \"$LIBIEC61850_IMAGE\" --port 1102")
 lines.append("```\n")
@@ -55,7 +59,7 @@ lines.append("```bash")
 lines.append("iec61850ctl server start \\")
 lines.append("  --scl e2e/testdata/interop.icd \\")
 lines.append("  --values e2e/testdata/self-server-values.json \\")
-lines.append("  --ied-name InteropIED --fixture-id iec61850-v2 \\")
+lines.append(f"  --ied-name InteropIED --fixture-id {data['fixture']} \\")
 lines.append("  --host 127.0.0.1 --port 1102 --ready-json")
 lines.append("```\n")
 lines.append("For reverse (external client → CLI server) examples, bind `--host 0.0.0.0` and pass `--add-host=host.docker.internal:host-gateway` to the adapter container. See [SERVER.md](SERVER.md).\n")

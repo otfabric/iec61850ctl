@@ -8,29 +8,41 @@
 [![Codecov](https://codecov.io/gh/otfabric/iec61850ctl/graph/badge.svg)](https://codecov.io/gh/otfabric/iec61850ctl)
 [![Release](https://img.shields.io/github/v/release/otfabric/iec61850ctl?label=release)](https://github.com/otfabric/iec61850ctl/releases)
 
-A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) and [otfabric/go-mms](https://github.com/otfabric/go-mms).
+A command-line tool for IEC 61850 — MMS client and server, GOOSE, Sampled Values and SCL — built in pure Go on [otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) and [otfabric/go-mms](https://github.com/otfabric/go-mms).
 
-`iec61850ctl` gives operators and developers terminal access to IEC 61850 IEDs: browse the data model, read and write scalar objects, operate controllable objects, subscribe to reports (including BRCB purge/resume), work with GOOSE and Sampled Values on raw Ethernet, transfer files, query journals, parse SCL offline, run a local MMS server from SCL, and optionally expose a small read-only HTTP/JSON API.
+`iec61850ctl` gives operators, commissioning engineers and developers terminal access to an IEC 61850 substation:
+
+- **MMS client** (IEC 61850-8-1) — browse the data model, read and write objects, operate controls, subscribe to reports (including BRCB purge/resume), transfer files and query journals.
+- **Station bus** (IEC 61850-8-1 GOOSE, IEC 61850-9-2 / 9-2LE Sampled Values) — sniff, run supervised subscriptions, publish with guard rails, and read or write the control blocks over MMS.
+- **Engineering** (IEC 61850-6 SCL) — parse, flatten and convert SCL files offline.
+- **Simulation and integration** — run an MMS server from SCL, or a read-only HTTP/JSON API in front of one device.
+
+For scripting, every command has stable exit codes, and the browse, read, control, report, GOOSE and SV commands have `json` / `jsonl` output ([docs/AUTOMATION.md](docs/AUTOMATION.md)).
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e exercises the built CLI against all four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and GOOSE and Sampled Values in both directions against their publishers and subscribers. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e runs the built CLI against the four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and — for the three stacks with GOOSE and SV support (all but IEC61850bean) — GOOSE and Sampled Values in both directions. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
 - [Features](#features)
 - [Installation](#installation)
+- [Platform Support](#platform-support)
 - [Quick Start](#quick-start)
 - [Command Reference](#command-reference)
 - [Usage Examples](#usage-examples)
 - [Global Flags and Environment](#global-flags-and-environment)
+- [Exit Codes](#exit-codes)
 - [Output Formats](#output-formats)
+- [Safety](#safety)
 - [Development](#development)
 - [Built With](#built-with)
 - [Documentation](#documentation)
 - [License](#license)
 
 ## Features
+
+**MMS client**
 
 - **Discover** — TCP scan of a subnet/range for MMS (port 102) responders
 - **Browse** — list LDs, LNs, DOs, DAs, datasets, reports, journals, and files
@@ -40,12 +52,18 @@ Black-box e2e exercises the built CLI against all four independent stacks of [mm
 - **Subscribe** — report control blocks (BR/RP) with GI, optional dataset sync, BRCB purge/resume EntryID, clean disable on exit
 - **Control** — atomic `control inspect` / `control operate` (auto/direct/SBO/SBOw on one association)
 - **Write** — `set object` for scalar MMS attributes (rejects `FC=CO`; use control for CO)
+
+**Station bus (raw Ethernet)**
+
 - **GOOSE** — list GoCBs from SCL, sniff, supervised subscribe, guarded publish (test frames by default), GoCB read/write over MMS
 - **Sampled Values** — list SVCBs from SCL, sniff, supervised subscribe with live loss/rate statistics, guarded publish (simulation frames by default) with 9-2LE sine waveform injection, MSVCB read/write over MMS
+
+**Engineering, simulation and integration**
+
 - **SCL** — offline parse/flatten and CSV convert (no device connection)
 - **Server** — run an MMS server from ICD/CID/SCD (`--scl`); optional value seed from serialized JSON
 - **Export** — generate libiec61850 `.cfg` from serialized JSON (**export-only**, not used by this tool’s runtime)
-- **HTTP** — REST JSON API for browse/read/find (**no** control or write over HTTP)
+- **HTTP** — read-only JSON API for browse/read/find (**no** control or write over HTTP; no authentication — see [docs/HTTP.md](docs/HTTP.md))
 
 See [RELEASE.md](RELEASE.md) for the latest release notes. Protocol model primer: [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
@@ -53,7 +71,15 @@ See [RELEASE.md](RELEASE.md) for the latest release notes. Protocol model primer
 
 ### Pre-built binaries
 
-Download from [GitHub Releases](https://github.com/otfabric/iec61850ctl/releases).
+[GitHub Releases](https://github.com/otfabric/iec61850ctl/releases) has archives for linux (amd64, arm64, armv7), darwin (amd64, arm64) and windows (amd64, arm64), plus a SHA-256 checksum file:
+
+```sh
+VERSION=0.4.0
+curl -LO https://github.com/otfabric/iec61850ctl/releases/download/v$VERSION/iec61850ctl-$VERSION-linux-amd64.tar.gz
+curl -LO https://github.com/otfabric/iec61850ctl/releases/download/v$VERSION/iec61850ctl-$VERSION-checksums.txt
+sha256sum --ignore-missing -c iec61850ctl-$VERSION-checksums.txt
+tar xzf iec61850ctl-$VERSION-linux-amd64.tar.gz
+```
 
 ### From source
 
@@ -79,6 +105,22 @@ make build-all
 ```
 
 Produces linux/darwin/windows binaries under `release/` for amd64/arm64 (and linux arm/v7). See `Makefile`.
+
+## Platform Support
+
+| Feature | Linux | macOS / *BSD | Windows |
+|---------|-------|--------------|---------|
+| MMS client, server, SCL, HTTP | yes | yes | yes |
+| GOOSE / SV on raw Ethernet | yes (`AF_PACKET`, needs `CAP_NET_RAW`) | yes (`/dev/bpf*`, e.g. the `access_bpf` group on macOS) | no — exit code `8` |
+| GoCB / MSVCB access over MMS | yes | yes | yes |
+
+On Linux, grant the capability once instead of running as root:
+
+```sh
+sudo setcap cap_net_raw+ep "$(command -v iec61850ctl)"
+```
+
+`server start` binds port 102 by default, which needs root or `CAP_NET_BIND_SERVICE` on Linux; use `--port` above 1024 otherwise.
 
 ## Quick Start
 
@@ -106,6 +148,10 @@ iec61850ctl scl parse --input device.cid --flatten
 
 # Run a local MMS server from SCL
 iec61850ctl server start --scl device.cid --host 0.0.0.0 --port 102
+
+# Watch GOOSE and Sampled Values on the station bus
+iec61850ctl goose sniff --iface eth0 --count 5
+iec61850ctl sv subscribe --iface eth0 --scl station.scd --svcb MSVCB01 --duration 10s
 ```
 
 Defaults: `--port 102`. Host/port/IED name can also come from `IEC61850_HOST` / `IEC61850_PORT` / `IEC61850_IED_NAME` (flags win).
@@ -159,7 +205,7 @@ iec61850ctl
 │   ├── subscribe       Validated, supervised subscription with statistics (--iface --scl --svcb)
 │   ├── publish         Publish an SVCB (--iface --yes; simulation frames unless --simulation=false --live; --waveform)
 │   └── svcb get|set    Read/write an MSVCB over MMS (--ld --svcb)
-├── http                REST API fronting one IEC 61850 device
+├── http                Read-only HTTP/JSON API fronting one IEC 61850 device
 ├── version             Print version / build metadata
 └── completion          Shell completion (bash|zsh|fish|powershell)
 ```
@@ -298,7 +344,9 @@ iec61850ctl http --iec-host 192.0.2.10 --iec-port 102 --listen :8080
 # GET /api/reports/all
 ```
 
-Errors are JSON `{"error": "...", "code": "..."}` with a status derived from the error class: `400` invalid input, `404` not found, `403` rejected/denied, `501` unsupported, `504` timeout, `502`/`503` device connection problems, `500` otherwise. The global `--timeout`, `--connect-timeout` and `--retry` flags apply to the device connection.
+Errors are JSON `{"error": "...", "code": "..."}` with a status derived from the error class: `400` invalid input, `403` rejected/denied, `404` not found, `501` unsupported, `502` device connection failed, `503` shutting down, `504` timeout, `500` otherwise. The global `--timeout`, `--connect-timeout` and `--retry` flags apply to the device connection.
+
+The API has no authentication or TLS and `--listen` defaults to `:8080` (all interfaces): bind it to loopback or put a reverse proxy in front. Endpoint reference: [docs/HTTP.md](docs/HTTP.md).
 
 ## Global Flags and Environment
 
@@ -325,14 +373,16 @@ Retries apply only to establishing the connection; invalid input, authentication
 |------|---------|
 | `0` | Success |
 | `1` | Failure (unclassified) |
-| `2` | Usage error or invalid input / reference / configuration |
+| `2` | Usage error or invalid input / reference / configuration (including a refused `goose`/`sv publish` without `--yes`, `--iface` or `--live`) |
 | `3` | Connection failed or lost |
-| `4` | Timeout (connect or request) |
-| `5` | Not found (object, file, IED, RCB) |
-| `6` | Rejected or access denied by the server (including failed controls) |
-| `7` | Write verification or control confirmation mismatch |
-| `8` | Service not supported by the server |
+| `4` | Timeout (connect or request), or `--count` not reached before `--duration` |
+| `5` | Not found (object, file, IED, RCB, control block, network interface) |
+| `6` | Rejected or access denied (including failed controls and raw-socket permission errors) |
+| `7` | Write verification, control confirmation, or GoCB/MSVCB enable read-back mismatch |
+| `8` | Service not supported by the server or platform (e.g. raw Ethernet on Windows) |
 | `130` | Interrupted (SIGINT / SIGTERM) |
+
+The full contract per command is in [docs/AUTOMATION.md](docs/AUTOMATION.md).
 
 ## Output Formats
 
@@ -347,6 +397,21 @@ Retries apply only to establishing the connection; invalid input, authentication
 | `sv list`, `sv svcb get`, `sv svcb set` | `text`, `json` |
 
 Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-failure, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
+
+## Safety
+
+Several commands change the state of real equipment or inject traffic on a live station bus:
+
+| Command | Effect | Guard rail |
+|---------|--------|------------|
+| `control operate` | operates a controllable object (possibly switchgear) | explicit `--object` and `--value`; `--confirm-ref` to verify |
+| `set object` | writes a data attribute | `FC=CO` rejected; `--verify` reads back |
+| `subscribe report` | writes RCB settings; `--purge-buf` clears a BRCB's buffer | the RCB is disabled again on exit |
+| `goose publish` | sends GOOSE frames | explicit `--iface`, `--yes`; test flag set unless `--test=false --live` |
+| `sv publish` | sends SV frames at the configured rate | explicit `--iface`, `--yes`; simulation bit set unless `--simulation=false --live` |
+| `goose gocb set`, `sv svcb set` | enables, disables or reconfigures a control block | changes only what you pass |
+
+Run these against test equipment first, and only on networks you are authorised to work on. See [SECURITY.md](SECURITY.md) for the threat model and how to report a vulnerability.
 
 ## Development
 
@@ -382,12 +447,14 @@ make e2e-docs              # regenerate docs/interop-examples.md
 |-----|----------|
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
 | [docs/SERVER.md](docs/SERVER.md) | SCL server, readiness JSON, value seeding, `.cfg` export |
+| [docs/HTTP.md](docs/HTTP.md) | HTTP API endpoints, errors, deployment |
 | [docs/GOOSE.md](docs/GOOSE.md) | GOOSE list/sniff/subscribe/publish, GoCB access, safety rules, example sessions |
 | [docs/SV.md](docs/SV.md) | Sampled Values list/sniff/subscribe/publish, 9-2LE waveforms, MSVCB access, safety rules, example sessions |
 | [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr and JSON/JSONL contract |
 | [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
 | [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |
 | [RELEASE.md](RELEASE.md) | Release notes |
+| [SECURITY.md](SECURITY.md) | Security considerations and vulnerability reporting |
 
 ## License
 

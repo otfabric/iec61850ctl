@@ -4,7 +4,7 @@
     "ld": "InteropLD",
     "ln": "LLN0",
     "buffered": false,
-    "ref": "InteropLD/LLN0.urcb01",
+    "ref": "InteropLD/LLN0.RP.urcb01",
     "rpt_id": "interop_urcb01",
     "dat_set": "InteropLD/LLN0$dsInterop",
     "enabled": false,

@@ -47,10 +47,17 @@ var runState struct {
 
 var rootCmd = &cobra.Command{
 	Use:   "iec61850ctl",
-	Short: "IEC 61850 MMS CLI (browse, read, reports, SCL, local server)",
-	Long: `Pure-Go command-line tool for IEC 61850 MMS: discover devices, browse and read
-the data model, subscribe to reports, transfer files, query journals, parse SCL
-offline, run a local MMS server from SCL, and optionally expose an HTTP/JSON API.
+	Short: "IEC 61850 CLI: MMS client and server, GOOSE, Sampled Values, SCL",
+	Long: `Pure-Go command-line tool for IEC 61850.
+
+  MMS client    discover devices, browse and read the data model, write and
+                operate objects, subscribe to reports, transfer files, query
+                journals
+  Station bus   GOOSE and Sampled Values on raw Ethernet: sniff, supervised
+                subscribe, guarded publish, control block access over MMS
+  Engineering   parse and convert SCL offline
+  Server        run a local MMS server from SCL, or an HTTP/JSON API in front
+                of one device
 
 Environment Variables:
   IEC61850_HOST       Default host address (overridden by --host flag)
