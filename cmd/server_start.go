@@ -38,7 +38,7 @@ func init() {
 	serverStartCmd.Flags().StringVar(&serverStartValues, "values", "", "path to serialized IED JSON (leaf values applied before start)")
 	serverStartCmd.Flags().StringVar(&serverStartHost, "host", "0.0.0.0", "bind address")
 	serverStartCmd.Flags().IntVarP(&serverStartPort, "port", "p", 102, "MMS port (0 = ephemeral; the bound address is printed and included in --ready-json)")
-	serverStartCmd.Flags().IntVar(&serverStartMaxConn, "max-connections", 5, "maximum MMS client connections")
+	serverStartCmd.Flags().IntVar(&serverStartMaxConn, "max-connections", 5, "reserved; not enforced yet")
 	serverStartCmd.Flags().BoolVar(&serverStartReadyJSON, "ready-json", false, "emit one JSON readiness event on stdout after bind")
 	serverStartCmd.Flags().StringVar(&serverStartFixtureID, "fixture-id", "", "optional fixture identifier included in readiness JSON")
 	serverStartCmd.Flags().StringVar(&serverStartFilesDir, "files-dir", "", "directory served read-only over MMS file services (list files / get file)")

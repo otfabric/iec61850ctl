@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Command-line tool for IEC 61850 MMS protocol communication (industrial automation/electrical substations). Supports reading data objects, listing logical devices (LDs), logical nodes (LNs), data objects (DOs), report subscription, SCL parsing, and a built-in MMS server. Pure Go — no CGO.
+Command-line tool for IEC 61850 (industrial automation/electrical substations): an MMS client (browse, read, write, control, reports, files, journals), GOOSE and Sampled Values on raw Ethernet (sniff, supervised subscribe, guarded publish, GoCB/MSVCB access over MMS), offline SCL tools, a built-in MMS server and an HTTP/JSON API. Pure Go — no CGO.
 
 **Repository**: [github.com/otfabric/iec61850ctl](https://github.com/otfabric/iec61850ctl)
 
@@ -21,7 +21,7 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
 - **HTTP API**: `internal/transport/http/` — optional REST wrapper
 - **Black-box e2e**: `e2e/` (`//go:build e2e`) — treats the built binary as an external process
 - **External dependencies**:
-  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.1.0 — IEC 61850 client/server, SCL, directory discovery, GOOSE
+  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.2.1 — IEC 61850 client/server, SCL, directory discovery, GOOSE, Sampled Values
   - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.2.1 — MMS encoding and ISO transport, retry policy
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
 - **Go version**: 1.24+ (see `go.mod`)
@@ -29,7 +29,7 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
 ## Project Structure
 
 ```
-cmd/                    Cobra commands (discover, get, list, subscribe, server, scl, tree, http, ...)
+cmd/                    Cobra commands (discover, get, list, subscribe, control, set, goose, sv, server, scl, tree, http, ...)
 internal/
   app/                  Command handlers wired to services
   transport/http/       Optional HTTP server
@@ -40,6 +40,7 @@ pkg/
     client/             go-iec61850 client connection adapter
     server/             SCL-based server run + libiec61850 .cfg export
   gooseops/             GOOSE list/sniff/subscribe/publish on go-iec61850/goose
+  svops/                SV list/sniff/subscribe/publish on go-iec61850/sv
   errs/                 Sentinels and exit-code mapping
   logging/              slog setup for --log-level/--log-format
   scl/                  Offline SCL parse/convert
@@ -47,7 +48,7 @@ pkg/
   view/                 View models for formatters
   network/              Device discovery scanner
 e2e/                    Black-box CLI interoperability tests (build tag e2e)
-docs/                   PROTOCOL, SERVER, AUTOMATION, INTEROP, examples
+docs/                   PROTOCOL, SERVER, GOOSE, SV, AUTOMATION, INTEROP, examples
 main.go                 Entry point
 ```
 
@@ -60,7 +61,10 @@ iec61850ctl
   ├── get               object, file, report, ds, journal
   ├── list              lds, lns, dos, das, dss, reports, files, journals
   ├── subscribe report  RCB subscription (--format text|jsonl)
+  ├── control           inspect, operate
+  ├── set object        scalar write (rejects FC=CO)
   ├── goose             list, sniff, subscribe, publish, gocb get|set
+  ├── sv                list, sniff, subscribe, publish, svcb get|set
   ├── server
   │   ├── start             --scl, --ied-name, --values, --ready-json, --fixture-id
   │   └── generate-config   Export libiec61850 .cfg (external tools only)
@@ -117,7 +121,7 @@ server.Run(server.RunConfig{
     Host:       "0.0.0.0",
     Port:       102,
     ReadyJSON:  true,
-    FixtureID:  "iec61850-v2",
+    FixtureID:  "iec61850-v3",
 })
 ```
 
@@ -126,9 +130,10 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 ## Automation & interop docs
 
 - [docs/AUTOMATION.md](../docs/AUTOMATION.md) — stdout/stderr, JSON/JSONL contracts
-- [docs/INTEROP.md](../docs/INTEROP.md) — 20 CI e2e stacks: client, reverse control/report/reader and GOOSE against libiec61850, iec61850bean, dscsystems and iec61850-rust, plus self
+- [docs/GOOSE.md](../docs/GOOSE.md), [docs/SV.md](../docs/SV.md) — raw-Ethernet command reference; kept in sync by `cmd/docs_test.go`, examples captured by `cmd/docs_capture_test.go`
+- [docs/INTEROP.md](../docs/INTEROP.md) — 19 CI e2e jobs: client, reverse control/report/reader, GOOSE and SV against libiec61850, iec61850bean, dscsystems and iec61850-rust (GOOSE/SV: not iec61850bean), plus self
 - [docs/SERVER.md](../docs/SERVER.md) — readiness JSON, value seeding
-- [RELEASE.md](../RELEASE.md) — release notes (v0.3.0: GOOSE, exit codes, quality pass)
+- [RELEASE.md](../RELEASE.md) — release notes (v0.4.0: Sampled Values, GOOSE/SV reference docs)
 
 ## Error Handling
 

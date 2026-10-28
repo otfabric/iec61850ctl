@@ -1,6 +1,6 @@
 # Automation contract
 
-Authoritative machine-facing contract for scripting `iec61850ctl`. Human-oriented text output remains the default for interactive use.
+Authoritative machine-facing contract for scripting `iec61850ctl`: the MMS client commands, `goose`, `sv`, `server start` and `http`. Human-oriented text output remains the default for interactive use.
 
 ## Streams and exit codes
 
@@ -17,13 +17,15 @@ Authoritative machine-facing contract for scripting `iec61850ctl`. Human-oriente
 | `1` | Failure (unclassified) |
 | `2` | Usage error, invalid flag value, malformed reference/input/config |
 | `3` | Connection failed or lost (including a dropped report subscription) |
-| `4` | Timeout (`--connect-timeout` / `--timeout`) |
-| `5` | Not found (object, file, IED, RCB, journal) |
-| `6` | Rejected or access denied by the server (including failed select/operate) |
+| `4` | Timeout (`--connect-timeout` / `--timeout`); for `goose`/`sv` `sniff` and `subscribe`, `--count` not reached before `--duration` |
+| `5` | Not found (object, file, dataset, IED, RCB, journal, GoCB/SVCB, network interface) |
+| `6` | Rejected or access denied (including failed select/operate, a refused GoCB/MSVCB write, and raw-socket permission errors) |
 | `7` | Write verification (`--verify`) or control confirmation (`--confirm-ref`) mismatch |
-| `8` | Service not supported by the server |
+| `8` | Service not supported by the server, or by the platform (raw Ethernet on Windows) |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
+- Servers differ in how they report a missing object. A read that the server answers with the MMS data-access error *object-non-existent* (as libiec61850 and go-iec61850 servers do for `get object` and `get report`) exits `6`, not `5`. Treat both as "not available" in scripts.
+- `goose publish` and `sv publish` refused by their guard rails (no `--iface`, no `--yes`, or operational frames without `--live`) exit `2` before anything is sent.
 - For `control operate` / `set object` with `--format json`, protocol outcomes that reach execution still print one JSON document; non-zero exit is driven by `status` / `write_ok` (see below), not by omitting JSON.
 - Runtime errors are printed once to stderr (usage is not appended).
 - `--help` still prints help to stdout and exits `0`.
@@ -48,7 +50,7 @@ An empty IED name preserves legacy behaviour (no MMS domain prefix stripping).
 
 | Target | `IEC61850_IED_NAME` / `--ied-name` |
 |--------|-------------------------------------|
-| External mms-interop servers (libiec61850 / Bean) | Set to `InteropIED` so LD names appear without the IED prefix |
+| External mms-interop servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust) | Set to `InteropIED` so LD names appear without the IED prefix |
 | `iec61850ctl server start` (self-server) | **Leave unset** — Go server domains are bare LD names (`InteropLD`); setting an IED name breaks browse/read |
 
 The same `--ied-name` flag selects an IED from SCL for `server start` (server-side SCL selection), independent of the client dial setting above.
@@ -61,8 +63,10 @@ The same `--ied-name` flag selects an IED from SCL for `server start` (server-si
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
 | `control inspect`, `control operate`, `set object` | `text`, `json` |
 | `subscribe report` | `text`, `jsonl` |
+| `goose list`, `goose gocb get`, `goose gocb set`, `sv list`, `sv svcb get`, `sv svcb set` | `text`, `json` |
+| `goose sniff`, `goose subscribe`, `goose publish`, `sv sniff`, `sv subscribe`, `sv publish` | `text`, `jsonl` |
 
-Unknown formats exit non-zero (no silent fallback to text) for the restricted families above.
+Unknown formats exit `2` (no silent fallback to text).
 
 ### JSON on failure (control / set)
 
@@ -104,7 +108,7 @@ Timestamps, bit strings, octet strings, arrays, and structures do **not** yet ha
 Top-level JSON array. Empty result: `[]`.
 
 ```json
-[{ "name": "dsInterop" }]
+[{ "name": "dsInterop" }, { "name": "dsSvGeneric" }]
 ```
 
 With `--detailed`, entries may include `is_deletable`, `member_count`, and `members`.
@@ -122,9 +126,16 @@ Top-level array of report summaries (scoped and `--all` share the same shape):
   {
     "ld": "InteropLD",
     "ln": "LLN0",
-    "name": "urcb0101",
+    "name": "urcb01",
     "buffered": false,
-    "ref": "InteropLD/LLN0.RP.urcb0101"
+    "ref": "InteropLD/LLN0.RP.urcb01"
+  },
+  {
+    "ld": "InteropLD",
+    "ln": "LLN0",
+    "name": "brcb01",
+    "buffered": true,
+    "ref": "InteropLD/LLN0.BR.brcb01"
   }
 ]
 ```
@@ -136,14 +147,19 @@ Single envelope (never two consecutive documents). Nested `report` always includ
 ```json
 {
   "report": {
+    "name": "urcb01",
     "ld": "InteropLD",
     "ln": "LLN0",
-    "name": "urcb0101",
     "buffered": false,
-    "ref": "InteropLD/LLN0.RP.urcb0101",
+    "ref": "InteropLD/LLN0.urcb01",
     "rpt_id": "interop_urcb01",
-    "dat_set": "InteropLD/LLN0.dsInterop",
+    "dat_set": "InteropLD/LLN0$dsInterop",
     "enabled": false,
+    "conf_rev": 1,
+    "intg_pd_ms": 0,
+    "buf_tm_ms": 0,
+    "reserved": false,
+    "sq_num": 0,
     "trigger_options": {
       "data_change": true,
       "quality_change": false,
@@ -155,7 +171,7 @@ Single envelope (never two consecutive documents). Nested `report` always includ
       "sequence_number": true,
       "time_stamp": true,
       "reason_code": true,
-      "data_set_name": true,
+      "data_set_name": false,
       "data_reference": false,
       "buffer_overflow": false,
       "entry_id": false,
@@ -166,7 +182,7 @@ Single envelope (never two consecutive documents). Nested `report` always includ
 }
 ```
 
-With `--detailed`, `data_set` holds the dataset view when available.
+With `--detailed`, `data_set` holds the dataset view when available. `dat_set` is the server's MMS form (`LD/LN$name`). Note that `report.ref` here omits the `RP`/`BR` segment that `list reports` includes.
 
 For **buffered** RCBs, the nested `report` may also include BRCB runtime fields when the server exposes them: `purge_buf` (bool), `entry_id_value` (hex string), `resv_tms` (int). These are distinct from `optional_fields.entry_id` (OptFlds bit).
 
@@ -177,10 +193,11 @@ For **buffered** RCBs, the nested `report` may also include BRCB runtime fields 
   "object": "InteropLD/GGIO1.SPCSO2",
   "control_model": {"code": 2, "name": "sbo-with-normal-security"},
   "controllable": true,
-  "requires_select": true,
-  "enhanced_security": false
+  "requires_select": true
 }
 ```
+
+`enhanced_security` is present (`true`) only for the `*-with-enhanced-security` models.
 
 ### `control operate --format json`
 
@@ -191,13 +208,20 @@ For **buffered** RCBs, the nested `report` may also include BRCB runtime fields 
   "controllable": true,
   "requires_select": true,
   "mode": "sbo",
-  "ctl_num": 7,
-  "status": "confirmed",
+  "requested_value": true,
+  "ctl_num": 1,
   "operations": [
-    {"operation": "select", "ok": true},
+    {"operation": "select", "ok": true, "detail": "InteropLD/GGIO1.SPCSO2"},
     {"operation": "operate", "ok": true}
   ],
-  "confirmation": {"attempted": true, "matched": true, "value": true}
+  "confirmation": {
+    "attempted": true,
+    "object": "InteropLD/GGIO1.SPCSO2.stVal[ST]",
+    "fc": "ST",
+    "value": true,
+    "matched": true
+  },
+  "status": "confirmed"
 }
 ```
 
@@ -225,12 +249,12 @@ Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[S
 
 `subscribe report --format jsonl` emits one JSON object per stdout line. Diagnostics remain on stderr.
 
-Suggested events:
+A BRCB run with `--sync --interrogation --show-values --max-reports 1`:
 
 ```json
-{"event":"baseline","data_set":"…","values":[…]}
-{"event":"report","rpt_id":"interop_brcb01","sequence_number":1,"entry_id":"0000000000000001","values":[…],"reasons":["gi"]}
-{"event":"summary","reports_received":1,"clean_disable":true,"duration_ms":1234}
+{"event":"baseline","data_set":"InteropLD/LLN0$dsInterop","values":[false,1]}
+{"event":"report","rpt_id":"interop_brcb01","sequence_number":1,"entry_id":"0000000000000001","values":[false,1],"reasons":["gi"]}
+{"event":"summary","reports_received":1,"clean_disable":true,"duration_ms":104}
 ```
 
 - `--show-values` controls inclusion of `values`.
@@ -238,6 +262,29 @@ Suggested events:
 - BRCB pre-enable: `--purge-buf`, `--entry-id HEX`, `--resv-tms N` (require `--type BR`); written before `RptEna`.
 - The `summary` event is emitted only after subscription cleanup completes.
 - Reason tokens include `gi`, `dchg`, `qchg`, `dupd`, `integrity`.
+
+## GOOSE and Sampled Values
+
+`goose` and `sv` follow the same rules: results on stdout, diagnostics (including undecodable frames and the LIVE warning) on stderr.
+
+- `list`, `gocb get|set` and `svcb get|set` with `--format json` print exactly one JSON document.
+- `sniff`, `subscribe` and `publish` with `--format jsonl` print one object per line, each with an `event` field, and end with exactly one `summary` record (also after Ctrl+C or `--duration`).
+
+| Command | `event` values |
+|---------|----------------|
+| `goose sniff` | `frame`, `summary` |
+| `goose subscribe` | `state`, `message`, `timeout`, `stnum-gap`, `sqnum-gap`, `duplicate`, `out-of-order`, `restart`, `invalid`, `supervision`, `summary` |
+| `goose publish` | `summary` |
+| `sv sniff` | `asdu`, `summary` |
+| `sv subscribe` | `asdu` (every `--sample-every`), `start`, `gap`, `duplicate`, `out-of-order`, `timeout`, `restored`, `synch`, `confrev`, `invalid`, `stats` (every `--stats-interval`), `summary` |
+| `sv publish` | `summary` |
+
+```json
+{"event":"summary","frames":1,"filtered":0,"decode_errors":0}
+{"event":"summary","sv_id":"InteropSv92LE","app_id":"0x4000","dst":"01:0c:cd:04:00:00","simulation":true,"rate":4000,"no_asdu":1,"samples":7956,"frames":7956,"skipped":45,"late":97,"send_errors":0,"next_smp_cnt":1}
+```
+
+APPIDs are hex strings (`"0x4000"`), MACs are `aa:bb:cc:dd:ee:ff`. The full record shapes, with captured examples, are in [GOOSE.md](GOOSE.md) and [SV.md](SV.md).
 
 ## Client lifecycle
 
@@ -253,3 +300,7 @@ Automation should treat hang-free exit as part of the contract, especially again
 ## Server readiness JSON
 
 See [SERVER.md](SERVER.md) for `--ready-json` / `--fixture-id`. When enabled, exactly one readiness JSON line is written to **stdout** after bind; the human listening message remains on stderr.
+
+## HTTP API
+
+`iec61850ctl http` returns JSON bodies and `{"error","code"}` errors whose `code` follows the same classes as the exit codes. See [HTTP.md](HTTP.md).

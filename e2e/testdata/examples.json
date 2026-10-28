@@ -1,12 +1,12 @@
 {
   "title": "iec61850ctl interoperability examples",
-  "fixture": "iec61850-v2",
+  "fixture": "iec61850-v3",
   "ied_name": "InteropIED",
   "cases": [
     {
       "title": "List logical devices",
       "notes": "Association + LD discovery. Against external adapters set IEC61850_IED_NAME=InteropIED so domains appear as InteropLD; against self-server leave IEC61850_IED_NAME unset.",
-      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust", "self"],
       "argv": ["list", "lds", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"contains_name": "InteropLD"},
@@ -15,7 +15,7 @@
     {
       "title": "List logical nodes",
       "notes": "LN names under InteropLD.",
-      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust", "self"],
       "argv": ["list", "lns", "--ld", "InteropLD", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"contains_names": ["LLN0", "GGIO1", "MMXU1", "MMTR1"]},
@@ -24,7 +24,7 @@
     {
       "title": "Read MX float",
       "notes": "Scalar float encoding (JSON number).",
-      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust", "self"],
       "argv": ["get", "object", "--object", "InteropLD/MMXU1.TotW.mag.f", "--fc", "MX", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"value": 1234.5},
@@ -33,7 +33,7 @@
     {
       "title": "Read ST boolean",
       "notes": "SPS1.stVal seeded false in expected-values / self-server-values.",
-      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust", "self"],
       "argv": ["get", "object", "--object", "InteropLD/GGIO1.SPS1.stVal", "--fc", "ST", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"value": false},
@@ -42,7 +42,7 @@
     {
       "title": "Get dataset",
       "notes": "dsInterop has two members (SPS1.stVal, Mod.stVal).",
-      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust", "self"],
       "argv": ["get", "ds", "--ld", "InteropLD", "--ln", "LLN0", "--name", "dsInterop", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"name": "dsInterop", "member_count": 2}
@@ -50,7 +50,7 @@
     {
       "title": "Discover report instance names",
       "notes": "SCL defines urcb01; some servers expand the instance to urcb0101. Always discover before subscribe — neither name is universally valid.",
-      "stacks": ["libiec61850", "iec61850bean", "self"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust", "self"],
       "argv": ["list", "reports", "--ld", "InteropLD", "--ln", "LLN0", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"contains_report_prefix": "urcb01"},
@@ -59,7 +59,7 @@
     {
       "title": "URCB GI subscription (JSONL)",
       "notes": "Replace REPORT_INSTANCE with the name returned by list reports (often urcb01 or urcb0101). Do not hard-code a single instance across stacks.",
-      "stacks": ["libiec61850", "iec61850bean"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
       "argv": ["subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "REPORT_INSTANCE", "--type", "RP", "--interrogation", "--max-reports", "1", "--duration", "15s", "--show-values", "--format", "jsonl"],
       "expected_exit": 0,
       "expect_jsonl_events": ["report", "summary"],
@@ -68,7 +68,7 @@
     {
       "title": "Control inspect",
       "notes": "Atomic control journeys require a single association; inspect ctlModel before operate.",
-      "stacks": ["libiec61850", "iec61850bean"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
       "argv": ["control", "inspect", "--object", "InteropLD/GGIO1.SPCSO2", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"controllable": true, "requires_select": true}
@@ -76,7 +76,7 @@
     {
       "title": "Control operate (atomic SBO)",
       "notes": "One association: select → operate → optional confirm-ref. No cross-process select.",
-      "stacks": ["libiec61850", "iec61850bean"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
       "argv": ["control", "operate", "--object", "InteropLD/GGIO1.SPCSO2", "--value", "true", "--type", "bool", "--mode", "auto", "--confirm-ref", "InteropLD/GGIO1.SPCSO2.stVal[ST]", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"status": "confirmed"}
@@ -84,7 +84,7 @@
     {
       "title": "Set scalar object (ING)",
       "notes": "Writable fixture InteropLD/GGIO1.SetInt1.setVal[SP]. FC=CO is rejected — use control operate.",
-      "stacks": ["libiec61850", "iec61850bean"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
       "argv": ["set", "object", "--object", "InteropLD/GGIO1.SetInt1.setVal", "--fc", "SP", "--value", "5", "--type", "int", "--verify", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"write_ok": true}
@@ -92,10 +92,40 @@
     {
       "title": "BRCB subscribe with purge",
       "notes": "Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.",
-      "stacks": ["libiec61850", "iec61850bean"],
+      "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
       "argv": ["subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "REPORT_INSTANCE", "--type", "BR", "--purge-buf", "--interrogation", "--max-reports", "1", "--duration", "15s", "--format", "jsonl"],
       "expected_exit": 0,
       "expect_jsonl_events": ["report", "summary"]
+    },
+    {
+      "title": "GOOSE control blocks from SCL",
+      "notes": "Offline: lists the GSEControl blocks of the mms-interop GOOSE fixture (goose-v1).",
+      "stacks": ["offline"],
+      "argv": ["goose", "list", "--scl", "e2e/testdata/interop-goose.cid"],
+      "expected_exit": 0
+    },
+    {
+      "title": "Sniff GOOSE from a peer publisher",
+      "notes": "Raw Ethernet: run on a host or container attached to the same Docker bridge or LAN as the adapter's GOOSE publisher. Needs CAP_NET_RAW.",
+      "stacks": ["libiec61850", "dscsystems", "iec61850-rust"],
+      "argv": ["goose", "sniff", "--iface", "eth0", "--count", "5", "--format", "jsonl"],
+      "expected_exit": 0,
+      "expect_jsonl_events": ["frame", "summary"]
+    },
+    {
+      "title": "Supervised SV subscription",
+      "notes": "Subscribes to the 9-2LE stream of the sv-v1 fixture and prints every 4000th sample, a stats record every second and a final summary. Needs CAP_NET_RAW.",
+      "stacks": ["libiec61850", "dscsystems", "iec61850-rust"],
+      "argv": ["sv", "subscribe", "--iface", "eth0", "--scl", "e2e/testdata/interop-sv.cid", "--svcb", "MSVCB01", "--sample-every", "4000", "--duration", "10s", "--format", "jsonl"],
+      "expected_exit": 0,
+      "expect_jsonl_events": ["start", "asdu", "summary"]
+    },
+    {
+      "title": "Read an MSVCB over MMS",
+      "notes": "MSVCB02 of the IED fixture. iec61850bean and iec61850-rust do not model MSVCBs over MMS and fail this read.",
+      "stacks": ["libiec61850", "dscsystems"],
+      "argv": ["sv", "svcb", "get", "--ld", "InteropLD", "--svcb", "MSVCB02", "--format", "json"],
+      "expected_exit": 0
     }
   ]
 }

@@ -36,7 +36,8 @@ Example endpoints:
   GET  /api/reports/all
   POST /api/find/path
   
-See internal/transport/http/ for full endpoint documentation.`,
+Read-only, with no authentication or TLS: bind --listen to loopback or a
+management interface. Endpoint reference: docs/HTTP.md.`,
 	RunE: runHTTP,
 }
 

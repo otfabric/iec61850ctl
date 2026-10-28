@@ -30,14 +30,14 @@ Stop with Ctrl+C.
 | `--files-dir` | Directory served read-only over MMS file services (`list files`, `get file`); not recursive, delete/rename are denied |
 | `--max-connections` | Reserved for future use (default `5`; not enforced by the current go-mms listener) |
 | `--ready-json` | After bind, emit one readiness JSON line on **stdout** |
-| `--fixture-id` | Fixture revision string included in the readiness event (e.g. `iec61850-v2`) |
+| `--fixture-id` | Fixture revision string included in the readiness event (e.g. `iec61850-v3`) |
 
 ### Structured readiness (`--ready-json`)
 
 When `--ready-json` is set, the server writes exactly one JSON line to **stdout** after the listener is bound. The human “listening on …” message always goes to **stderr**.
 
 ```json
-{"event":"ready","address":"0.0.0.0:1102","fixture":"iec61850-v2","adapter":"iec61850ctl","version":"<build>","ied_name":"InteropIED"}
+{"event":"ready","address":"0.0.0.0:1102","fixture":"iec61850-v3","adapter":"iec61850ctl","version":"<build>","ied_name":"InteropIED"}
 ```
 
 | Field | Meaning |
@@ -59,7 +59,7 @@ External mms-interop adapters often run in Docker and reach a host-bound CLI ser
 iec61850ctl server start \
   --scl e2e/testdata/interop.icd \
   --values e2e/testdata/self-server-values.json \
-  --ied-name InteropIED --fixture-id iec61850-v2 \
+  --ied-name InteropIED --fixture-id iec61850-v3 \
   --host 0.0.0.0 --port 1102 --ready-json
 
 docker run --rm --add-host=host.docker.internal:host-gateway \
@@ -165,6 +165,15 @@ flowchart LR
     JSON2 --> Gen --> CFG --> Ext
   end
 ```
+
+## GOOSE and Sampled Values control blocks
+
+The server exposes the SCL's GSEControl and SampledValueControl blocks over
+MMS (`LLN0$GO$<name>`, `LLN0$MS$<name>`), so `goose gocb get` and `sv svcb
+get` work against it. It does **not** publish GOOSE or SV on a network
+interface: writing GoEna or SvEna is accepted, but the block reads back
+disabled and no frames are sent. To put frames on the wire, use `goose
+publish` or `sv publish` (see [GOOSE.md](GOOSE.md) and [SV.md](SV.md)).
 
 ## Requirements
 

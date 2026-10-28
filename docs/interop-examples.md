@@ -2,13 +2,13 @@
 
 Generated from `e2e/testdata/examples.json`. Do not edit by hand; run `make e2e-docs`.
 
-Fixture: `iec61850-v2` · IED name: `InteropIED`
+mms-interop: `v0.4.0` · IED fixture: `iec61850-v3` · IED name: `InteropIED`
 
 See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).
 
 ## Environment
 
-Against **external** adapter servers (libiec61850 / Bean):
+Against **external** adapter servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust):
 
 ```bash
 export IEC61850_HOST=127.0.0.1
@@ -27,16 +27,26 @@ Against **`iec61850ctl server start` (self-server)**, leave `IEC61850_IED_NAME` 
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
   mms-interop-libiec61850:local --port 1102
 
-# IEC61850bean
+# iec61850bean
 docker run --rm -p 1102:1102 --entrypoint iec61850bean-ied-server \
   mms-interop-iec61850bean:local --port 1102
+
+# dscsystems
+docker run --rm -p 1102:1102 --entrypoint dscsystems-ied-server \
+  mms-interop-dscsystems:local --port 1102
+
+# iec61850-rust
+docker run --rm -p 1102:1102 --entrypoint iec61850-rust-ied-server \
+  mms-interop-iec61850-rust:local --port 1102
 ```
 
 ### Digest-pinned images (CI / reproducible)
 
 ```bash
-LIBIEC61850_IMAGE=ghcr.io/otfabric/mms-interop-libiec61850@sha256:9c29847dbd0523002b113a2fd1806cfb523bdd1610ae2e47f53b6156ec15fde7
-IEC61850BEAN_IMAGE=ghcr.io/otfabric/mms-interop-iec61850bean@sha256:d95a64e2cb801db24ce9836e9dacc1035bf5131056802e241e9de6546861c611
+LIBIEC61850_IMAGE=ghcr.io/otfabric/mms-interop-libiec61850@sha256:966e17e37e7fb5c22b825443ce79565d51067705c8f8485fd63d4001b4bd31ff
+IEC61850BEAN_IMAGE=ghcr.io/otfabric/mms-interop-iec61850bean@sha256:ab2cda6a77ea054a04a736fdf1c36c5c8f50c766aa41cf5818bd11f3fadfac7d
+DSCSYSTEMS_IMAGE=ghcr.io/otfabric/mms-interop-dscsystems@sha256:899e4d96605a921647e7c079db0b0a7f69c05d0582830b81607bc1a152a8d60a
+IEC61850RUST_IMAGE=ghcr.io/otfabric/mms-interop-iec61850-rust@sha256:c46c83c6d7eaa9800bbe48fb6ca9d25a4e9338d0bfc6f31fbba7813d89e4445d
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
   "$LIBIEC61850_IMAGE" --port 1102
 ```
@@ -47,7 +57,7 @@ docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
 iec61850ctl server start \
   --scl e2e/testdata/interop.icd \
   --values e2e/testdata/self-server-values.json \
-  --ied-name InteropIED --fixture-id iec61850-v2 \
+  --ied-name InteropIED --fixture-id iec61850-v3 \
   --host 127.0.0.1 --port 1102 --ready-json
 ```
 
@@ -57,7 +67,7 @@ For reverse (external client → CLI server) examples, bind `--host 0.0.0.0` and
 
 ### List logical devices
 
-Stacks: `libiec61850`, `iec61850bean`, `self`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `self`
 
 Association + LD discovery. Against external adapters set IEC61850_IED_NAME=InteropIED so domains appear as InteropLD; against self-server leave IEC61850_IED_NAME unset.
 
@@ -73,7 +83,7 @@ Example stdout (illustrative):
 
 ### List logical nodes
 
-Stacks: `libiec61850`, `iec61850bean`, `self`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `self`
 
 LN names under InteropLD.
 
@@ -89,7 +99,7 @@ Example stdout (illustrative):
 
 ### Read MX float
 
-Stacks: `libiec61850`, `iec61850bean`, `self`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `self`
 
 Scalar float encoding (JSON number).
 
@@ -105,7 +115,7 @@ Example stdout (illustrative):
 
 ### Read ST boolean
 
-Stacks: `libiec61850`, `iec61850bean`, `self`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `self`
 
 SPS1.stVal seeded false in expected-values / self-server-values.
 
@@ -121,7 +131,7 @@ Example stdout (illustrative):
 
 ### Get dataset
 
-Stacks: `libiec61850`, `iec61850bean`, `self`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `self`
 
 dsInterop has two members (SPS1.stVal, Mod.stVal).
 
@@ -131,7 +141,7 @@ iec61850ctl get ds --ld InteropLD --ln LLN0 --name dsInterop --format json
 
 ### Discover report instance names
 
-Stacks: `libiec61850`, `iec61850bean`, `self`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `self`
 
 SCL defines urcb01; some servers expand the instance to urcb0101. Always discover before subscribe — neither name is universally valid.
 
@@ -147,7 +157,7 @@ Example stdout (illustrative):
 
 ### URCB GI subscription (JSONL)
 
-Stacks: `libiec61850`, `iec61850bean`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
 Replace REPORT_INSTANCE with the name returned by list reports (often urcb01 or urcb0101). Do not hard-code a single instance across stacks.
 
@@ -171,7 +181,7 @@ iec61850ctl list reports --ld InteropLD --ln LLN0 --format json
 
 ### Control inspect
 
-Stacks: `libiec61850`, `iec61850bean`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
 Atomic control journeys require a single association; inspect ctlModel before operate.
 
@@ -181,7 +191,7 @@ iec61850ctl control inspect --object InteropLD/GGIO1.SPCSO2 --format json
 
 ### Control operate (atomic SBO)
 
-Stacks: `libiec61850`, `iec61850bean`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
 One association: select → operate → optional confirm-ref. No cross-process select.
 
@@ -191,7 +201,7 @@ iec61850ctl control operate --object InteropLD/GGIO1.SPCSO2 --value true --type 
 
 ### Set scalar object (ING)
 
-Stacks: `libiec61850`, `iec61850bean`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
 Writable fixture InteropLD/GGIO1.SetInt1.setVal[SP]. FC=CO is rejected — use control operate.
 
@@ -201,7 +211,7 @@ iec61850ctl set object --object InteropLD/GGIO1.SetInt1.setVal --fc SP --value 5
 
 ### BRCB subscribe with purge
 
-Stacks: `libiec61850`, `iec61850bean`
+Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
 Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.
 
@@ -214,4 +224,44 @@ Discover the instance name first:
 ```bash
 iec61850ctl list reports --ld InteropLD --ln LLN0 --format json
 # then substitute --report <name> from the JSON `name` field
+```
+
+### GOOSE control blocks from SCL
+
+Stacks: `offline`
+
+Offline: lists the GSEControl blocks of the mms-interop GOOSE fixture (goose-v1).
+
+```bash
+iec61850ctl goose list --scl e2e/testdata/interop-goose.cid
+```
+
+### Sniff GOOSE from a peer publisher
+
+Stacks: `libiec61850`, `dscsystems`, `iec61850-rust`
+
+Raw Ethernet: run on a host or container attached to the same Docker bridge or LAN as the adapter's GOOSE publisher. Needs CAP_NET_RAW.
+
+```bash
+iec61850ctl goose sniff --iface eth0 --count 5 --format jsonl
+```
+
+### Supervised SV subscription
+
+Stacks: `libiec61850`, `dscsystems`, `iec61850-rust`
+
+Subscribes to the 9-2LE stream of the sv-v1 fixture and prints every 4000th sample, a stats record every second and a final summary. Needs CAP_NET_RAW.
+
+```bash
+iec61850ctl sv subscribe --iface eth0 --scl e2e/testdata/interop-sv.cid --svcb MSVCB01 --sample-every 4000 --duration 10s --format jsonl
+```
+
+### Read an MSVCB over MMS
+
+Stacks: `libiec61850`, `dscsystems`
+
+MSVCB02 of the IED fixture. iec61850bean and iec61850-rust do not model MSVCBs over MMS and fail this read.
+
+```bash
+iec61850ctl sv svcb get --ld InteropLD --svcb MSVCB02 --format json
 ```
