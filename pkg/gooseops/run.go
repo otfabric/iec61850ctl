@@ -337,6 +337,15 @@ func Publish(ctx context.Context, cfg PublishConfig) (PublishResult, error) {
 	}
 	defer func() { _ = pub.Close() }()
 
+	// Send the initial state here rather than leaving it to Run: a state
+	// change published before the Run goroutine starts would otherwise
+	// replace it, and stNum 1 would never carry the configured values.
+	if pc.Values != nil {
+		if err := pub.Publish(cloneValues(pc.Values)); err != nil {
+			return res, fmt.Errorf("goose publish: %w", err)
+		}
+	}
+
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	runErr := make(chan error, 1)
