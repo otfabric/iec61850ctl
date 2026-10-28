@@ -86,6 +86,7 @@ func ExitCode(err error) int {
 		errors.Is(err, sv.ErrValidation):
 		return ExitUsage
 	case errors.Is(err, ErrNotFound),
+		IsObjectNonExistent(err),
 		errors.Is(err, iec61850.ErrNotFound),
 		errors.Is(err, fs.ErrNotExist),
 		errors.Is(err, goose.ErrNotFound),
@@ -122,6 +123,28 @@ func ExitCode(err error) int {
 	}
 	return ExitFailure
 }
+
+// IsObjectNonExistent reports whether err carries the MMS
+// object-non-existent result: the per-variable data-access error
+// (go-mms or go-iec61850 bulk form) or the access-class service error.
+// ExitCode maps it to ExitNotFound; every other data-access or service
+// error stays ExitRejected.
+func IsObjectNonExistent(err error) bool {
+	var mdae *mms.DataAccessError
+	if errors.As(err, &mdae) && mdae.Code == mms.DataAccessErrorObjectNonExistent {
+		return true
+	}
+	var idae *iec61850.DataAccessError
+	if errors.As(err, &idae) && idae.ErrorCode == int(mms.DataAccessErrorObjectNonExistent) {
+		return true
+	}
+	var se *mms.ServiceError
+	return errors.As(err, &se) && se.Class == mms.ErrorClassAccess && se.Code == accessErrObjectNonExistent
+}
+
+// accessErrObjectNonExistent is the ISO 9506-2 access-class service error
+// code for object-non-existent.
+const accessErrObjectNonExistent = 2
 
 // IsTimeout reports whether err is a deadline/timeout in any layer.
 func IsTimeout(err error) bool {

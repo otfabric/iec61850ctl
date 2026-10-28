@@ -81,11 +81,13 @@ $ curl -s 'http://127.0.0.1:8080/api/datasets/with-values?ld=InteropLD&ln=LLN0&n
 
 ### Path search
 
-`POST /api/find/path` takes the fields of `find path`: `LNPattern` (regex),
-`DOName` (exact DO), and optionally `DAName`, `IncludeDAs` and `Detailed`.
+`POST /api/find/path` takes the fields of `find path`: `ln_pattern` (regex),
+`do_name` (exact DO), and optionally `da_name`, `include_das` and `detailed`.
+The v0.4.0 PascalCase keys (`LNPattern`, `DOName`, …) are still accepted but
+deprecated.
 
 ```console
-$ curl -s -d '{"LNPattern":"GGIO","DOName":"SPCSO1"}' http://127.0.0.1:8080/api/find/path
+$ curl -s -d '{"ln_pattern":"GGIO","do_name":"SPCSO1"}' http://127.0.0.1:8080/api/find/path
 {"matches":[{"LD":"InteropLD","LN":"GGIO1","DO":"SPCSO1","DataAttributes":null}],"call_count":3}
 ```
 
@@ -107,8 +109,8 @@ come from the same error classes as the CLI exit codes:
 | Status | `code` | Cause | CLI exit code |
 |--------|--------|-------|---------------|
 | `400` | `invalid_input` | missing or malformed parameter or body | `2` |
-| `403` | `rejected` | the device refused the request; some devices also report a nonexistent LD or RCB this way | `6` |
-| `404` | `not_found` | object or dataset not found | `5` |
+| `403` | `rejected` | the device refused the request or denied access | `6` |
+| `404` | `not_found` | object, dataset, LD or RCB not found (including MMS *object-non-existent*) | `5` |
 | `405` | `method_not_allowed` | wrong HTTP method | |
 | `501` | `unsupported` | service not supported by the device | `8` |
 | `502` | `connection_failed` | association lost or device unreachable | `3` |

@@ -526,7 +526,7 @@ Connecting to 127.0.0.1:10103
 
 - **Order.** SvEna is written last. That lets you change attributes and enable in one call, but only if the block is already disabled.
 - **Disabled-only changes.** Servers accept the other attributes only while SvEna is false. A write the server refuses exits with code `6`.
-- **After a write.** `set` prints the MSVCB as read back from the server.
+- **After a write.** `set` prints the MSVCB as read back from the server. If `--enable` or `--disable` was given and SvEna reads back the other value (the server accepted the write but does not publish), `set` exits with code `7`.
 
 An OptFlds change on an enabled block is refused:
 

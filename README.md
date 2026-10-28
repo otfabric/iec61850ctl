@@ -378,7 +378,7 @@ Retries apply only to establishing the connection; invalid input, authentication
 | `4` | Timeout (connect or request), or `--count` not reached before `--duration` |
 | `5` | Not found (object, file, IED, RCB, control block, network interface) |
 | `6` | Rejected or access denied (including failed controls and raw-socket permission errors) |
-| `7` | Write verification or control confirmation mismatch |
+| `7` | Write verification, control confirmation, or GoCB/MSVCB enable read-back mismatch |
 | `8` | Service not supported by the server or platform (e.g. raw Ethernet on Windows) |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 

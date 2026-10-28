@@ -629,7 +629,10 @@ func runSVSvcbSet(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	return writeSVCB(cmd.OutOrStdout(), asJSON, v)
+	if err := writeSVCB(cmd.OutOrStdout(), asJSON, v); err != nil {
+		return err
+	}
+	return verifyEna("SvEna", upd.SvEna, v.SvEna)
 }
 
 type (

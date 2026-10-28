@@ -422,3 +422,21 @@ func TestSvcbItem(t *testing.T) {
 		}
 	}
 }
+
+// A server without an SV publisher accepts the SvEna write but reads back
+// false: set --enable must exit 7, not 0.
+func TestSVSvcbEnableNotPublishing(t *testing.T) {
+	srv, err := server.Start(context.Background(), server.RunConfig{SclPath: svFixture(), Host: "127.0.0.1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = srv.Close() })
+
+	r := runCLI(t, gooseSrvArgs(srv, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable")...)
+	expectCode(t, r, errs.ExitOK)
+	r = runCLI(t, gooseSrvArgs(srv, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--format", "json")...)
+	expectCode(t, r, errs.ExitMismatch)
+	if !strings.Contains(r.stdout, `"sv_ena": false`) || !strings.Contains(r.stderr, "SvEna reads back false") {
+		t.Fatalf("stdout:\n%s\nstderr:\n%s", r.stdout, r.stderr)
+	}
+}

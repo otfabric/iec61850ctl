@@ -526,7 +526,21 @@ func runGooseGocbSet(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	return writeGoCB(cmd.OutOrStdout(), asJSON, v)
+	if err := writeGoCB(cmd.OutOrStdout(), asJSON, v); err != nil {
+		return err
+	}
+	return verifyEna("GoEna", upd.GoEna, v.GoEna)
+}
+
+// verifyEna returns ErrVerifyMismatch (exit 7) when a requested GoEna/SvEna
+// write reads back with a different value: the server accepted the write but
+// did not start or stop publishing. requested is nil when no enable or
+// disable was asked for.
+func verifyEna(attr string, requested *bool, readBack bool) error {
+	if requested == nil || *requested == readBack {
+		return nil
+	}
+	return errs.Newf(errs.ErrVerifyMismatch, "verification mismatch: %s reads back %t after writing %t", attr, readBack, *requested)
 }
 
 type (

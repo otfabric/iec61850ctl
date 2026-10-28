@@ -331,3 +331,37 @@ func TestGocbItem(t *testing.T) {
 		}
 	}
 }
+
+// A server without a GOOSE publisher accepts the GoEna write but reads back
+// false: set --enable must exit 7, not 0.
+func TestGooseGoCBEnableNotPublishing(t *testing.T) {
+	srv, err := server.Start(context.Background(), server.RunConfig{SclPath: gooseFixture(), Host: "127.0.0.1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = srv.Close() })
+
+	r := runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--disable")...)
+	expectCode(t, r, errs.ExitOK)
+	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable")...)
+	expectCode(t, r, errs.ExitMismatch)
+	if !strings.Contains(r.stdout, "GoEna:      false") || !strings.Contains(r.stderr, "GoEna reads back false") {
+		t.Fatalf("stdout:\n%s\nstderr:\n%s", r.stdout, r.stderr)
+	}
+}
+
+func TestVerifyEna(t *testing.T) {
+	t.Parallel()
+	on, off := true, false
+	if verifyEna("GoEna", nil, false) != nil || verifyEna("GoEna", &on, true) != nil || verifyEna("SvEna", &off, false) != nil {
+		t.Fatal("matching read-back must pass")
+	}
+	for _, c := range []struct {
+		req  *bool
+		back bool
+	}{{&on, false}, {&off, true}} {
+		if err := verifyEna("SvEna", c.req, c.back); errs.ExitCode(err) != errs.ExitMismatch {
+			t.Errorf("verifyEna(%t, %t) = %v", *c.req, c.back, err)
+		}
+	}
+}

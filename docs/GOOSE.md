@@ -380,7 +380,7 @@ Connecting to 127.0.0.1:10102
 - **Writable attributes.** Only GoEna, GoID and DatSet can be written.
 - **Order.** GoEna is written last. That lets you change GoID or DatSet and enable in one call, but only if the block is already disabled.
 - **Disabled-only changes.** Servers accept GoID and DatSet changes only while GoEna is false. A write the server refuses exits with code `6`.
-- **After a write.** `set` prints the GoCB as read back from the server.
+- **After a write.** `set` prints the GoCB as read back from the server. If `--enable` or `--disable` was given and GoEna reads back the other value (the server accepted the write but does not publish), `set` exits with code `7`.
 
 A GoID change on an enabled block is refused:
 

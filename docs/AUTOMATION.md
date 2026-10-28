@@ -18,13 +18,12 @@ Authoritative machine-facing contract for scripting `iec61850ctl`: the MMS clien
 | `2` | Usage error, invalid flag value, malformed reference/input/config |
 | `3` | Connection failed or lost (including a dropped report subscription) |
 | `4` | Timeout (`--connect-timeout` / `--timeout`); for `goose`/`sv` `sniff` and `subscribe`, `--count` not reached before `--duration` |
-| `5` | Not found (object, file, dataset, IED, RCB, journal, GoCB/SVCB, network interface) |
+| `5` | Not found (object, file, dataset, IED, RCB, journal, GoCB/SVCB, network interface), including a server answer of MMS *object-non-existent* |
 | `6` | Rejected or access denied (including failed select/operate, a refused GoCB/MSVCB write, and raw-socket permission errors) |
-| `7` | Write verification (`--verify`) or control confirmation (`--confirm-ref`) mismatch |
+| `7` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or `goose gocb set` / `sv svcb set` GoEna/SvEna read-back mismatch |
 | `8` | Service not supported by the server, or by the platform (raw Ethernet on Windows) |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
-- Servers differ in how they report a missing object. A read that the server answers with the MMS data-access error *object-non-existent* (as libiec61850 and go-iec61850 servers do for `get object` and `get report`) exits `6`, not `5`. Treat both as "not available" in scripts.
 - `goose publish` and `sv publish` refused by their guard rails (no `--iface`, no `--yes`, or operational frames without `--live`) exit `2` before anything is sent.
 - For `control operate` / `set object` with `--format json`, protocol outcomes that reach execution still print one JSON document; non-zero exit is driven by `status` / `write_ok` (see below), not by omitting JSON.
 - Runtime errors are printed once to stderr (usage is not appended).
@@ -151,7 +150,7 @@ Single envelope (never two consecutive documents). Nested `report` always includ
     "ld": "InteropLD",
     "ln": "LLN0",
     "buffered": false,
-    "ref": "InteropLD/LLN0.urcb01",
+    "ref": "InteropLD/LLN0.RP.urcb01",
     "rpt_id": "interop_urcb01",
     "dat_set": "InteropLD/LLN0$dsInterop",
     "enabled": false,
@@ -182,7 +181,7 @@ Single envelope (never two consecutive documents). Nested `report` always includ
 }
 ```
 
-With `--detailed`, `data_set` holds the dataset view when available. `dat_set` is the server's MMS form (`LD/LN$name`). Note that `report.ref` here omits the `RP`/`BR` segment that `list reports` includes.
+With `--detailed`, `data_set` holds the dataset view when available. `dat_set` is the server's MMS form (`LD/LN$name`).
 
 For **buffered** RCBs, the nested `report` may also include BRCB runtime fields when the server exposes them: `purge_buf` (bool), `entry_id_value` (hex string), `resv_tms` (int). These are distinct from `optional_fields.entry_id` (OptFlds bit).
 

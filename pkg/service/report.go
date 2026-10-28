@@ -75,7 +75,7 @@ func (r *ReportService) GetAllReports() ([]domain.ReportControlBlockRef, error) 
 			buffered := fc == "BR"
 			entries = append(entries, domain.ReportControlBlockRef{
 				LD: ld.Name, LN: ln, Name: name, Buffered: buffered,
-				Ref: fmt.Sprintf("%s/%s.%s", ld.Name, ln, name),
+				Ref: domain.RCBRef(ld.Name, ln, name, buffered),
 			})
 		}
 	}
@@ -123,7 +123,7 @@ func mapRCB(ld, ln, name string, buffered bool, rcb *iec61850.ReportControlBlock
 		LD:       ld,
 		LN:       ln,
 		Buffered: buffered,
-		Ref:      fmt.Sprintf("%s/%s.%s", ld, ln, name),
+		Ref:      domain.RCBRef(ld, ln, name, buffered),
 		RptID:    rcb.RptID,
 		DatSet:   rcb.DatSet,
 	}

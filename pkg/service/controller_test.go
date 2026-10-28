@@ -10,10 +10,12 @@ import (
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 type controlMock struct {
 	model          iec61850.CtlModel
+	modelErr       error
 	selectRet      string
 	selectErr      error
 	selectWVErr    error
@@ -32,7 +34,7 @@ type controlMock struct {
 }
 
 func (m *controlMock) ReadCtlModel(_ context.Context, _ iec61850.Ref) (iec61850.CtlModel, error) {
-	return m.model, nil
+	return m.model, m.modelErr
 }
 func (m *controlMock) Select(_ context.Context, _ iec61850.Ref) (string, error) {
 	m.selectCalls++
@@ -232,6 +234,30 @@ func TestController_StatusOnly(t *testing.T) {
 	}
 	if res.Status != domain.ControlStatusFailed {
 		t.Fatalf("status=%s", res.Status)
+	}
+}
+
+func TestController_MissingCtlModel(t *testing.T) {
+	t.Parallel()
+	nonExistent := &mms.DataAccessError{Code: mms.DataAccessErrorObjectNonExistent}
+	c := NewController(&controlMock{modelErr: nonExistent})
+	_, err := c.Inspect(context.Background(), "InteropLD/GGIO1.SPS1")
+	if !errors.Is(err, iec61850.ErrNotControllable) || errs.ExitCode(err) != errs.ExitRejected {
+		t.Fatalf("inspect: err=%v exit=%d", err, errs.ExitCode(err))
+	}
+	_, err = c.Operate(context.Background(), domain.ControlRequest{
+		Object: "InteropLD/GGIO1.SPS1",
+		Mode:   domain.ControlModeAuto,
+		Value:  domain.ScalarValue{Kind: domain.ScalarBool, Bool: true},
+	})
+	if !errors.Is(err, iec61850.ErrNotControllable) || errs.ExitCode(err) != errs.ExitRejected {
+		t.Fatalf("operate: err=%v exit=%d", err, errs.ExitCode(err))
+	}
+
+	denied := &mms.DataAccessError{Code: mms.DataAccessErrorObjectAccessDenied}
+	_, err = NewController(&controlMock{modelErr: denied}).Inspect(context.Background(), "InteropLD/GGIO1.SPS1")
+	if errors.Is(err, iec61850.ErrNotControllable) || !errors.Is(err, mms.ErrDataAccess) {
+		t.Fatalf("access denied must pass through: %v", err)
 	}
 }
 
