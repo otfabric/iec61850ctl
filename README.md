@@ -328,7 +328,7 @@ Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-fai
 make check                 # fmt, staticcheck, golangci-lint, vet, race tests, coverage gate
 make build-nocheck         # fast binary → bin/iec61850ctl
 make test                  # unit tests with -race
-make coverage-gate         # every package >= 90% (COVERAGE_MIN=..)
+make coverage-gate         # every package >= 90% (COVERAGE_MIN=..), cgo-free
 make fuzz                  # every fuzz target for FUZZTIME (default 10s)
 make vet
 
@@ -340,7 +340,7 @@ make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md
 ```
 
-`CGO_ENABLED=0` for builds; race tests enable CGO temporarily. The `cmd/` tests drive the CLI in-process against an in-repo MMS server and compare output with golden files under `cmd/testdata/golden` (refresh with `go test ./cmd -update`); `cmd/chaos_test.go` puts a fault-injecting proxy (stalls, resets, slow peers) between CLI and server. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
+`CGO_ENABLED=0` for builds and the coverage gate; only `make test` enables CGO, because Go's race detector needs it on Linux (the code itself is cgo-free). The `cmd/` tests drive the CLI in-process against an in-repo MMS server and compare output with golden files under `cmd/testdata/golden` (refresh with `go test ./cmd -update`); `cmd/chaos_test.go` puts a fault-injecting proxy (stalls, resets, slow peers) between CLI and server. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Built With
 

@@ -3,6 +3,8 @@
 #
 # Run the unit tests with coverage and fail when any package with statements
 # is below the threshold (default 90%). Writes coverage.out (all packages).
+# Runs without -race so it needs no cgo; races are checked by `make test`
+# and the CI Race jobs.
 #
 #   COVERAGE_MIN=90 scripts/coverage-gate.sh
 set -euo pipefail
@@ -10,7 +12,7 @@ set -euo pipefail
 min="${COVERAGE_MIN:-90}"
 export GOWORK=off
 
-out="$(CGO_ENABLED=1 go test -count=1 -race -covermode=atomic \
+out="$(CGO_ENABLED=0 go test -count=1 -covermode=atomic \
 	-coverprofile=coverage.out ./... 2>&1)" || { echo "$out"; exit 1; }
 echo "$out"
 

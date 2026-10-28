@@ -73,7 +73,7 @@ cover: coverage ## Open coverage report in browser
 	@echo "Opening coverage report"
 	@go tool cover -html=coverage.out
 
-check: fmt lint lint-ci vet coverage-gate ## Run all checks (format, lint, vet, race tests, coverage gate)
+check: fmt lint lint-ci vet test coverage-gate ## Run all checks (format, lint, vet, race tests, coverage gate)
 
 build: check ## Build the application (runs full check first)
 	@$(MAKE) build-nocheck

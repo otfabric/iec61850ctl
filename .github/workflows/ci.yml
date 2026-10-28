@@ -30,7 +30,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Race tests and per-package coverage gate (>= 90%)
+      - name: Per-package coverage gate (>= 90%, no cgo)
         run: make coverage-gate
 
       - name: Fuzz smoke (5s per target)
