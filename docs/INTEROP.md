@@ -50,7 +50,7 @@ Journeys include association/browse, ST/MX reads against `expected-values.json`,
 - ST, MX, CF, DC reads against seeded values;
 - ST write (`Mod.stVal=5`) and dataset read reflecting the write.
 
-Requires iec61850-interop adapters that declare the `*-ied-client` commands in `fixtures/capabilities.json`. The lock file pins the [iec61850-interop `v0.4.0`](https://github.com/otfabric/iec61850-interop/releases/tag/v0.4.0) image digests (IED fixture `iec61850-v3`); local `:local` images are fine for development.
+Requires iec61850-interop adapters that declare the `*-ied-client` commands in `fixtures/capabilities.json`. The lock file pins the [iec61850-interop `v1.0.1`](https://github.com/otfabric/iec61850-interop/releases/tag/v1.0.1) image digests (IED fixture `iec61850-v3`); local `:local` images are fine for development.
 
 ### GOOSE (raw Ethernet)
 
