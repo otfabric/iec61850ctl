@@ -14,7 +14,7 @@ frame codec, publisher, subscriber and raw transports.
 | [`sv svcb get`, `sv svcb set`](#sv-svcb-get--set) | MMS (`--host`) | Reads or writes a multicast SV control block (MSVCB) on an IED |
 
 The example sessions on this page are real output. They were captured with
-`TestCaptureDocExamples` (`cmd/docs_capture_test.go`) against the mms-interop
+`TestCaptureDocExamples` (`cmd/docs_capture_test.go`) against the iec61850-interop
 SV fixture (`pkg/svops/testdata/interop-sv.cid`). It has two streams:
 
 | Control block | svID | APPID | Destination | Dataset | Rate | ASDUs/frame |
@@ -65,7 +65,7 @@ structured member (an SAV `Amp` is `INT32,Quality`). `sv list` prints it.
 - **Quality.** A quality value is one of:
   - names joined with `+`: `good`, `invalid`, `questionable`, `test`, `derived`, `old-data`, `substituted`, `failure`, `operator-blocked` (e.g. `invalid+test`);
   - the 32-bit word in hex or decimal: `0x0802`;
-  - 13 MSB-first binary digits, as in the MMS JSON and the mms-interop fixtures: `0000000000010` is `test`.
+  - 13 MSB-first binary digits, as in the MMS JSON and the iec61850-interop fixtures: `0000000000010` is `test`.
 
   In JSON output a quality is the MMS bit string `{"bits":"0000","len":13}`.
 
@@ -593,6 +593,6 @@ only used in tests, through the in-memory hub.
 
 The e2e suite runs `sv subscribe`, `sv sniff` and `sv publish` for both
 streams against the SV publishers and subscribers of libiec61850, dscsystems
-and iec61850-rust (mms-interop `sv-v1`) on a Docker bridge network. It also
+and iec61850-rust (iec61850-interop `sv-v1`) on a Docker bridge network. It also
 reads `MSVCB02` with `sv svcb get` from the libiec61850 and dscsystems IED
 servers. See [INTEROP.md](INTEROP.md#sampled-values-raw-ethernet).

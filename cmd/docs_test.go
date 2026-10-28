@@ -4,7 +4,9 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -259,5 +261,80 @@ func TestShellWords(t *testing.T) {
 	}
 	if _, err := shellWords(`'open`); err == nil {
 		t.Error("unterminated quote accepted")
+	}
+}
+
+// interopRepo is the interoperability suite the e2e tests pin.
+const interopRepo = "otfabric/iec61850-interop"
+
+// oldInteropName is the suite's name before v1.0.0. It is built at run time
+// so this file does not match its own search.
+var oldInteropName = strings.Join([]string{"mms", "interop"}, "-")
+
+// TestInteropSuiteNames checks the rename of the interop suite to
+// iec61850-interop: the old name survives only in the historical RELEASE.md
+// entries (whose links point at the new repository), the docs link the new
+// repository, and the lock pins the new image names.
+func TestInteropSuiteNames(t *testing.T) {
+	root := repoRoot()
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, path)
+		if d.IsDir() {
+			switch d.Name() {
+			case ".git", "bin", "release", "node_modules":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		switch filepath.Ext(path) {
+		case ".md", ".go", ".sh", ".yml", ".yaml", ".json":
+		default:
+			if d.Name() != "Makefile" {
+				return nil
+			}
+		}
+		if rel == "RELEASE.md" {
+			return nil
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(strings.ToLower(string(b)), oldInteropName) {
+			t.Errorf("%s mentions %s; use iec61850-interop", rel, oldInteropName)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	release := readRepoFile(t, "RELEASE.md")
+	if strings.Contains(release, "github.com/otfabric/"+oldInteropName) {
+		t.Errorf("RELEASE.md links github.com/otfabric/%s; link github.com/%s", oldInteropName, interopRepo)
+	}
+	for _, page := range []string{"README.md", "docs/INTEROP.md"} {
+		if !strings.Contains(readRepoFile(t, page), "https://github.com/"+interopRepo) {
+			t.Errorf("%s does not link https://github.com/%s", page, interopRepo)
+		}
+	}
+
+	var lock struct {
+		SourceRepository string            `json:"source_repository"`
+		Images           map[string]string `json:"images"`
+	}
+	if err := json.Unmarshal([]byte(readRepoFile(t, "e2e/testdata/interop.lock.json")), &lock); err != nil {
+		t.Fatal(err)
+	}
+	if lock.SourceRepository != interopRepo {
+		t.Errorf("interop.lock.json source_repository %q, want %q", lock.SourceRepository, interopRepo)
+	}
+	for stack, img := range lock.Images {
+		if want := "ghcr.io/otfabric/iec61850-interop-" + stack + "@sha256:"; !strings.HasPrefix(img, want) {
+			t.Errorf("interop.lock.json image %s = %q, want %s<digest>", stack, img, want)
+		}
 	}
 }

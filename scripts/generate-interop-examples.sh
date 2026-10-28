@@ -25,7 +25,7 @@ stacks = [
 lines = []
 lines.append(f"# {data['title']}\n")
 lines.append("Generated from `e2e/testdata/examples.json`. Do not edit by hand; run `make e2e-docs`.\n")
-lines.append(f"mms-interop: `{lock.get('source_tag', '?')}` · IED fixture: `{data['fixture']}` · IED name: `{data['ied_name']}`\n")
+lines.append(f"iec61850-interop: `{lock.get('source_tag', '?')}` · IED fixture: `{data['fixture']}` · IED name: `{data['ied_name']}`\n")
 lines.append("See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).\n")
 
 lines.append("## Environment\n")
@@ -45,12 +45,12 @@ for i, (name, _, entry) in enumerate(stacks):
         lines.append("")
     lines.append(f"# {name}")
     lines.append(f"docker run --rm -p 1102:1102 --entrypoint {entry} \\")
-    lines.append(f"  mms-interop-{name}:local --port 1102")
+    lines.append(f"  iec61850-interop-{name}:local --port 1102")
 lines.append("```\n")
 lines.append("### Digest-pinned images (CI / reproducible)\n")
 lines.append("```bash")
 for name, var, _ in stacks:
-    lines.append(f"{var}={images.get(name, 'ghcr.io/otfabric/mms-interop-' + name + '@sha256:<digest>')}")
+    lines.append(f"{var}={images.get(name, 'ghcr.io/otfabric/iec61850-interop-' + name + '@sha256:<digest>')}")
 lines.append("docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \\")
 lines.append("  \"$LIBIEC61850_IMAGE\" --port 1102")
 lines.append("```\n")

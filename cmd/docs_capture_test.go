@@ -21,7 +21,7 @@ import (
 
 // TestCaptureDocExamples records the example sessions of docs/GOOSE.md and
 // docs/SV.md: real runs of the CLI against the in-memory GOOSE/SV hub and
-// an in-process server for the mms-interop fixtures. It only runs when
+// an in-process server for the iec61850-interop fixtures. It only runs when
 // IEC61850CTL_DOCS_CAPTURE names an output directory:
 //
 //	IEC61850CTL_DOCS_CAPTURE=/tmp/docs go test ./cmd -run TestCaptureDocExamples

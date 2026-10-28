@@ -99,7 +99,7 @@
     },
     {
       "title": "GOOSE control blocks from SCL",
-      "notes": "Offline: lists the GSEControl blocks of the mms-interop GOOSE fixture (goose-v1).",
+      "notes": "Offline: lists the GSEControl blocks of the iec61850-interop GOOSE fixture (goose-v1).",
       "stacks": ["offline"],
       "argv": ["goose", "list", "--scl", "e2e/testdata/interop-goose.cid"],
       "expected_exit": 0

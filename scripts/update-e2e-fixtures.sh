@@ -5,24 +5,24 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIR="$ROOT/e2e/testdata"
 LOCK="$DIR/interop.lock.json"
-MMS_INTEROP_DIR="${MMS_INTEROP_DIR:-}"
+IEC61850_INTEROP_DIR="${IEC61850_INTEROP_DIR:-}"
 
-if [[ -z "$MMS_INTEROP_DIR" ]]; then
-  echo "usage: MMS_INTEROP_DIR=/path/to/mms-interop $0" >&2
+if [[ -z "$IEC61850_INTEROP_DIR" ]]; then
+  echo "usage: IEC61850_INTEROP_DIR=/path/to/iec61850-interop $0" >&2
   echo "optional: LIBIEC61850_IMAGE=... IEC61850BEAN_IMAGE=... DSCSYSTEMS_IMAGE=... IEC61850RUST_IMAGE=..." >&2
   exit 1
 fi
 
-ICD_SRC="$MMS_INTEROP_DIR/fixtures/iec61850/interop.icd"
-VAL_SRC="$MMS_INTEROP_DIR/fixtures/iec61850/values.json"
-GOOSE_CID_SRC="$MMS_INTEROP_DIR/fixtures/goose/interop-goose.cid"
-GOOSE_JSON_SRC="$MMS_INTEROP_DIR/fixtures/goose/goose.json"
-SV_CID_SRC="$MMS_INTEROP_DIR/fixtures/sv/interop-sv.cid"
-SV_JSON_SRC="$MMS_INTEROP_DIR/fixtures/sv/sv.json"
-CAPS_SRC="$MMS_INTEROP_DIR/fixtures/capabilities.json"
+ICD_SRC="$IEC61850_INTEROP_DIR/fixtures/iec61850/interop.icd"
+VAL_SRC="$IEC61850_INTEROP_DIR/fixtures/iec61850/values.json"
+GOOSE_CID_SRC="$IEC61850_INTEROP_DIR/fixtures/goose/interop-goose.cid"
+GOOSE_JSON_SRC="$IEC61850_INTEROP_DIR/fixtures/goose/goose.json"
+SV_CID_SRC="$IEC61850_INTEROP_DIR/fixtures/sv/interop-sv.cid"
+SV_JSON_SRC="$IEC61850_INTEROP_DIR/fixtures/sv/sv.json"
+CAPS_SRC="$IEC61850_INTEROP_DIR/fixtures/capabilities.json"
 for f in "$ICD_SRC" "$VAL_SRC" "$GOOSE_CID_SRC" "$GOOSE_JSON_SRC" "$SV_CID_SRC" "$SV_JSON_SRC" "$CAPS_SRC"; do
   if [[ ! -f "$f" ]]; then
-    echo "mms-interop fixture not found: $f" >&2
+    echo "iec61850-interop fixture not found: $f" >&2
     exit 1
   fi
 done
@@ -41,12 +41,12 @@ if [[ ! -f "$DIR/self-server-values.json" ]]; then
   exit 1
 fi
 
-SOURCE_COMMIT="$(git -C "$MMS_INTEROP_DIR" rev-parse HEAD)"
-SOURCE_TAG="$(git -C "$MMS_INTEROP_DIR" describe --tags --exact-match 2>/dev/null || git -C "$MMS_INTEROP_DIR" describe --tags 2>/dev/null || true)"
+SOURCE_COMMIT="$(git -C "$IEC61850_INTEROP_DIR" rev-parse HEAD)"
+SOURCE_TAG="$(git -C "$IEC61850_INTEROP_DIR" describe --tags --exact-match 2>/dev/null || git -C "$IEC61850_INTEROP_DIR" describe --tags 2>/dev/null || true)"
 
 # Images: <STACK>_IMAGE overrides, else the digest already in the lock, else
 # the local build tag. The image digests of a release are in the
-# mms-interop release manifest.json.
+# iec61850-interop release manifest.json.
 SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_TAG="$SOURCE_TAG" python3 - "$DIR" "$LOCK" "$CAPS_SRC" <<'PY2'
 import hashlib, json, os, sys
 d, lock_path, caps_path = sys.argv[1:]
@@ -65,7 +65,7 @@ sv = [s for s in stacks if caps["commands"].get(f"{s}-sv-publisher")]
 files = ["interop.icd", "expected-values.json", "self-server-values.json", "interop-goose.cid", "goose.json",
          "interop-sv.cid", "sv.json"]
 lock = {
-    "source_repository": "otfabric/mms-interop",
+    "source_repository": "otfabric/iec61850-interop",
     "source_commit": os.environ["SOURCE_COMMIT"],
     "source_tag": os.environ["SOURCE_TAG"],
     "fixture_revision": caps["fixtureRevision"],
@@ -73,7 +73,7 @@ lock = {
     "sv_fixture_revision": json.load(open(os.path.join(d, "sv.json")))["revision"],
     "svcb_over_mms": {s: bool(caps.get("svcbOverMms", {}).get(s)) for s in stacks},
     "files": {f: "sha256:" + hashlib.sha256(open(os.path.join(d, f), "rb").read()).hexdigest() for f in files},
-    "images": {s: os.environ.get(env) or old.get(s) or f"mms-interop-{s}:local" for s, env in stacks.items()},
+    "images": {s: os.environ.get(env) or old.get(s) or f"iec61850-interop-{s}:local" for s, env in stacks.items()},
     "required_commands": {},
 }
 for s in stacks:

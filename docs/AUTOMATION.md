@@ -49,7 +49,7 @@ An empty IED name preserves legacy behaviour (no MMS domain prefix stripping).
 
 | Target | `IEC61850_IED_NAME` / `--ied-name` |
 |--------|-------------------------------------|
-| External mms-interop servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust) | Set to `InteropIED` so LD names appear without the IED prefix |
+| External iec61850-interop servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust) | Set to `InteropIED` so LD names appear without the IED prefix |
 | `iec61850ctl server start` (self-server) | **Leave unset** — Go server domains are bare LD names (`InteropLD`); setting an IED name breaks browse/read |
 
 The same `--ied-name` flag selects an IED from SCL for `server start` (server-side SCL selection), independent of the client dial setting above.

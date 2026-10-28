@@ -23,8 +23,8 @@ import (
 )
 
 // GOOSE interop journeys (goose-<stack>): raw Ethernet between iec61850ctl
-// and the mms-interop GOOSE adapters on a Docker bridge network
-// (mms-interop docs/goose.md). GOOSE has no IP, so iec61850ctl runs as a
+// and the iec61850-interop GOOSE adapters on a Docker bridge network
+// (iec61850-interop docs/goose.md). GOOSE has no IP, so iec61850ctl runs as a
 // static Linux binary inside a container on the same bridge, with NET_RAW;
 // this works on Linux CI and on Docker Desktop alike.
 //
@@ -67,7 +67,7 @@ type gooseFixtureCB struct {
 	Update   []typedValue `json:"update"`
 }
 
-// typedValue is the mms-interop typed value JSON: {"type":T,"value":V}.
+// typedValue is the iec61850-interop typed value JSON: {"type":T,"value":V}.
 type typedValue struct {
 	Type  string          `json:"type"`
 	Value json.RawMessage `json:"value"`

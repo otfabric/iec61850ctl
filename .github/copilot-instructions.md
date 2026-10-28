@@ -21,8 +21,8 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
 - **HTTP API**: `internal/transport/http/` — optional REST wrapper
 - **Black-box e2e**: `e2e/` (`//go:build e2e`) — treats the built binary as an external process
 - **External dependencies**:
-  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.2.1 — IEC 61850 client/server, SCL, directory discovery, GOOSE, Sampled Values
-  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.2.1 — MMS encoding and ISO transport, retry policy
+  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.2.2 — IEC 61850 client/server, SCL, directory discovery, GOOSE, Sampled Values
+  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.2.2 — MMS encoding and ISO transport, retry policy
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
 - **Go version**: 1.24+ (see `go.mod`)
 
@@ -85,7 +85,7 @@ iec61850ctl
 
 **Directory discovery**: Uses go-iec61850 client APIs via `pkg/service` explorer.
 
-**IED name**: `--ied-name` / `IEC61850_IED_NAME` for client domain normalisation. Required against external mms-interop servers (`InteropIED`); **must be unset** when speaking to `iec61850ctl server start`.
+**IED name**: `--ied-name` / `IEC61850_IED_NAME` for client domain normalisation. Required against external iec61850-interop servers (`InteropIED`); **must be unset** when speaking to `iec61850ctl server start`.
 
 ## Code Patterns
 
@@ -133,7 +133,7 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 - [docs/GOOSE.md](../docs/GOOSE.md), [docs/SV.md](../docs/SV.md) — raw-Ethernet command reference; kept in sync by `cmd/docs_test.go`, examples captured by `cmd/docs_capture_test.go`
 - [docs/INTEROP.md](../docs/INTEROP.md) — 19 CI e2e jobs: client, reverse control/report/reader, GOOSE and SV against libiec61850, iec61850bean, dscsystems and iec61850-rust (GOOSE/SV: not iec61850bean), plus self
 - [docs/SERVER.md](../docs/SERVER.md) — readiness JSON, value seeding
-- [RELEASE.md](../RELEASE.md) — release notes (v0.4.0: Sampled Values, GOOSE/SV reference docs)
+- [RELEASE.md](../RELEASE.md) — release notes (v0.4.1: iec61850-interop v1.0.1, CLI consistency fixes)
 
 ## Error Handling
 

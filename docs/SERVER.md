@@ -53,7 +53,7 @@ Automation should parse stdout as a single readiness document, then connect clie
 
 ### Docker-to-host clients
 
-External mms-interop adapters often run in Docker and reach a host-bound CLI server:
+External iec61850-interop adapters often run in Docker and reach a host-bound CLI server:
 
 ```sh
 iec61850ctl server start \
@@ -64,13 +64,13 @@ iec61850ctl server start \
 
 docker run --rm --add-host=host.docker.internal:host-gateway \
   --entrypoint libiec61850-ied-controller \
-  mms-interop-libiec61850:local \
+  iec61850-interop-libiec61850:local \
   --host host.docker.internal --port 1102 --do SPCSO1 --ctlval 1
 ```
 
 ### Reverse interoperability coverage
 
-Black-box e2e (Phase 3A) drives mms-interop **controller** and **reporter** adapters against `server start`:
+Black-box e2e (Phase 3A) drives iec61850-interop **controller** and **reporter** adapters against `server start`:
 
 - Controllers: direct (`SPCSO1`), SBO (`SPCSO2`), SBOw (`SPCSO3`)
 - Reporters: URCB data-change (enable → write → report → disable → conclude)
@@ -79,7 +79,7 @@ See [INTEROP.md](INTEROP.md). Phase 3B also exercises capability-declared `*-ied
 
 ### Interop control registration
 
-Every `server start` registers handlers for the mms-interop controllable objects on **`InteropLD`**:
+Every `server start` registers handlers for the iec61850-interop controllable objects on **`InteropLD`**:
 
 | DO | ctlModel |
 |----|----------|

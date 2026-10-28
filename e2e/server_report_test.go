@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Reverse report journeys: mms-interop reporter adapters → iec61850ctl server.
+// Reverse report journeys: iec61850-interop reporter adapters → iec61850ctl server.
 // Operation names match go-iec61850 interop Test*Server_URCB_DataChange.
 func TestReverse_ServerReport(t *testing.T) {
 	for _, tc := range reverseCases(prefixServer, "ied-reporter") {

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// Reverse general-reader journeys (Phase 3B): mms-interop IED clients → iec61850ctl server.
+// Reverse general-reader journeys (Phase 3B): iec61850-interop IED clients → iec61850ctl server.
 func TestReverse_ServerReader(t *testing.T) {
 	for _, tc := range reverseCases(prefixServerReader, "ied-client") {
 		tc := tc
