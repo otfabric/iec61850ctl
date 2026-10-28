@@ -257,3 +257,40 @@ func TestNewConnectionRealServer(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// gocbProbe adds GoCB access to probeConn and records the request deadline.
+type gocbProbe struct {
+	*probeConn
+	hadDeadline bool
+}
+
+func (g *gocbProbe) GetGoCB(ctx context.Context, ld, id string) (*iec61850.GoCB, error) {
+	_, g.hadDeadline = ctx.Deadline()
+	return &iec61850.GoCB{Reference: ld + "/" + id}, nil
+}
+
+func (g *gocbProbe) SetGoCB(ctx context.Context, _, _ string, _ iec61850.GoCBUpdate) error {
+	_, g.hadDeadline = ctx.Deadline()
+	return nil
+}
+
+func TestTimeoutConnGoCB(t *testing.T) {
+	t.Parallel()
+	plain := &timeoutConn{IEC61850Connection: &probeConn{}, timeout: time.Second}
+	if _, err := plain.GetGoCB(context.Background(), "LD", "LLN0$GO$g"); !errors.Is(err, errs.ErrUnsupported) {
+		t.Fatalf("get: %v", err)
+	}
+	if err := plain.SetGoCB(context.Background(), "LD", "LLN0$GO$g", iec61850.GoCBUpdate{}); !errors.Is(err, errs.ErrUnsupported) {
+		t.Fatalf("set: %v", err)
+	}
+	g := &gocbProbe{probeConn: &probeConn{}}
+	tc := &timeoutConn{IEC61850Connection: g, timeout: time.Second}
+	cb, err := tc.GetGoCB(context.Background(), "LD", "LLN0$GO$g")
+	if err != nil || cb.Reference != "LD/LLN0$GO$g" || !g.hadDeadline {
+		t.Fatalf("get: %+v %v deadline=%v", cb, err, g.hadDeadline)
+	}
+	g.hadDeadline = false
+	if err := tc.SetGoCB(context.Background(), "LD", "LLN0$GO$g", iec61850.GoCBUpdate{}); err != nil || !g.hadDeadline {
+		t.Fatalf("set: %v deadline=%v", err, g.hadDeadline)
+	}
+}

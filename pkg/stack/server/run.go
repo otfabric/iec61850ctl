@@ -16,6 +16,7 @@ import (
 	"syscall"
 
 	iec61850 "github.com/otfabric/go-iec61850"
+	"github.com/otfabric/go-iec61850/goose"
 	"github.com/otfabric/go-iec61850/scl"
 	"github.com/otfabric/go-mms/transport/iso"
 
@@ -37,6 +38,12 @@ type RunConfig struct {
 	Logger         *slog.Logger // structured go-iec61850/go-mms server logging; nil disables
 	Stdout         io.Writer    // readiness JSON destination (default os.Stdout)
 	Stderr         io.Writer    // human status line destination (default os.Stderr)
+
+	// GOOSE, when non-nil, publishes the model's GoCBs on this transport
+	// and exposes them over MMS (LLN0$GO$<name>). GOOSEStartDisabled
+	// leaves GoEna false until a client enables publishing.
+	GOOSE              goose.Transport
+	GOOSEStartDisabled bool
 }
 
 // Running is a started server. Close it to stop serving.
@@ -142,6 +149,11 @@ func Start(ctx context.Context, cfg RunConfig) (*Running, error) {
 	}
 
 	srv.EnableReports()
+	if cfg.GOOSE != nil {
+		if _, err := srv.EnableGOOSE(iec61850.GOOSEOptions{Transport: cfg.GOOSE, StartDisabled: cfg.GOOSEStartDisabled, Logger: cfg.Logger}); err != nil {
+			return fail(fmt.Errorf("enable GOOSE: %w", err))
+		}
+	}
 	if srv.JournalEngine() == nil {
 		srv.EnableJournals()
 	}

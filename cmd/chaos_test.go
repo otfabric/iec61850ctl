@@ -219,6 +219,7 @@ func TestChaos(t *testing.T) {
 // keeps a URCB enabled for an owner that vanished without disabling it,
 // which would starve later subscribers on the shared server.
 func TestChaosSubscribeConnectionLoss(t *testing.T) {
+	baseline := runtime.NumGoroutine()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	srv, err := server.Start(ctx, server.RunConfig{SclPath: fixture("interop.icd"), Host: "127.0.0.1"})
@@ -227,7 +228,6 @@ func TestChaosSubscribeConnectionLoss(t *testing.T) {
 	}
 	defer func() { _ = srv.Close() }()
 
-	baseline := runtime.NumGoroutine()
 	p := newChaosProxyTo(t, srv.Addr(), faultNone, 0, 0)
 	trip := time.AfterFunc(700*time.Millisecond, p.trip)
 	defer trip.Stop()
@@ -244,5 +244,7 @@ func TestChaosSubscribeConnectionLoss(t *testing.T) {
 		t.Fatalf("took %v to notice connection loss", el)
 	}
 	p.close()
+	_ = srv.Close()
+	cancel()
 	waitGoroutines(t, baseline)
 }

@@ -29,6 +29,13 @@ type WriteConnection interface {
 	Read(ctx context.Context, ref iec61850.Ref) (*iec61850.Value, error)
 }
 
+// GoCBConnection reads and writes GOOSE control blocks over MMS. It is
+// optional: connections that do not implement it report ErrUnsupported.
+type GoCBConnection interface {
+	GetGoCB(ctx context.Context, ld, gocbItemID string) (*iec61850.GoCB, error)
+	SetGoCB(ctx context.Context, ld, gocbItemID string, upd iec61850.GoCBUpdate) error
+}
+
 // IEC61850Connection is the aggregate client boundary used by browse/read services.
 // It embeds ControlConnection and WriteConnection so ClientAdapter satisfies all three.
 type IEC61850Connection interface {
@@ -81,3 +88,4 @@ func NewClientAdapter(c *iec61850.Client) IEC61850Connection {
 var _ IEC61850Connection = (*ClientAdapter)(nil)
 var _ ControlConnection = (*ClientAdapter)(nil)
 var _ WriteConnection = (*ClientAdapter)(nil)
+var _ GoCBConnection = (*ClientAdapter)(nil)

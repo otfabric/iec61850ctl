@@ -98,7 +98,9 @@ func newConnection(ctx context.Context, in ConnectionInput, dial dialFunc) (serv
 	addr := in.Addr()
 	opts := iec61850.DialOptions{IEDName: in.IEDName, Logger: in.Logger}
 	var c *iec61850.Client
-	err := in.Retry.Do(ctx, logger, func(attempt int) error {
+	attempt := 0
+	err := in.Retry.Do(ctx, logger, func(ctx context.Context) error {
+		attempt++
 		actx, cancel := context.WithTimeout(ctx, connectTimeout)
 		defer cancel()
 		var derr error
@@ -118,7 +120,9 @@ func newConnection(ctx context.Context, in ConnectionInput, dial dialFunc) (serv
 	return &timeoutConn{IEC61850Connection: service.NewClientAdapter(c), base: ctx, timeout: requestTimeout}, nil
 }
 
-// RetryPolicy configures bounded exponential backoff with jitter.
+// RetryPolicy configures connect retries. It maps onto go-mms's
+// mms.RetryPolicy (exponential backoff, multiplier 2, 50% downward jitter)
+// and mms.Retry, with this package's retry classification.
 type RetryPolicy struct {
 	// Retries is the number of additional attempts after the first (0 = no retry).
 	Retries int
@@ -127,14 +131,10 @@ type RetryPolicy struct {
 	BaseDelay time.Duration
 	// MaxDelay caps the delay between attempts. Zero uses DefaultRetryMaxDelay.
 	MaxDelay time.Duration
-	// sleep waits for d or until ctx is done; nil uses a timer. Test seam.
-	sleep func(ctx context.Context, d time.Duration) error
-	// jitter maps a backoff ceiling to the actual delay; nil uses equal jitter. Test seam.
-	jitter func(d time.Duration) time.Duration
 }
 
-// Backoff returns the delay before retry number n (1-based), before jitter.
-func (p RetryPolicy) Backoff(n int) time.Duration {
+// MMS returns the equivalent go-mms policy. onRetry may be nil.
+func (p RetryPolicy) MMS(onRetry func(attempt int, err error, delay time.Duration)) mms.RetryPolicy {
 	base, maxDelay := p.BaseDelay, p.MaxDelay
 	if base <= 0 {
 		base = DefaultRetryBaseDelay
@@ -142,84 +142,46 @@ func (p RetryPolicy) Backoff(n int) time.Duration {
 	if maxDelay <= 0 {
 		maxDelay = DefaultRetryMaxDelay
 	}
-	d := base
-	for i := 1; i < n; i++ {
-		if d >= maxDelay/2 {
-			return maxDelay
-		}
-		d *= 2
+	return mms.RetryPolicy{
+		MaxAttempts:    max(p.Retries, 0) + 1,
+		InitialBackoff: base,
+		MaxBackoff:     maxDelay,
+		Multiplier:     2,
+		Jitter:         0.5,
+		Retryable:      retryable,
+		OnRetry:        onRetry,
 	}
-	return min(d, maxDelay)
 }
 
-// Do runs fn until it succeeds, returns a permanent error, ctx is done, or
-// the retry budget is exhausted. The returned error is the last attempt's
-// error annotated with the attempt count.
-func (p RetryPolicy) Do(ctx context.Context, logger *slog.Logger, fn func(attempt int) error) error {
+// Do runs fn under mms.Retry until it succeeds, returns a permanent error,
+// ctx is done, or the retry budget is exhausted. When retries were allowed
+// the returned error notes how many attempts were made.
+func (p RetryPolicy) Do(ctx context.Context, logger *slog.Logger, fn func(ctx context.Context) error) error {
 	if logger == nil {
 		logger = slog.New(slog.DiscardHandler)
 	}
-	sleep, jitter := p.sleep, p.jitter
-	if sleep == nil {
-		sleep = sleepCtx
+	pol := p.MMS(func(attempt int, err error, delay time.Duration) {
+		logger.Warn("connect failed, retrying", "attempt", attempt, "of", max(p.Retries, 0)+1, "delay", delay, "err", err)
+	})
+	attempts := 0
+	err := mms.Retry(ctx, pol, func(ctx context.Context) error {
+		attempts++
+		return fn(ctx)
+	})
+	if err == nil || pol.MaxAttempts == 1 {
+		return err
 	}
-	if jitter == nil {
-		jitter = equalJitter
+	if attempts == pol.MaxAttempts && ctx.Err() == nil {
+		return fmt.Errorf("%w (gave up after %d attempt(s))", err, attempts)
 	}
-	total := max(p.Retries, 0) + 1
-	var last error
-	for attempt := 1; attempt <= total; attempt++ {
-		if err := ctx.Err(); err != nil {
-			if last != nil {
-				return fmt.Errorf("%w (after %d attempt(s), last error: %v)", err, attempt-1, last)
-			}
-			return err
-		}
-		last = fn(attempt)
-		if last == nil {
-			return nil
-		}
-		if attempt == total || !retryable(ctx, last) {
-			break
-		}
-		d := jitter(p.Backoff(attempt))
-		logger.Warn("connect failed, retrying", "attempt", attempt, "of", total, "delay", d, "err", last)
-		if err := sleep(ctx, d); err != nil {
-			return fmt.Errorf("%w (after %d attempt(s), last error: %v)", err, attempt, last)
-		}
-	}
-	if total > 1 {
-		return fmt.Errorf("%w (gave up after %d attempt(s))", last, total)
-	}
-	return last
+	return fmt.Errorf("%w (after %d attempt(s))", err, attempts)
 }
 
-// retryable reports whether a failed dial is worth another attempt.
-// Caller cancellation, bad arguments and rejected credentials are permanent.
-func retryable(ctx context.Context, err error) bool {
-	if ctx.Err() != nil {
+// retryable reports whether a failed dial is worth another attempt: the
+// go-mms classification plus this module's invalid-input sentinels.
+func retryable(err error) bool {
+	if errors.Is(err, iec61850.ErrInvalidArgument) || errors.Is(err, errs.ErrInvalidInput) {
 		return false
 	}
-	switch {
-	case errors.Is(err, context.Canceled),
-		errors.Is(err, iec61850.ErrInvalidArgument),
-		errors.Is(err, errs.ErrInvalidInput),
-		errors.Is(err, mms.ErrAuthenticationFailed):
-		return false
-	}
-	return true
-}
-
-func sleepCtx(ctx context.Context, d time.Duration) error {
-	if d <= 0 {
-		return ctx.Err()
-	}
-	t := time.NewTimer(d)
-	defer t.Stop()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-t.C:
-		return nil
-	}
+	return mms.IsRetryable(err)
 }

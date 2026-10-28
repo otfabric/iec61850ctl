@@ -21,8 +21,8 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
 - **HTTP API**: `internal/transport/http/` — optional REST wrapper
 - **Black-box e2e**: `e2e/` (`//go:build e2e`) — treats the built binary as an external process
 - **External dependencies**:
-  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.0.9 — IEC 61850 client/server, SCL, directory discovery
-  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.1.0 — MMS encoding and ISO transport
+  - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.1.0 — IEC 61850 client/server, SCL, directory discovery, GOOSE
+  - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.2.1 — MMS encoding and ISO transport, retry policy
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
 - **Go version**: 1.24+ (see `go.mod`)
 
@@ -39,6 +39,9 @@ pkg/
   stack/
     client/             go-iec61850 client connection adapter
     server/             SCL-based server run + libiec61850 .cfg export
+  gooseops/             GOOSE list/sniff/subscribe/publish on go-iec61850/goose
+  errs/                 Sentinels and exit-code mapping
+  logging/              slog setup for --log-level/--log-format
   scl/                  Offline SCL parse/convert
   formatter/            Output formatters
   view/                 View models for formatters
@@ -57,6 +60,7 @@ iec61850ctl
   ├── get               object, file, report, ds, journal
   ├── list              lds, lns, dos, das, dss, reports, files, journals
   ├── subscribe report  RCB subscription (--format text|jsonl)
+  ├── goose             list, sniff, subscribe, publish, gocb get|set
   ├── server
   │   ├── start             --scl, --ied-name, --values, --ready-json, --fixture-id
   │   └── generate-config   Export libiec61850 .cfg (external tools only)
@@ -124,7 +128,7 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 - [docs/AUTOMATION.md](../docs/AUTOMATION.md) — stdout/stderr, JSON/JSONL contracts
 - [docs/INTEROP.md](../docs/INTEROP.md) — seven CI e2e stacks (client, self, reverse control/report/reader); Phases 3–6
 - [docs/SERVER.md](../docs/SERVER.md) — readiness JSON, value seeding
-- [RELEASE.md](../RELEASE.md) — v0.2.0 control/write/BRCB notes
+- [RELEASE.md](../RELEASE.md) — release notes (v0.3.0: GOOSE, exit codes, quality pass)
 
 ## Error Handling
 

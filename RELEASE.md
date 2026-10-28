@@ -1,5 +1,89 @@
 # iec61850ctl Releases
 
+## v0.3.0
+
+**Date:** 2026-10-28
+
+### Summary
+
+GOOSE support on [go-iec61850 v1.1.0](https://github.com/otfabric/go-iec61850/releases/tag/v1.1.0), plus a quality pass:
+- typed errors with stable exit codes
+- structured logging
+- connect retries and timeouts
+- in-process CLI tests with golden output
+- chaos and fuzz tests
+- a 90% per-package coverage gate
+
+### Highlights
+
+#### GOOSE (`goose` subtree)
+
+- **`goose list --scl`**: the GOOSE control blocks in an SCL file, each with its GSE address (MAC, APPID, VLAN, Min/MaxTime) and dataset members. Output as text or JSON.
+- **`goose sniff --iface`**: decodes every GOOSE frame on an interface. Filters: `--appid`, `--dst`, `--gocb-ref`. Output as text or JSONL.
+- **`goose subscribe --iface --scl --gocb`**: a subscription built from SCL that validates confRev, datSet, goID and member types, and supervises the stream like LGOS (timeouts, stNum/sqNum gaps, duplicates, restarts). It ends with a per-stream summary. With `--count`, it exits `4` if the count is not reached within `--duration`.
+- **`goose publish`**: publishes a GoCB from SCL with `--value` overrides and `--changes`/`--interval` state changes.
+  - It needs an explicit `--iface` and `--yes`.
+  - Frames carry `test=true` unless `--test=false` is combined with `--live`.
+- **`goose gocb get|set`**: reads and writes a GoCB over MMS: GoEna, GoID and DatSet. GoEna is written last.
+- **`--bare-domain`** matches publishers whose MMS domain is the bare LD instance (such as go-iec61850 and the bundled server) instead of IED name + LD.
+- The raw transports are AF_PACKET on Linux (needs `CAP_NET_RAW`) and BPF on macOS/BSD (needs access to `/dev/bpf*`).
+
+#### Errors and exit codes
+
+- Stable exit codes:
+
+  | Code | Meaning |
+  |------|---------|
+  | `2` | usage or invalid input |
+  | `3` | connection failed or lost |
+  | `4` | timeout |
+  | `5` | not found |
+  | `6` | rejected or denied |
+  | `7` | verification or confirmation mismatch |
+  | `8` | unsupported |
+  | `130` | interrupted |
+
+- GOOSE transport errors map onto the same codes: a missing interface gives `5`, missing permission gives `6`, an unsupported platform gives `8`.
+- The HTTP API returns typed status codes and an error `code` field.
+
+#### Global flags
+
+- `--log-level` and `--log-format` (slog, on stderr).
+- `--connect-timeout` and `--timeout`.
+- `--retry` and `--retry-max-delay`. Retries use go-mms `RetryPolicy`/`Retry` with backoff and jitter; invalid input, authentication failures and interrupts are never retried.
+
+#### Reliability
+
+- `subscribe report --keepalive` (default `5s`) detects a lost association and exits with code `3`.
+- Fixed:
+  - Journal paging could loop forever.
+  - `list das` output order is now stable and names are no longer doubled.
+  - Control mode and confirmation failures return the right exit codes.
+  - A float32 overflow in control values is now an error.
+  - GOOSE `--value` rejects text that is not printable ASCII for VisibleString members.
+- `server start --files-dir` (read-only MMS file service) and `--port 0` (ephemeral port).
+
+#### Testing
+
+- `cmd/` is driven in-process against the bundled server, with golden output for every format.
+- A chaos proxy injects stalls, resets and slow peers, with goroutine-leak checks.
+- GOOSE e2e tests run over the go-iec61850 in-memory hub.
+- Fuzz targets cover references, SCL, value formatters and parsers, HTTP handlers, and GOOSE APPID/value parsing.
+- New make targets: `make coverage-gate` (every package at 90% or more) and `make fuzz`. A CI `quality` job runs both.
+
+### Dependencies
+
+- `github.com/otfabric/go-iec61850` **v1.0.9** → **v1.1.0**
+- `github.com/otfabric/go-mms` **v1.1.0** → **v1.2.1**
+- `github.com/otfabric/go-cotp` **v1.0.4** → **v1.1.0** (indirect)
+- `github.com/otfabric/go-tpkt` → **v1.0.1** (indirect)
+
+### Removed
+
+- The `results.json` and `test_rcb.sh` artefacts. `mapping.json` moved to `docs/examples/`.
+
+---
+
 ## v0.2.1
 
 **Date:** 2026-10-28

@@ -40,6 +40,7 @@ Black-box e2e exercises the built CLI independently against [libiec61850](https:
 - **Subscribe** — report control blocks (BR/RP) with GI, optional dataset sync, BRCB purge/resume EntryID, clean disable on exit
 - **Control** — atomic `control inspect` / `control operate` (auto/direct/SBO/SBOw on one association)
 - **Write** — `set object` for scalar MMS attributes (rejects `FC=CO`; use control for CO)
+- **GOOSE** — list GoCBs from SCL, sniff, supervised subscribe, guarded publish (test frames by default), GoCB read/write over MMS
 - **SCL** — offline parse/flatten and CSV convert (no device connection)
 - **Server** — run an MMS server from ICD/CID/SCD (`--scl`); optional value seed from serialized JSON
 - **Export** — generate libiec61850 `.cfg` from serialized JSON (**export-only**, not used by this tool’s runtime)
@@ -145,6 +146,12 @@ iec61850ctl
 ├── server
 │   ├── start           Start MMS server from --scl (--values, --files-dir, --port 0)
 │   └── generate-config Export libiec61850 .cfg (export-only)
+├── goose
+│   ├── list            GOOSE control blocks from SCL (--scl)
+│   ├── sniff           Decode GOOSE frames on an interface (--iface)
+│   ├── subscribe       Validated, supervised subscription to one GoCB (--iface --scl --gocb)
+│   ├── publish         Publish a GoCB (--iface --yes; test frames unless --test=false --live)
+│   └── gocb get|set    Read/write a GoCB over MMS (--ld --gocb)
 ├── http                REST API fronting one IEC 61850 device
 ├── version             Print version / build metadata
 └── completion          Shell completion (bash|zsh|fish|powershell)
@@ -242,6 +249,22 @@ iec61850ctl server start --scl device.cid --values device.json --port 102
 
 Details: [docs/SERVER.md](docs/SERVER.md).
 
+### GOOSE
+
+```sh
+iec61850ctl goose list --scl station.scd
+iec61850ctl goose sniff --iface eth0 --appid 0x1001 --count 10 --format jsonl
+iec61850ctl goose subscribe --iface eth0 --scl station.scd --gocb IED1/LD0/gcb1 --duration 30s
+
+# Publishing injects traffic: explicit --iface and --yes; test=true unless --test=false --live
+iec61850ctl goose publish --iface eth0 --scl device.cid --gocb gcb1 --value 0=true --changes 3 --interval 1s --yes
+
+iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
+iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
+```
+
+Raw sockets need `CAP_NET_RAW` on Linux or access to `/dev/bpf*` on macOS/BSD. Details: [docs/GOOSE.md](docs/GOOSE.md).
+
 ### HTTP API
 
 ```sh
@@ -294,7 +317,8 @@ Retries apply only to establishing the connection; invalid input, authentication
 | `list lds`, `list lns`, `list dos`, `list das` | `text`, `json`, `csv`, `table`, `yaml` |
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
 | `control inspect`, `control operate`, `set object` | `text`, `json` |
-| `subscribe report` | `text`, `jsonl` |
+| `subscribe report`, `goose sniff`, `goose subscribe`, `goose publish` | `text`, `jsonl` |
+| `goose list`, `goose gocb get`, `goose gocb set` | `text`, `json` |
 
 Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-failure, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
 
@@ -322,7 +346,7 @@ make e2e-docs              # regenerate docs/interop-examples.md
 
 | Library | Role |
 |---------|------|
-| [go-iec61850](https://github.com/otfabric/go-iec61850) | IEC 61850 client/server, SCL model, reports |
+| [go-iec61850](https://github.com/otfabric/go-iec61850) | IEC 61850 client/server, SCL model, reports, GOOSE |
 | [go-mms](https://github.com/otfabric/go-mms) | MMS / ISO-on-TCP transport |
 | [cobra](https://github.com/spf13/cobra) | CLI |
 
@@ -332,6 +356,7 @@ make e2e-docs              # regenerate docs/interop-examples.md
 |-----|----------|
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
 | [docs/SERVER.md](docs/SERVER.md) | SCL server, readiness JSON, value seeding, `.cfg` export |
+| [docs/GOOSE.md](docs/GOOSE.md) | GOOSE list/sniff/subscribe/publish, GoCB access, safety rules |
 | [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr and JSON/JSONL contract |
 | [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
 | [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |

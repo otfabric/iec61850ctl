@@ -10,6 +10,7 @@ import (
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 	"github.com/otfabric/iec61850ctl/pkg/service"
 )
 
@@ -148,6 +149,24 @@ func (t *timeoutConn) ReadDataSet(ctx context.Context, ld, ds string) ([]iec6185
 
 func (t *timeoutConn) ListReports(ctx context.Context, ld string) ([]string, error) {
 	return call(t, ctx, func(c context.Context) ([]string, error) { return t.IEC61850Connection.ListReports(c, ld) })
+}
+
+// GetGoCB forwards to the wrapped connection when it supports GoCB access.
+func (t *timeoutConn) GetGoCB(ctx context.Context, ld, id string) (*iec61850.GoCB, error) {
+	g, ok := t.IEC61850Connection.(service.GoCBConnection)
+	if !ok {
+		return nil, errs.Newf(errs.ErrUnsupported, "connection does not support GoCB access")
+	}
+	return call(t, ctx, func(c context.Context) (*iec61850.GoCB, error) { return g.GetGoCB(c, ld, id) })
+}
+
+// SetGoCB forwards to the wrapped connection when it supports GoCB access.
+func (t *timeoutConn) SetGoCB(ctx context.Context, ld, id string, upd iec61850.GoCBUpdate) error {
+	g, ok := t.IEC61850Connection.(service.GoCBConnection)
+	if !ok {
+		return errs.Newf(errs.ErrUnsupported, "connection does not support GoCB access")
+	}
+	return call0(t, ctx, func(c context.Context) error { return g.SetGoCB(c, ld, id, upd) })
 }
 
 func (t *timeoutConn) GetReportControlBlock(ctx context.Context, ld, id string) (*iec61850.ReportControlBlock, error) {
