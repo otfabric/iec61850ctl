@@ -500,3 +500,25 @@ func TestReporterRun_KeepAliveCancelled(t *testing.T) {
 		t.Fatalf("cancelled run: %v", err)
 	}
 }
+
+// TestReportReader_ClosedStream checks how a closed report channel is read:
+// after the caller's cancel it is a normal end, otherwise the stream is lost.
+func TestReportReader_ClosedStream(t *testing.T) {
+	t.Parallel()
+	closed := make(chan *iec61850.ReportIndication)
+	close(closed)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	r := NewReporter(nil).WithConfig(ReporterConfig{ReportRef: "x"})
+	r.runReportReader(ctx, closed)
+	if r.lost.Load() {
+		t.Fatal("stream closed after cancel was reported lost")
+	}
+
+	r = NewReporter(nil).WithConfig(ReporterConfig{ReportRef: "x"})
+	r.runReportReader(context.Background(), closed)
+	if !r.lost.Load() {
+		t.Fatal("stream closed without cancel or stop was not reported lost")
+	}
+}
