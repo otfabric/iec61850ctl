@@ -7,7 +7,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"io"
+	"sort"
+	"strings"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
@@ -71,7 +73,7 @@ func runListDas(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(attributesMap) == 0 {
-		fmt.Printf("No data attributes found in '%s'\n", doRef)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No data attributes found in '%s'\n", doRef)
 		return nil
 	}
 
@@ -79,12 +81,9 @@ func runListDas(cmd *cobra.Command, args []string) error {
 	outputFormat, ok := formatter.ParseOutputFormat(dasFormatFlag)
 	if ok && outputFormat != formatter.OutputFormatText {
 		var flatAttrs []view.DataAttribute
-		for parentName, attributes := range attributesMap {
-			for _, attr := range attributes {
-				displayName := parentName
-				if attr.Name != "" {
-					displayName = parentName + "." + attr.Name
-				}
+		for _, parentName := range sortedKeys(attributesMap) {
+			for _, attr := range attributesMap[parentName] {
+				displayName := daDisplayName(parentName, attr.Name)
 				flatAttrs = append(flatAttrs, view.DataAttribute{
 					Name:    displayName,
 					FC:      attr.FC,
@@ -97,12 +96,12 @@ func runListDas(cmd *cobra.Command, args []string) error {
 		}
 		if len(flatAttrs) == 0 {
 			if outputFormat == formatter.OutputFormatJSON {
-				_, _ = os.Stdout.WriteString("[]\n")
+				_, _ = io.WriteString(cmd.OutOrStdout(), "[]\n")
 			}
 			return nil
 		}
 		renderer := formatter.NewRenderer(outputFormat)
-		return renderer.RenderDataAttributes(flatAttrs, os.Stdout)
+		return renderer.RenderDataAttributes(flatAttrs, cmd.OutOrStdout())
 	}
 
 	// Count total leaf attributes
@@ -112,23 +111,20 @@ func runListDas(cmd *cobra.Command, args []string) error {
 	}
 
 	if dasDetailedFlag {
-		fmt.Printf("Found %d leaf data attribute(s) in '%s':\n", totalCount, doRef)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d leaf data attribute(s) in '%s':\n", totalCount, doRef)
 	} else {
-		fmt.Printf("Found %d leaf data attribute(s) in '%s':\n", totalCount, doRef)
-		fmt.Println()
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d leaf data attribute(s) in '%s':\n", totalCount, doRef)
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	}
 
 	index := 1
-	for parentName, attributes := range attributesMap {
+	for _, parentName := range sortedKeys(attributesMap) {
+		attributes := attributesMap[parentName]
 		if len(attributes) > 0 {
 			if !dasDetailedFlag {
 				// Simple mode: just list attribute names with numbering
 				for _, attr := range attributes {
-					if attr.Name == "" {
-						fmt.Printf("  %d. %s\n", index, parentName)
-					} else {
-						fmt.Printf("  %d. %s.%s\n", index, parentName, attr.Name)
-					}
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s\n", index, daDisplayName(parentName, attr.Name))
 					index++
 				}
 			} else {
@@ -137,7 +133,7 @@ func runListDas(cmd *cobra.Command, args []string) error {
 				if attributes[0].FC != "" {
 					fcStr = attributes[0].FC
 				}
-				fmt.Printf("\n  %d. %s [FC=%s]:\n", index, parentName, fcStr)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\n  %d. %s [FC=%s]:\n", index, parentName, fcStr)
 				index++
 
 				for _, attr := range attributes {
@@ -149,7 +145,7 @@ func runListDas(cmd *cobra.Command, args []string) error {
 					if valueStr == "" {
 						valueStr = "(nil)"
 					}
-					fmt.Printf("     %-48s [FC=%-2s] Type: %-15s Value: %s\n",
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     %-48s [FC=%-2s] Type: %-15s Value: %s\n",
 						attr.Name, fcStr, attr.Type, valueStr)
 				}
 			}
@@ -157,4 +153,27 @@ func runListDas(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// daDisplayName joins a top-level DA name and a leaf name. Leaf names returned
+// by the explorer may already carry the parent prefix ("Oper" -> "Oper.ctlVal")
+// or equal the parent for scalar DAs ("q" -> "q"); never repeat the parent.
+func daDisplayName(parent, name string) string {
+	switch {
+	case name == "" || name == parent:
+		return parent
+	case parent == "" || strings.HasPrefix(name, parent+"."):
+		return name
+	}
+	return parent + "." + name
+}
+
+// sortedKeys returns the map keys in lexical order for deterministic output.
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

@@ -9,6 +9,7 @@ import (
 )
 
 func TestFormatTypeSpec(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		spec *mms.TypeSpec

@@ -7,6 +7,7 @@ import (
 )
 
 func TestDataAttribute_IsLeaf(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		da   DataAttribute
@@ -28,6 +29,7 @@ func TestDataAttribute_IsLeaf(t *testing.T) {
 }
 
 func TestDataAttribute_Walk_Leaves_LeafCount(t *testing.T) {
+	t.Parallel()
 	tree := DataAttribute{
 		Name: "AnIn1",
 		Type: TypeStructure,

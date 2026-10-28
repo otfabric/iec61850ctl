@@ -23,10 +23,11 @@ Stop with Ctrl+C.
 | Flag | Description |
 |------|-------------|
 | `--scl` | Path to SCL/CID/ICD (**required**) |
-| `--ied-name` | IED in the SCL (default: first IED) |
+| `--ied-name` | IED in the SCL (default: first IED that has a server with logical devices) |
 | `--values` | Optional serialized IED JSON to seed leaves |
 | `--host` | Bind address (default `0.0.0.0`) |
-| `--port` / `-p` | MMS port (default `102`) |
+| `--port` / `-p` | MMS port (default `102`; `0` binds an ephemeral port, printed on stderr and in `--ready-json`) |
+| `--files-dir` | Directory served read-only over MMS file services (`list files`, `get file`); not recursive, delete/rename are denied |
 | `--max-connections` | Reserved for future use (default `5`; not enforced by the current go-mms listener) |
 | `--ready-json` | After bind, emit one readiness JSON line on **stdout** |
 | `--fixture-id` | Fixture revision string included in the readiness event (e.g. `iec61850-v2`) |

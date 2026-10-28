@@ -1,0 +1,51 @@
+{
+  "report": {
+    "name": "brcb01",
+    "ld": "InteropLD",
+    "ln": "LLN0",
+    "buffered": true,
+    "ref": "InteropLD/LLN0.brcb01",
+    "rpt_id": "interop_brcb01",
+    "dat_set": "InteropLD/LLN0$dsInterop",
+    "enabled": false,
+    "conf_rev": 1,
+    "intg_pd_ms": 0,
+    "buf_tm_ms": 0,
+    "reserved": false,
+    "sq_num": 0,
+    "trigger_options": {
+      "data_change": true,
+      "quality_change": false,
+      "data_update": false,
+      "periodic": false,
+      "gi": true
+    },
+    "optional_fields": {
+      "sequence_number": true,
+      "time_stamp": true,
+      "reason_code": true,
+      "data_set_name": false,
+      "data_reference": false,
+      "buffer_overflow": true,
+      "entry_id": true,
+      "config_revision": false
+    },
+    "purge_buf": false,
+    "entry_id_value": "0000000000000000"
+  },
+  "data_set": {
+    "name": "dsInterop",
+    "is_deletable": false,
+    "member_count": 2,
+    "members": [
+      {
+        "index": 1,
+        "ref": "InteropLD/GGIO1.SPS1.stVal[ST]"
+      },
+      {
+        "index": 2,
+        "ref": "InteropLD/LLN0.Mod.stVal[ST]"
+      }
+    ]
+  }
+}

@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	journalListLD string
+	journalListLD     string
+	journalListDomain string
 )
 
 var listJournalCmd = &cobra.Command{
@@ -31,11 +32,15 @@ Examples:
 func init() {
 	listCmd.AddCommand(listJournalCmd)
 	listJournalCmd.Flags().StringVar(&journalListLD, "ld", "", "logical device (LD) name to list journals from")
-	listJournalCmd.Flags().StringVar(&journalListLD, "domain", "", "MMS domain name (alias for --ld)")
-	_ = listJournalCmd.MarkFlagRequired("ld")
+	listJournalCmd.Flags().StringVar(&journalListDomain, "domain", "", "MMS domain name (alias for --ld)")
+	listJournalCmd.MarkFlagsOneRequired("ld", "domain")
+	listJournalCmd.MarkFlagsMutuallyExclusive("ld", "domain")
 }
 
 func runListJournal(cmd *cobra.Command, args []string) error {
+	if journalListDomain != "" {
+		journalListLD = journalListDomain
+	}
 	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
@@ -52,15 +57,15 @@ func runListJournal(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(journals) == 0 {
-		fmt.Printf("No journals found in logical device '%s'.\n", journalListLD)
-		fmt.Println("Note: Journal availability depends on device configuration.")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No journals found in logical device '%s'.\n", journalListLD)
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Note: Journal availability depends on device configuration.")
 		return nil
 	}
 
-	fmt.Printf("Journals in '%s' (%d):\n", journalListLD, len(journals))
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Journals in '%s' (%d):\n", journalListLD, len(journals))
 	for i, j := range journals {
-		fmt.Printf("  %d. %s (in %s)\n", i+1, j.Name, j.LogicalNode)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (in %s)\n", i+1, j.Name, j.LogicalNode)
 	}
-	fmt.Printf("\nUse '--journal %s' with 'get journal' to read entries.\n", journals[0].Name)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nUse '--journal %s' with 'get journal' to read entries.\n", journals[0].Name)
 	return nil
 }

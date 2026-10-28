@@ -8,8 +8,9 @@
 package formatter
 
 import (
-	"fmt"
 	"io"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 
 	"github.com/otfabric/iec61850ctl/pkg/view"
 )
@@ -22,7 +23,7 @@ func (f *Formatter) RenderDataAttributes(attrs []view.DataAttribute, w io.Writer
 // RenderDataSet renders a view DataSet using the configured output format.
 func (f *Formatter) RenderDataSet(ds *view.DataSet, w io.Writer) error {
 	if ds == nil {
-		return fmt.Errorf("dataset is nil")
+		return errs.Invalidf("dataset is nil")
 	}
 	return NewRenderer(f.outputFormat).RenderDataSet(ds, w)
 }
@@ -30,7 +31,7 @@ func (f *Formatter) RenderDataSet(ds *view.DataSet, w io.Writer) error {
 // RenderReportControlBlock renders a view ReportControlBlock using the configured output format.
 func (f *Formatter) RenderReportControlBlock(rcb *view.ReportControlBlock, w io.Writer) error {
 	if rcb == nil {
-		return fmt.Errorf("report control block is nil")
+		return errs.Invalidf("report control block is nil")
 	}
 	return NewRenderer(f.outputFormat).RenderReportControlBlock(rcb, w)
 }

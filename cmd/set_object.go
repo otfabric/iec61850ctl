@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
@@ -61,10 +63,10 @@ func runSetObject(cmd *cobra.Command, _ []string) error {
 	}
 	fc := domain.ParseFC(setFCFlag)
 	if !fc.IsValid() {
-		return fmt.Errorf("invalid functional constraint: %s", setFCFlag)
+		return errs.Invalidf("invalid functional constraint: %s", setFCFlag)
 	}
 	if fc == domain.FC_CO {
-		return fmt.Errorf("FC=CO is not allowed for set object; use control operate")
+		return errs.Invalidf("FC=CO is not allowed for set object; use control operate")
 	}
 	kind, err := domain.ParseScalarKind(setTypeFlag)
 	if err != nil {
@@ -81,7 +83,7 @@ func runSetObject(cmd *cobra.Command, _ []string) error {
 	}
 	defer session.Close()
 
-	ctx, cancel := context.WithTimeout(cmd.Context(), defaultRequestTimeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), requestTimeout())
 	defer cancel()
 
 	res, err := app.New(session.Conn()).SetObject(ctx, domain.WriteRequest{
@@ -114,10 +116,10 @@ func runSetObject(cmd *cobra.Command, _ []string) error {
 	}
 
 	if !res.WriteOK {
-		return fmt.Errorf("write failed")
+		return errs.Newf(errs.ErrRejected, "write failed")
 	}
 	if res.Verification != nil && res.Verification.Attempted && !res.Verification.Matched {
-		return fmt.Errorf("verification mismatch")
+		return errs.Newf(errs.ErrVerifyMismatch, "verification mismatch")
 	}
 	return nil
 }

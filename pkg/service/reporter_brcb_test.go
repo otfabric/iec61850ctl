@@ -23,6 +23,7 @@ func (m *brcbSetMock) SetReportControlBlock(_ context.Context, _, _ string, u ie
 }
 
 func TestReporter_ApplyBRCBPreEnable(t *testing.T) {
+	t.Parallel()
 	m := &brcbSetMock{}
 	resv := int32(30)
 	r := NewReporter(m).WithConfig(ReporterConfig{

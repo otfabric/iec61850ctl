@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/spf13/cobra"
 
 	iec61850 "github.com/otfabric/go-iec61850"
@@ -55,7 +57,7 @@ func init() {
 func runGetObject(cmd *cobra.Command, args []string) error {
 	fcModel := domain.ParseFC(fcString)
 	if !fcModel.IsValid() {
-		return fmt.Errorf("invalid functional constraint: %s", fcString)
+		return errs.Invalidf("invalid functional constraint: %s", fcString)
 	}
 	format, err := parseCLIFormatFlag(objectFormatFlag)
 	if err != nil {
@@ -171,30 +173,20 @@ func runGetObject(cmd *cobra.Command, args []string) error {
 }
 
 func buildStructAttrPath(object, parentName, attrName string) string {
-	if parentName == "" {
-		if attrName != "" {
-			return object + "." + attrName
-		}
-		return object
+	if attrName == parentName {
+		attrName = ""
 	}
-	lastDot := strings.LastIndex(object, ".")
-	if lastDot >= 0 && object[lastDot+1:] == parentName {
-		if attrName != "" && attrName != parentName {
-			if strings.HasPrefix(attrName, parentName+".") {
-				return object + "." + attrName
-			}
-			return object + "." + attrName
+	// The object already names the parent DA, or the leaf name carries it.
+	if parentName == "" || strings.HasSuffix(object, "."+parentName) || strings.HasPrefix(attrName, parentName+".") {
+		if attrName == "" {
+			return object
 		}
-		return object
+		return object + "." + attrName
 	}
-	daPath := object + "." + parentName
-	if attrName != "" && attrName != parentName {
-		if strings.HasPrefix(attrName, parentName+".") {
-			return object + "." + attrName
-		}
-		daPath += "." + attrName
+	if attrName == "" {
+		return object + "." + parentName
 	}
-	return daPath
+	return object + "." + parentName + "." + attrName
 }
 
 func parseObjectRef(object string) (ld, ln, doName string) {

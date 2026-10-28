@@ -3,6 +3,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -71,6 +72,10 @@ func (j *Journal) ReadStartAfter(ldName, journalName string, fromMs uint64, entr
 	return mapJournalResult(res)
 }
 
+// MaxJournalPages bounds GetEntries pagination so a peer that keeps answering
+// MoreFollows cannot loop forever. The result then reports MoreFollows=true.
+const MaxJournalPages = 1000
+
 // GetEntries reads journal entries by time range or start-after with pagination.
 // If endMs is nil, uses ReadJournalAfter until exhausted.
 func (j *Journal) GetEntries(domainID, journalName string, startMs uint64, endMs *uint64) (*domain.JournalQueryResult, error) {
@@ -80,7 +85,7 @@ func (j *Journal) GetEntries(domainID, journalName string, startMs uint64, endMs
 	if endMs != nil {
 		from := startMs
 		to := *endMs
-		for {
+		for page := 0; page < MaxJournalPages; page++ {
 			entries, moreFollows, err := j.ReadTimeRange(domainID, journalName, from, to)
 			if err != nil {
 				return nil, err
@@ -96,12 +101,15 @@ func (j *Journal) GetEntries(domainID, journalName string, startMs uint64, endMs
 			if parseErr != nil {
 				return &domain.JournalQueryResult{Entries: all, MoreFollows: true}, fmt.Errorf("advance journal cursor: %w", parseErr)
 			}
+			if ms+1 <= from {
+				break // cursor did not advance: misbehaving peer, stop paging
+			}
 			from = ms + 1
 		}
 	} else {
 		from := startMs
 		var afterID []byte
-		for {
+		for page := 0; page < MaxJournalPages; page++ {
 			entries, moreFollows, err := j.ReadStartAfter(domainID, journalName, from, afterID)
 			if err != nil {
 				return nil, err
@@ -115,6 +123,9 @@ func (j *Journal) GetEntries(domainID, journalName string, startMs uint64, endMs
 			id, decodeErr := hex.DecodeString(last.EntryID)
 			if decodeErr != nil {
 				return &domain.JournalQueryResult{Entries: all, MoreFollows: true}, fmt.Errorf("decode journal entry id: %w", decodeErr)
+			}
+			if bytes.Equal(id, afterID) {
+				break // cursor did not advance: misbehaving peer, stop paging
 			}
 			afterID = id
 			if ms, parseErr := domain.ParseTimeToUnixMs(last.OccurrenceTime); parseErr == nil {

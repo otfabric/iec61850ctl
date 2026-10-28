@@ -10,6 +10,7 @@ import (
 )
 
 func TestReportService_ListReports(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		reports: []string{"LLN0$BR$rcb1", "LLN0$RP$urcb1", "MMXU1$BR$brcb01"},
 	}
@@ -38,6 +39,7 @@ func TestReportService_ListReports(t *testing.T) {
 }
 
 func TestReportService_GetAllReports(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		reports:        []string{"LLN0$BR$rcb1", "LLN0$RP$urcb1", "bad", "MMXU1$BR$brcb01"},
@@ -72,6 +74,7 @@ func TestReportService_GetAllReports(t *testing.T) {
 }
 
 func TestReportService_GetReportDetails(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		rcb: &iec61850.ReportControlBlock{
 			RptID:    "id1",
@@ -115,6 +118,7 @@ func TestReportService_GetReportDetails(t *testing.T) {
 }
 
 func TestReportService_ResolveReportDetails(t *testing.T) {
+	t.Parallel()
 	brcb := &iec61850.ReportControlBlock{RptID: "br"}
 	urcb := &iec61850.ReportControlBlock{RptID: "ur"}
 
@@ -145,6 +149,7 @@ func TestReportService_ResolveReportDetails(t *testing.T) {
 }
 
 func TestMapRCB_Nil(t *testing.T) {
+	t.Parallel()
 	if mapRCB("LD0", "LLN0", "r", true, nil) != nil {
 		t.Fatal("expected nil")
 	}

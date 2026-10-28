@@ -11,6 +11,7 @@ import (
 
 // Compile-time check that App constructors accept IEC61850Connection.
 func TestApp_NewAcceptsNilConn(t *testing.T) {
+	t.Parallel()
 	a := New(nil)
 	if a == nil {
 		t.Fatal("New returned nil")
@@ -21,6 +22,7 @@ func TestApp_NewAcceptsNilConn(t *testing.T) {
 }
 
 func TestProjectLogicalDevices_Empty(t *testing.T) {
+	t.Parallel()
 	out := service.ProjectLogicalDevices(nil)
 	if len(out) != 0 {
 		t.Fatalf("got %d", len(out))

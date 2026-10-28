@@ -8,6 +8,7 @@ import (
 )
 
 func TestReporterFluentAPI(t *testing.T) {
+	t.Parallel()
 	reporter := NewReporter(nil).
 		WithReportRef("LD0/LN0.BR.rcb1").
 		WithDuration(10 * time.Second).
@@ -29,6 +30,7 @@ func TestReporterFluentAPI(t *testing.T) {
 }
 
 func TestReporterWithConfig(t *testing.T) {
+	t.Parallel()
 	config := ReporterConfig{
 		ReportRef:  "LD0/LN0.BR.rcb1",
 		Duration:   10 * time.Second,
@@ -43,6 +45,7 @@ func TestReporterWithConfig(t *testing.T) {
 }
 
 func TestExplorerFluentAPI(t *testing.T) {
+	t.Parallel()
 	explorer := NewExplorer(nil).WithDebug(true)
 
 	if !explorer.debug {
@@ -51,6 +54,7 @@ func TestExplorerFluentAPI(t *testing.T) {
 }
 
 func TestTreeFluentAPI(t *testing.T) {
+	t.Parallel()
 	tree := NewTree(nil).WithCallInterval(100 * time.Millisecond)
 
 	if tree.callInterval != 100*time.Millisecond {

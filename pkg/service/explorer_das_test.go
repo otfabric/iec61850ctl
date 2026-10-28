@@ -9,6 +9,7 @@ import (
 )
 
 func TestExplorer_GetLogicalNodesAndDataObjects(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalNodes: []string{"LLN0", "MMXU1"},
 		dataObjects:  []string{"DO1", "Hz"},
@@ -33,6 +34,7 @@ func TestExplorer_GetLogicalNodesAndDataObjects(t *testing.T) {
 }
 
 func TestExplorer_GetDataAttributesAndDANames(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{}
 	ex := NewExplorer(mock)
 
@@ -85,6 +87,7 @@ func TestExplorer_GetDataAttributesAndDANames(t *testing.T) {
 }
 
 func TestListDataAttributesInput_Validate(t *testing.T) {
+	t.Parallel()
 	if err := (ListDataAttributesInput{}).Validate(); err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -102,6 +105,7 @@ func TestListDataAttributesInput_Validate(t *testing.T) {
 }
 
 func TestExplorer_GetDataAttributes_NilClient(t *testing.T) {
+	t.Parallel()
 	ex := NewExplorer(nil)
 	_, err := ex.GetDataAttributes(ListDataAttributesInput{
 		LogicalDevice: "LD0", LogicalNode: "LN", DataObject: "DO",
@@ -112,6 +116,7 @@ func TestExplorer_GetDataAttributes_NilClient(t *testing.T) {
 }
 
 func TestExplorer_GetLogicalDevices_WithCounts(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		logicalNodes:   []string{"LLN0"},

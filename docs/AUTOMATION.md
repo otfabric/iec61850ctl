@@ -7,10 +7,23 @@ Authoritative machine-facing contract for scripting `iec61850ctl`. Human-oriente
 | Stream | Contents |
 |--------|----------|
 | **stdout** | Command results only (text, JSON, or JSON Lines) |
-| **stderr** | Connection status, warnings, diagnostics, debug |
+| **stderr** | Connection status, warnings, diagnostics, structured logs (`--log-level`, `--log-format text|json`) |
 
 - Successful commands exit `0`.
-- Invalid flags, validation failures, connection failures, and remote errors exit non-zero.
+- Failures exit with a code that classifies the cause (stable contract):
+
+| Code | Meaning |
+|------|---------|
+| `1` | Failure (unclassified) |
+| `2` | Usage error, invalid flag value, malformed reference/input/config |
+| `3` | Connection failed or lost (including a dropped report subscription) |
+| `4` | Timeout (`--connect-timeout` / `--timeout`) |
+| `5` | Not found (object, file, IED, RCB, journal) |
+| `6` | Rejected or access denied by the server (including failed select/operate) |
+| `7` | Write verification (`--verify`) or control confirmation (`--confirm-ref`) mismatch |
+| `8` | Service not supported by the server |
+| `130` | Interrupted (SIGINT / SIGTERM) |
+
 - For `control operate` / `set object` with `--format json`, protocol outcomes that reach execution still print one JSON document; non-zero exit is driven by `status` / `write_ok` (see below), not by omitting JSON.
 - Runtime errors are printed once to stderr (usage is not appended).
 - `--help` still prints help to stdout and exits `0`.
@@ -28,7 +41,7 @@ and is always written to **stderr**.
 | Setting | Flag | Environment | Precedence |
 |---------|------|-------------|------------|
 | Host | `--host` | `IEC61850_HOST` | flag → env → error if missing |
-| Port | `--port` | `IEC61850_PORT` | flag (if not default `102`) → env → `102` |
+| Port | `--port` | `IEC61850_PORT` | flag (when given, even `102`) → env → `102`; an invalid env value is a usage error |
 | IED name | `--ied-name` | `IEC61850_IED_NAME` | flag → env → empty |
 
 An empty IED name preserves legacy behaviour (no MMS domain prefix stripping).
@@ -232,7 +245,7 @@ Client commands open a session through a shared helper that:
 
 1. Resolves host/port/IED name.
 2. Writes the connection target to stderr.
-3. Dials with `DialOptions.IEDName`.
+3. Dials with `DialOptions.IEDName`, bounding each attempt by `--connect-timeout` and retrying `--retry` times with exponential backoff and jitter (capped by `--retry-max-delay`). Every request is bounded by `--timeout`.
 4. Defers bounded teardown: `Close` (≈2s) then `Abort` (≈2s) on failure/timeout.
 
 Automation should treat hang-free exit as part of the contract, especially against IEC61850bean.

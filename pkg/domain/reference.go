@@ -3,8 +3,9 @@
 package domain
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // ObjectReference is a parsed IEC 61850 MMS object reference.
@@ -22,14 +23,14 @@ func ParseObjectReference(ref string) (ObjectReference, error) {
 
 	slashIdx := strings.Index(ref, "/")
 	if slashIdx < 0 {
-		return r, fmt.Errorf("invalid reference %q: missing '/' separator", ref)
+		return r, errs.Newf(errs.ErrInvalidReference, "invalid reference %q: missing '/' separator", ref)
 	}
 
 	r.LD = ref[:slashIdx]
 	rest := ref[slashIdx+1:]
 
 	if rest == "" {
-		return r, fmt.Errorf("invalid reference %q: missing logical node after '/'", ref)
+		return r, errs.Newf(errs.ErrInvalidReference, "invalid reference %q: missing logical node after '/'", ref)
 	}
 
 	dotIdx := strings.Index(rest, ".")
@@ -38,6 +39,9 @@ func ParseObjectReference(ref string) (ObjectReference, error) {
 		return r, nil
 	}
 
+	if dotIdx == 0 {
+		return r, errs.Newf(errs.ErrInvalidReference, "invalid reference %q: missing logical node after '/'", ref)
+	}
 	r.LN = rest[:dotIdx]
 	pathStr := rest[dotIdx+1:]
 	if pathStr != "" {

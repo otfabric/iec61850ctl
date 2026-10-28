@@ -4,7 +4,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -52,12 +52,12 @@ func runListLns(cmd *cobra.Command, args []string) error {
 		}
 		if len(nodes) == 0 {
 			if outputFormat == formatter.OutputFormatJSON {
-				_, _ = os.Stdout.WriteString("[]\n")
+				_, _ = io.WriteString(cmd.OutOrStdout(), "[]\n")
 			}
 			return nil
 		}
 		renderer := formatter.NewRenderer(outputFormat)
-		return renderer.RenderLogicalNodes(nodes, os.Stdout)
+		return renderer.RenderLogicalNodes(nodes, cmd.OutOrStdout())
 	}
 
 	if !lnsDetailedFlag {
@@ -66,14 +66,14 @@ func runListLns(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if len(lnNames) == 0 {
-			fmt.Printf("No logical nodes found in '%s'\n", ldNameForLns)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No logical nodes found in '%s'\n", ldNameForLns)
 			return nil
 		}
-		fmt.Printf("Found %d logical node(s) in '%s':\n", len(lnNames), ldNameForLns)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d logical node(s) in '%s':\n", len(lnNames), ldNameForLns)
 		for i, ln := range lnNames {
-			fmt.Printf("  %d. %s\n", i+1, ln)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s\n", i+1, ln)
 		}
-		fmt.Println("\nUse --detailed flag to see DO/DataSet/Report counts")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "\nUse --detailed flag to see DO/DataSet/Report counts")
 		return nil
 	}
 
@@ -82,18 +82,18 @@ func runListLns(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(nodes) == 0 {
-		fmt.Printf("No logical nodes found in '%s'\n", ldNameForLns)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No logical nodes found in '%s'\n", ldNameForLns)
 		return nil
 	}
-	fmt.Printf("Found %d logical node(s) in '%s':\n", len(nodes), ldNameForLns)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d logical node(s) in '%s':\n", len(nodes), ldNameForLns)
 	for i, ln := range nodes {
-		fmt.Printf("\n  %d. %s\n", i+1, ln.Name)
-		fmt.Printf("     Data Objects: %d\n", ln.DOCount)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\n  %d. %s\n", i+1, ln.Name)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     Data Objects: %d\n", ln.DOCount)
 		if ln.DSCount > 0 {
-			fmt.Printf("     DataSets: %d\n", ln.DSCount)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     DataSets: %d\n", ln.DSCount)
 		}
 		if ln.RCBCount > 0 {
-			fmt.Printf("     Reports: %d\n", ln.RCBCount)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     Reports: %d\n", ln.RCBCount)
 		}
 	}
 	return nil

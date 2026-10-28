@@ -191,3 +191,19 @@ func appendPath(base []string, name string) []string {
 	copy(out, base)
 	return append(out, name)
 }
+
+// typeStack records the DOType/DAType ids currently being expanded so that a
+// self- or mutually-recursive type definition terminates instead of recursing
+// without bound. Keys are namespaced ("DO:"+id, "DA:"+id).
+type typeStack map[string]bool
+
+// push marks key as being expanded; it reports false if key is already on the stack.
+func (s typeStack) push(key string) bool {
+	if s[key] {
+		return false
+	}
+	s[key] = true
+	return true
+}
+
+func (s typeStack) pop(key string) { delete(s, key) }

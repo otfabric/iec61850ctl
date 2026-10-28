@@ -17,6 +17,7 @@ import (
 // === R2.4: Pagination Tests ===
 
 func TestGetLogicalDevicesPaged(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD1", "LD2", "LD3", "LD4", "LD5"},
 	}
@@ -102,6 +103,7 @@ func TestGetLogicalDevicesPaged(t *testing.T) {
 }
 
 func TestGetAllReportsPaged(t *testing.T) {
+	t.Parallel()
 	// Use the existing mockConnection - it returns default empty lists for reports
 	mock := &mockConnection{
 		logicalDevices: []string{"LD1", "LD2"},
@@ -146,6 +148,7 @@ func TestGetAllReportsPaged(t *testing.T) {
 // === R4.3: Multi-format Output Tests ===
 
 func TestFormatterOutputFormat(t *testing.T) {
+	t.Parallel()
 	devices := []domain.LogicalDevice{{Name: "LD1", LNCount: 1}}
 	viewDevices := ProjectLogicalDevices(devices)
 
@@ -200,6 +203,7 @@ func TestFormatterOutputFormat(t *testing.T) {
 // === R6.1: Tree Build() Method Tests ===
 
 func TestTreeBuild(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"TestLD"},
 	}
@@ -236,6 +240,7 @@ func TestTreeBuild(t *testing.T) {
 // === R6.3: FindPath Builder Tests ===
 
 func TestFindPathBuilder(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD1"},
 	}
@@ -331,6 +336,7 @@ func TestFindPathBuilder(t *testing.T) {
 // === R7.2: Callback Injection Tests ===
 
 func TestReporterOnReportCallback(t *testing.T) {
+	t.Parallel()
 	// Use existing mockConnection which already implements the needed methods
 	mock := &mockConnection{}
 
@@ -375,6 +381,7 @@ func TestReporterOnReportCallback(t *testing.T) {
 // === General Phase 5 Integration Tests ===
 
 func TestPhase5FluentAPIs(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD1"},
 	}

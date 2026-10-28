@@ -10,6 +10,7 @@ import (
 
 // TestLogicalDeviceInfo_Structure verifies domain.LogicalDevice struct fields.
 func TestLogicalDeviceInfo_Structure(t *testing.T) {
+	t.Parallel()
 	info := domain.LogicalDevice{
 		Name:      "MNSREF615CTRL",
 		LNCount:   42,
@@ -37,6 +38,7 @@ func TestLogicalDeviceInfo_Structure(t *testing.T) {
 
 // TestGetLogicalDevices_NilClient tests that GetLogicalDevices returns an error when client is nil.
 func TestGetLogicalDevices_NilClient(t *testing.T) {
+	t.Parallel()
 	explorer := NewExplorer(nil)
 	if explorer == nil {
 		t.Fatal("NewExplorer(nil) returned nil")

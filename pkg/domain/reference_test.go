@@ -9,6 +9,7 @@ import (
 )
 
 func TestParseObjectReference(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		ref     string
@@ -74,6 +75,7 @@ func TestParseObjectReference(t *testing.T) {
 }
 
 func TestBuild(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		ld   string
@@ -96,6 +98,7 @@ func TestBuild(t *testing.T) {
 }
 
 func TestObjectReference_String_DOName_DAPath_WithFC(t *testing.T) {
+	t.Parallel()
 	r := ObjectReference{LD: "LD0", LN: "MMXU1", Path: []string{"Hz", "mag", "f"}}
 
 	if got := r.String(); got != "LD0/MMXU1.Hz.mag.f" {
@@ -130,6 +133,7 @@ func TestObjectReference_String_DOName_DAPath_WithFC(t *testing.T) {
 }
 
 func TestDataSetRef_ReportRef_JournalRef(t *testing.T) {
+	t.Parallel()
 	if got := DataSetRef("LD0", "LLN0", "dsEvents"); got != "LD0/LLN0$dsEvents" {
 		t.Errorf("DataSetRef() = %q", got)
 	}
@@ -142,6 +146,7 @@ func TestDataSetRef_ReportRef_JournalRef(t *testing.T) {
 }
 
 func TestParseDataSetRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		in     string
@@ -172,6 +177,7 @@ func TestParseDataSetRef(t *testing.T) {
 }
 
 func TestParseReportRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		in      string
@@ -203,6 +209,7 @@ func TestParseReportRef(t *testing.T) {
 }
 
 func TestParseJournalRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		in      string
@@ -232,6 +239,7 @@ func TestParseJournalRef(t *testing.T) {
 }
 
 func TestObjectReference_Parent_Child(t *testing.T) {
+	t.Parallel()
 	r := ObjectReference{LD: "LD0", LN: "MMXU1", Path: []string{"Hz", "mag", "f"}, FC: FC_MX}
 
 	parent := r.Parent()

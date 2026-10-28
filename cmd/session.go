@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -15,10 +17,8 @@ import (
 )
 
 const (
-	defaultConnectTimeout = 10 * time.Second
-	defaultRequestTimeout = 10 * time.Second
-	sessionCloseTimeout   = 2 * time.Second
-	sessionAbortTimeout   = 2 * time.Second
+	sessionCloseTimeout = 2 * time.Second
+	sessionAbortTimeout = 2 * time.Second
 )
 
 // clientSessionOptions configures dial timeouts and connection status output.
@@ -83,6 +83,9 @@ func (s *clientSession) CloseStrict() error {
 	return fmt.Errorf("close: %w (aborted)", err)
 }
 
+// connectFunc dials a server; tests replace it to inject fake connections.
+var connectFunc = client.NewConnection
+
 // openClientSession resolves host/port/IED name from flags and env, dials, and
 // returns a session. Callers must defer session.Close().
 func openClientSession(cmd *cobra.Command, opts clientSessionOptions) (*clientSession, error) {
@@ -90,38 +93,43 @@ func openClientSession(cmd *cobra.Command, opts clientSessionOptions) (*clientSe
 	if err != nil {
 		return nil, err
 	}
-	return openClientSessionTo(cmd, h, p, opts)
+	return openClientSessionTo(cmd.Context(), cmd, h, p, opts)
 }
 
-// openClientSessionTo dials a specific host:port using the shared IED-name resolution.
-func openClientSessionTo(cmd *cobra.Command, h string, p int, opts clientSessionOptions) (*clientSession, error) {
-	stderr := io.Writer(nil)
+// openClientSessionTo dials a specific host:port using the shared IED-name
+// resolution and the global timeout/retry/logging flags. Non-zero opts
+// timeouts override the global flags. Cancelling ctx aborts the dial and
+// every in-flight request on the session.
+func openClientSessionTo(ctx context.Context, cmd *cobra.Command, h string, p int, opts clientSessionOptions) (*clientSession, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	stderr := io.Writer(io.Discard)
 	if cmd != nil {
 		stderr = cmd.ErrOrStderr()
 	}
-	if stderr == nil {
-		stderr = io.Discard
-	}
 
 	if !opts.Quiet {
-		_, _ = fmt.Fprintf(stderr, "Connecting to %s:%d\n", h, p)
+		_, _ = fmt.Fprintf(stderr, "Connecting to %s\n", net.JoinHostPort(h, strconv.Itoa(p)))
 	}
 
-	connectSec := int(opts.ConnectTimeout / time.Second)
-	if opts.ConnectTimeout <= 0 {
-		connectSec = int(defaultConnectTimeout / time.Second)
+	connectTimeout := opts.ConnectTimeout
+	if connectTimeout <= 0 {
+		connectTimeout = connectTimeoutFlag
 	}
-	requestSec := int(opts.RequestTimeout / time.Second)
-	if opts.RequestTimeout <= 0 {
-		requestSec = int(defaultRequestTimeout / time.Second)
+	reqTimeout := opts.RequestTimeout
+	if reqTimeout <= 0 {
+		reqTimeout = requestTimeout()
 	}
 
-	conn, err := client.NewConnection(client.ConnectionInput{
+	conn, err := connectFunc(ctx, client.ConnectionInput{
 		Host:           h,
 		Port:           p,
-		ConnectTimeout: connectSec,
-		RequestTimeout: requestSec,
+		ConnectTimeout: connectTimeout,
+		RequestTimeout: reqTimeout,
 		IEDName:        getIEDName(),
+		Retry:          client.RetryPolicy{Retries: retryFlag, MaxDelay: retryMaxDelayFlag},
+		Logger:         cmdLogger(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connection failed: %w", err)

@@ -1,0 +1,6 @@
+object: InteropLD/GGIO1.SetInt1.setVal
+fc: SP
+type: int
+requested_value: 5
+write_ok: true
+verification matched=true value=5

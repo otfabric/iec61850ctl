@@ -1,0 +1,123 @@
+📦 InteropIEDInteropLD
+│
+├─ 🔧 LLN0 (Logical Node Zero)
+│  ├─ Beh
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  └─ t: ?
+│  ├─ Mod
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  ├─ t: ?
+│  │  ├─ ctlModel: direct-with-normal-security
+│  │  └─ d: ?
+│  ├─ 📊 DataSets (1)
+│  │  ├─ dsInterop
+│  └─ 📡 Reports (2)
+      ├─ urcb01 [Unbuffered]
+      └─ brcb01 [Buffered]
+├─ 🔧 GGIO1 (Generic IO)
+│  ├─ DPS1
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  └─ t: ?
+│  ├─ SPCSO1
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  ├─ t: ?
+│  │  ├─ ctlModel: direct-with-normal-security
+│  │  ├─ Oper.ctlVal: ?
+│  │  ├─ Oper.origin.orCat: ?
+│  │  ├─ Oper.origin.orIdent: ?
+│  │  ├─ Oper.ctlNum: ?
+│  │  ├─ Oper.T: ?
+│  │  ├─ Oper.Test: ?
+│  │  ├─ Oper.Check: ?
+│  │  ├─ SBO: ?
+│  │  ├─ SBOw.ctlVal: ?
+│  │  ├─ SBOw.origin.orCat: ?
+│  │  ├─ SBOw.origin.orIdent: ?
+│  │  ├─ SBOw.ctlNum: ?
+│  │  ├─ SBOw.T: ?
+│  │  ├─ SBOw.Test: ?
+│  │  ├─ SBOw.Check: ?
+│  │  ├─ Cancel.ctlVal: ?
+│  │  ├─ Cancel.origin.orCat: ?
+│  │  ├─ Cancel.origin.orIdent: ?
+│  │  ├─ Cancel.ctlNum: ?
+│  │  ├─ Cancel.T: ?
+│  │  ├─ Cancel.Test: ?
+│  │  └─ Cancel.Check: ?
+│  ├─ SPCSO2
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  ├─ t: ?
+│  │  ├─ ctlModel: sbo-with-normal-security
+│  │  ├─ Oper.ctlVal: ?
+│  │  ├─ Oper.origin.orCat: ?
+│  │  ├─ Oper.origin.orIdent: ?
+│  │  ├─ Oper.ctlNum: ?
+│  │  ├─ Oper.T: ?
+│  │  ├─ Oper.Test: ?
+│  │  ├─ Oper.Check: ?
+│  │  ├─ SBO: ?
+│  │  ├─ SBOw.ctlVal: ?
+│  │  ├─ SBOw.origin.orCat: ?
+│  │  ├─ SBOw.origin.orIdent: ?
+│  │  ├─ SBOw.ctlNum: ?
+│  │  ├─ SBOw.T: ?
+│  │  ├─ SBOw.Test: ?
+│  │  ├─ SBOw.Check: ?
+│  │  ├─ Cancel.ctlVal: ?
+│  │  ├─ Cancel.origin.orCat: ?
+│  │  ├─ Cancel.origin.orIdent: ?
+│  │  ├─ Cancel.ctlNum: ?
+│  │  ├─ Cancel.T: ?
+│  │  ├─ Cancel.Test: ?
+│  │  └─ Cancel.Check: ?
+│  ├─ SPCSO3
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  ├─ t: ?
+│  │  ├─ ctlModel: sbo-with-enhanced-security
+│  │  ├─ Oper.ctlVal: ?
+│  │  ├─ Oper.origin.orCat: ?
+│  │  ├─ Oper.origin.orIdent: ?
+│  │  ├─ Oper.ctlNum: ?
+│  │  ├─ Oper.T: ?
+│  │  ├─ Oper.Test: ?
+│  │  ├─ Oper.Check: ?
+│  │  ├─ SBO: ?
+│  │  ├─ SBOw.ctlVal: ?
+│  │  ├─ SBOw.origin.orCat: ?
+│  │  ├─ SBOw.origin.orIdent: ?
+│  │  ├─ SBOw.ctlNum: ?
+│  │  ├─ SBOw.T: ?
+│  │  ├─ SBOw.Test: ?
+│  │  ├─ SBOw.Check: ?
+│  │  ├─ Cancel.ctlVal: ?
+│  │  ├─ Cancel.origin.orCat: ?
+│  │  ├─ Cancel.origin.orIdent: ?
+│  │  ├─ Cancel.ctlNum: ?
+│  │  ├─ Cancel.T: ?
+│  │  ├─ Cancel.Test: ?
+│  │  └─ Cancel.Check: ?
+│  ├─ SPS1
+│  │  ├─ stVal: ?
+│  │  ├─ q: ?
+│  │  ├─ t: ?
+│  │  └─ d: ?
+│  └─ SetInt1
+│     ├─ setVal: ?
+│     ├─ q: ?
+│     └─ t: ?
+├─ 🔧 MMTR1 (Energy meter)
+│  └─ TotVAh
+│     ├─ actVal: ?
+│     ├─ q: ?
+│     └─ t: ?
+└─ 🔧 MMXU1 (Measurement unit)
+   └─ TotW
+      ├─ mag.f: ?
+      ├─ q: ?
+      └─ t: ?

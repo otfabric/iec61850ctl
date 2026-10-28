@@ -12,6 +12,7 @@ import (
 )
 
 func TestReporterConfigValidation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		config  service.ReporterConfig
@@ -64,6 +65,7 @@ func TestReporterConfigValidation(t *testing.T) {
 }
 
 func TestFindPathInputValidation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		input   service.FindPathInput
@@ -104,6 +106,7 @@ func TestFindPathInputValidation(t *testing.T) {
 }
 
 func TestParseDataSetRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		datSet string
@@ -155,6 +158,7 @@ func TestParseDataSetRef(t *testing.T) {
 }
 
 func TestParseReportRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		reportRef   string
@@ -209,6 +213,7 @@ func TestParseReportRef(t *testing.T) {
 }
 
 func TestParseTimeToUnixMs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		input   string

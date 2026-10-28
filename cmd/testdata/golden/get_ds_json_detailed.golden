@@ -1,0 +1,17 @@
+{
+  "name": "dsInterop",
+  "is_deletable": false,
+  "member_count": 2,
+  "members": [
+    {
+      "index": 1,
+      "ref": "InteropLD/GGIO1.SPS1.stVal[ST]",
+      "value": "false"
+    },
+    {
+      "index": 2,
+      "ref": "InteropLD/LLN0.Mod.stVal[ST]",
+      "value": "1"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import (
 
 // TestBulkFindResult verifies the BulkFindResult struct structure.
 func TestBulkFindResult(t *testing.T) {
+	t.Parallel()
 	result := BulkFindResult{
 		Entries: []BulkResultEntry{
 			{ControlledPropertyId: "prop1", Paths: []string{"LD0/LN1.DO1"}},
@@ -32,6 +33,7 @@ func TestBulkFindResult(t *testing.T) {
 
 // TestReportServiceCreation verifies NewReportService creates a service.
 func TestReportServiceCreation(t *testing.T) {
+	t.Parallel()
 	// Can't test with real connection, just verify constructor
 	service := NewReportService(nil)
 	if service == nil {
@@ -41,6 +43,7 @@ func TestReportServiceCreation(t *testing.T) {
 
 // TestDataSetServiceCreation verifies NewDataSetService creates a service.
 func TestDataSetServiceCreation(t *testing.T) {
+	t.Parallel()
 	// Can't test with real connection, just verify constructor
 	service := NewDataSetService(nil)
 	if service == nil {

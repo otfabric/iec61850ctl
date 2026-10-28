@@ -5,7 +5,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -51,12 +51,12 @@ func runListLds(cmd *cobra.Command, args []string) error {
 		}
 		if len(devices) == 0 {
 			if outputFormat == formatter.OutputFormatJSON {
-				_, _ = os.Stdout.WriteString("[]\n")
+				_, _ = io.WriteString(cmd.OutOrStdout(), "[]\n")
 			}
 			return nil
 		}
 		renderer := formatter.NewRenderer(outputFormat)
-		return renderer.RenderLogicalDevices(devices, os.Stdout)
+		return renderer.RenderLogicalDevices(devices, cmd.OutOrStdout())
 	}
 
 	if !ldsDetailedFlag {
@@ -65,14 +65,14 @@ func runListLds(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if len(devices) == 0 {
-			fmt.Println("No logical devices found")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No logical devices found")
 			return nil
 		}
-		fmt.Printf("Found %d logical device(s):\n", len(devices))
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d logical device(s):\n", len(devices))
 		for i, ld := range devices {
-			fmt.Printf("  %d. %s\n", i+1, ld)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s\n", i+1, ld)
 		}
-		fmt.Println("\nUse --detailed flag to see DataSet/Report breakdown")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "\nUse --detailed flag to see DataSet/Report breakdown")
 		return nil
 	}
 
@@ -81,23 +81,23 @@ func runListLds(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(devices) == 0 {
-		fmt.Println("No logical devices found")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No logical devices found")
 		return nil
 	}
 
-	fmt.Printf("Found %d logical device(s):\n", len(devices))
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d logical device(s):\n", len(devices))
 	ctx := context.Background()
 	for i, ld := range devices {
 		totalReports := ld.URCBCount + ld.BRCBCount
-		fmt.Printf("\n  %d. %-30s  [LNs: %3d, DataSets: %3d, Reports: %3d (UB:%d/B:%d)]\n",
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\n  %d. %-30s  [LNs: %3d, DataSets: %3d, Reports: %3d (UB:%d/B:%d)]\n",
 			i+1, ld.Name, ld.LNCount, ld.DSCount, totalReports, ld.URCBCount, ld.BRCBCount)
 
 		lnNames, err := a.Explorer().ListLogicalNodes(ld.Name)
 		if err != nil {
-			fmt.Printf("     Error getting LN details: %v\n", err)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     Error getting LN details: %v\n", err)
 			continue
 		}
-		fmt.Println("     Logical Nodes with DataSets/Reports:")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "     Logical Nodes with DataSets/Reports:")
 		hasContent := false
 		dss, _ := conn.ListDataSets(ctx, ld.Name)
 		reports, _ := conn.ListReports(ctx, ld.Name)
@@ -121,12 +121,12 @@ func runListLds(cmd *cobra.Command, args []string) error {
 			}
 			if lnDataSets > 0 || lnURCBs > 0 || lnBRCBs > 0 {
 				hasContent = true
-				fmt.Printf("       %-20s  [DataSets: %2d, Reports: %2d (UB:%d/B:%d)]\n",
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "       %-20s  [DataSets: %2d, Reports: %2d (UB:%d/B:%d)]\n",
 					lnName, lnDataSets, lnURCBs+lnBRCBs, lnURCBs, lnBRCBs)
 			}
 		}
 		if !hasContent {
-			fmt.Println("       (none)")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "       (none)")
 		}
 	}
 	return nil

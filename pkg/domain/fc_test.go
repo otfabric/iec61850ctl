@@ -9,6 +9,7 @@ import (
 )
 
 func TestAllFCs(t *testing.T) {
+	t.Parallel()
 	fcs := AllFCs()
 	if len(fcs) != len(allFCs) {
 		t.Fatalf("AllFCs() len = %d, want %d", len(fcs), len(allFCs))
@@ -26,6 +27,7 @@ func TestAllFCs(t *testing.T) {
 }
 
 func TestParseFC(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		in   string
 		want FunctionalConstraint
@@ -69,6 +71,7 @@ func TestParseFC(t *testing.T) {
 }
 
 func TestFunctionalConstraint_String_IsValid(t *testing.T) {
+	t.Parallel()
 	if FC_NONE.String() != "NONE" {
 		t.Errorf("FC_NONE.String() = %q, want NONE", FC_NONE.String())
 	}
@@ -93,6 +96,7 @@ func TestFunctionalConstraint_String_IsValid(t *testing.T) {
 }
 
 func TestFunctionalConstraint_ToLibFC_FromLibFC(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		fc   FunctionalConstraint

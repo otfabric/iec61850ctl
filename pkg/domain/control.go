@@ -3,8 +3,9 @@
 package domain
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // ControlMode selects how a control operate journey is executed.
@@ -29,7 +30,7 @@ func ParseControlMode(s string) (ControlMode, error) {
 	case "sbow":
 		return ControlModeSBOw, nil
 	default:
-		return "", fmt.Errorf("invalid control mode %q (want auto|direct|sbo|sbow)", s)
+		return "", errs.Invalidf("invalid control mode %q (want auto|direct|sbo|sbow)", s)
 	}
 }
 
@@ -98,7 +99,7 @@ func ParseOriginCategory(s string) (OriginCategory, error) {
 	case "process":
 		return OrCatProcess, nil
 	default:
-		return "", fmt.Errorf("invalid or-cat %q", s)
+		return "", errs.Invalidf("invalid or-cat %q", s)
 	}
 }
 
@@ -165,7 +166,7 @@ func ParseScalarKind(s string) (ScalarKind, error) {
 	case "string":
 		return ScalarString, nil
 	default:
-		return "", fmt.Errorf("invalid type %q (want bool|int|uint|float|enum|string)", s)
+		return "", errs.Invalidf("invalid type %q (want bool|int|uint|float|enum|string)", s)
 	}
 }
 
@@ -248,6 +249,10 @@ type ControlResult struct {
 	Cleanup        *ControlCleanup       `json:"cleanup,omitempty"`
 	Status         ControlStatus         `json:"status,omitempty"`
 	LastError      *LastApplicationError `json:"last_appl_error,omitempty"`
+
+	// Err is the classified cause of a failed status (not serialized); the
+	// CLI wraps it so the exit code reflects the underlying failure.
+	Err error `json:"-"`
 }
 
 // WriteRequest is an explicit scalar MMS write.

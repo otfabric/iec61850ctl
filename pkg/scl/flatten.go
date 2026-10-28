@@ -112,13 +112,17 @@ func flattenLN(prefix, lnName string, lnType string, doiList []DOI, doiList0 []D
 		}
 		doi := doiMap[do.Name]
 		doPath := lnName + "." + do.Name
-		entries := flattenDO(prefix, doPath, doType, doi, nil, doTypes, daTypes, enumTypes)
+		entries := flattenDO(prefix, doPath, doType, doi, nil, doTypes, daTypes, enumTypes, typeStack{})
 		out = append(out, entries...)
 	}
 	return out
 }
 
-func flattenDO(prefix, doPath string, doType *DOType, doi *DOI, sdiPath []string, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string) []FlattenEntry {
+func flattenDO(prefix, doPath string, doType *DOType, doi *DOI, sdiPath []string, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, stack typeStack) []FlattenEntry {
+	if !stack.push("DO:" + doType.ID) {
+		return nil // recursive DOType reference: stop instead of overflowing the stack
+	}
+	defer stack.pop("DO:" + doType.ID)
 	var out []FlattenEntry
 	// DA elements (leaf attributes)
 	for i := range doType.DA {
@@ -136,7 +140,7 @@ func flattenDO(prefix, doPath string, doType *DOType, doi *DOI, sdiPath []string
 			if parentFC == "" {
 				parentFC = inferFC(da.BType)
 			}
-			entries := flattenDAType(prefix, structPath, da.Type, doi, structSDIPath, parentFC, daTypes, enumTypes)
+			entries := flattenDAType(prefix, structPath, da.Type, doi, structSDIPath, parentFC, daTypes, enumTypes, stack)
 			out = append(out, entries...)
 		} else {
 			// Leaf: no type, or type is Enum/other (e.g. BehaviourModeKind) — not in daTypes
@@ -163,17 +167,17 @@ func flattenDO(prefix, doPath string, doType *DOType, doi *DOI, sdiPath []string
 		}
 		subDoPath := doPath + "." + sdo.Name
 		var subDOI *DOI
-		var subSDIPath []string
 		if doi != nil {
 			for j := range doi.SDI {
 				if doi.SDI[j].Name == sdo.Name {
+					// subDOI is rooted at the matching SDI, so value lookups below it
+					// start from an empty SDI path (not sdiPath+sdo.Name).
 					subDOI = &DOI{Name: sdo.Name, DAI: doi.SDI[j].DAI, SDI: doi.SDI[j].SDI}
-					subSDIPath = appendPath(sdiPath, sdo.Name)
 					break
 				}
 			}
 		}
-		entries := flattenDO(prefix, subDoPath, sdoType, subDOI, subSDIPath, doTypes, daTypes, enumTypes)
+		entries := flattenDO(prefix, subDoPath, sdoType, subDOI, nil, doTypes, daTypes, enumTypes, stack)
 		out = append(out, entries...)
 	}
 	return out
@@ -210,11 +214,15 @@ func getDAIValue(doi *DOI, sdiPath []string, daName string) string {
 
 // flattenDAType recursively expands a DAType and returns leaf entries (path, fc, value, bType).
 // parentFC is the fc of the containing DA (e.g. CO for Oper struct); used when BDA has no fc.
-func flattenDAType(prefix, structPath string, typeID string, doi *DOI, sdiPath []string, parentFC string, daTypes map[string]*DAType, enumTypes map[string]string) []FlattenEntry {
+func flattenDAType(prefix, structPath string, typeID string, doi *DOI, sdiPath []string, parentFC string, daTypes map[string]*DAType, enumTypes map[string]string, stack typeStack) []FlattenEntry {
 	dt := daTypes[typeID]
 	if dt == nil {
 		return nil
 	}
+	if !stack.push("DA:" + typeID) {
+		return nil // recursive DAType reference: stop instead of overflowing the stack
+	}
+	defer stack.pop("DA:" + typeID)
 	var out []FlattenEntry
 	for i := range dt.BDA {
 		bda := &dt.BDA[i]
@@ -228,7 +236,7 @@ func flattenDAType(prefix, structPath string, typeID string, doi *DOI, sdiPath [
 		}
 		if bda.Type != "" && daTypes[bda.Type] != nil {
 			// Nested struct
-			entries := flattenDAType(prefix, subPath, bda.Type, doi, appendPath(sdiPath, bda.Name), fc, daTypes, enumTypes)
+			entries := flattenDAType(prefix, subPath, bda.Type, doi, appendPath(sdiPath, bda.Name), fc, daTypes, enumTypes, stack)
 			out = append(out, entries...)
 		} else {
 			val := getDAIValue(doi, sdiPath, bda.Name)

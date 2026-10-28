@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	iec61850 "github.com/otfabric/go-iec61850"
 	mms "github.com/otfabric/go-mms"
 
@@ -79,11 +81,11 @@ func leafRefToStoreKey(ref string, fc domain.FunctionalConstraint) (string, erro
 		return "", err
 	}
 	if len(objRef.Path) == 0 {
-		return "", fmt.Errorf("not a leaf reference: %q", ref)
+		return "", errs.Invalidf("not a leaf reference: %q", ref)
 	}
 	fcStr := string(fc)
 	if fcStr == "" {
-		return "", fmt.Errorf("missing FC for %q", ref)
+		return "", errs.Invalidf("missing FC for %q", ref)
 	}
 	itemID := objRef.LN + "$" + fcStr + "$" + strings.Join(objRef.Path, "$")
 	return objRef.LD + "/" + itemID, nil

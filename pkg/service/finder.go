@@ -7,6 +7,7 @@ package service
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
@@ -145,6 +146,21 @@ func (f *Finder) FindPath(input FindPathInput) (*FindPathResult, error) {
 		Matches:   matches,
 		CallCount: callCount,
 	}, nil
+}
+
+// DataAttributePath builds the full display path of a data attribute returned
+// by FindPath/ListDataAttributes. Attribute names are already qualified with
+// their top-level parent (parent "mag" -> attr "mag.f"; leaf parent "q" ->
+// attr "q"), so the parent is only added when the name does not carry it.
+func DataAttributePath(doPath, parentName string, attr domain.DataAttribute) string {
+	name := attr.Name
+	switch {
+	case name == "":
+		name = parentName
+	case parentName != "" && name != parentName && !strings.HasPrefix(name, parentName+"."):
+		name = parentName + "." + name
+	}
+	return doPath + "." + name
 }
 
 // filterDataAttributes filters the data attributes map to only include entries

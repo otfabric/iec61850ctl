@@ -13,6 +13,7 @@ import (
 )
 
 func TestFormatLeafValue(t *testing.T) {
+	t.Parallel()
 	ts := domain.Timestamp{UnixMs: 1737646499123, TimeQuality: 0x00}
 	tm := time.UnixMilli(1737646499123).UTC()
 
@@ -134,6 +135,7 @@ func TestFormatLeafValue(t *testing.T) {
 }
 
 func TestFormatAttributeValueWithError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		value   interface{}
@@ -157,6 +159,7 @@ func TestFormatAttributeValueWithError(t *testing.T) {
 }
 
 func TestFormatDataAttributeValue(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		da   *domain.DataAttribute
@@ -187,6 +190,7 @@ func TestFormatDataAttributeValue(t *testing.T) {
 }
 
 func TestFormatMmsValue(t *testing.T) {
+	t.Parallel()
 	tm := time.UnixMilli(1737646499123).UTC()
 
 	tests := []struct {
@@ -280,6 +284,7 @@ func TestFormatMmsValue(t *testing.T) {
 }
 
 func TestFormatDomainValue(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		v          *domain.Value

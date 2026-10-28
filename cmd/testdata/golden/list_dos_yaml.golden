@@ -1,0 +1,12 @@
+- name: DPS1
+  dacount: 3
+- name: SPCSO1
+  dacount: 26
+- name: SPCSO2
+  dacount: 26
+- name: SPCSO3
+  dacount: 26
+- name: SPS1
+  dacount: 4
+- name: SetInt1
+  dacount: 3

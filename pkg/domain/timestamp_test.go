@@ -11,6 +11,7 @@ import (
 )
 
 func TestParseTimeToUnixMs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		in      string
@@ -86,6 +87,7 @@ func TestParseTimeToUnixMs(t *testing.T) {
 }
 
 func TestFormatTimestampMs(t *testing.T) {
+	t.Parallel()
 	if got := FormatTimestampMs(0); got != "" {
 		t.Errorf("FormatTimestampMs(0) = %q, want \"\"", got)
 	}
@@ -97,6 +99,7 @@ func TestFormatTimestampMs(t *testing.T) {
 }
 
 func TestFromUtcTimeValue(t *testing.T) {
+	t.Parallel()
 	ts := FromUtcTimeValue(1_700_000_000_000, 0x80|0x40|0x20|0x0A)
 	if ts.UnixMs != 1_700_000_000_000 {
 		t.Errorf("UnixMs = %d", ts.UnixMs)
@@ -124,6 +127,7 @@ func TestFromUtcTimeValue(t *testing.T) {
 }
 
 func TestTimestamp_Methods(t *testing.T) {
+	t.Parallel()
 	ts := Timestamp{
 		UnixMs:               1_700_000_000_123,
 		LeapSecondKnown:      false,
@@ -167,6 +171,7 @@ func TestTimestamp_Methods(t *testing.T) {
 }
 
 func TestFromLibTimestamp(t *testing.T) {
+	t.Parallel()
 	if got := FromLibTimestamp(iec61850.Timestamp{}); got != (Timestamp{}) {
 		t.Errorf("FromLibTimestamp(zero) = %+v, want zero", got)
 	}
@@ -193,6 +198,7 @@ func TestFromLibTimestamp(t *testing.T) {
 }
 
 func TestIsDigitsOnly(t *testing.T) {
+	t.Parallel()
 	if !isDigitsOnly("123") {
 		t.Error("isDigitsOnly(123) = false")
 	}

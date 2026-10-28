@@ -6,6 +6,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
 	"github.com/otfabric/iec61850ctl/pkg/view"
@@ -58,11 +60,11 @@ func runListReports(cmd *cobra.Command, args []string) error {
 
 	if reportsAllFlag {
 		if reportsLdFlag != "" || reportsLnFlag != "" {
-			return fmt.Errorf("--all cannot be combined with --ld or --ln")
+			return errs.Invalidf("--all cannot be combined with --ld or --ln")
 		}
 	} else {
 		if reportsLdFlag == "" || reportsLnFlag == "" {
-			return fmt.Errorf("--ld and --ln are required (or use --all to list reports across the server)")
+			return errs.Invalidf("--ld and --ln are required (or use --all to list reports across the server)")
 		}
 	}
 

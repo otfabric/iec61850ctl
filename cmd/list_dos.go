@@ -7,7 +7,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/formatter"
@@ -63,12 +63,12 @@ func runListDos(cmd *cobra.Command, args []string) error {
 		}
 		if len(objects) == 0 {
 			if outputFormat == formatter.OutputFormatJSON {
-				_, _ = os.Stdout.WriteString("[]\n")
+				_, _ = io.WriteString(cmd.OutOrStdout(), "[]\n")
 			}
 			return nil
 		}
 		renderer := formatter.NewRenderer(outputFormat)
-		return renderer.RenderDataObjects(objects, os.Stdout)
+		return renderer.RenderDataObjects(objects, cmd.OutOrStdout())
 	}
 
 	// Text format: simple listing without metadata
@@ -79,21 +79,21 @@ func runListDos(cmd *cobra.Command, args []string) error {
 
 	lnRef := fmt.Sprintf("%s/%s", ldNameForDos, lnNameForDos)
 	if len(doNames) == 0 {
-		fmt.Printf("No data objects found in '%s'\n", lnRef)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No data objects found in '%s'\n", lnRef)
 		return nil
 	}
 
-	fmt.Printf("Found %d data object(s) in '%s':\n", len(doNames), lnRef)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d data object(s) in '%s':\n", len(doNames), lnRef)
 
 	if !dosDetailedFlag {
 		// Simple mode: numbered list
-		fmt.Println()
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		for i, do := range doNames {
-			fmt.Printf("  %d. %s\n", i+1, do)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s\n", i+1, do)
 		}
 	} else {
 		// Detailed mode: show data attribute count for each DO
-		fmt.Println()
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		for i, do := range doNames {
 			// Get data attributes to count them
 			attrsMap, err := a.ListDataAttributes(app.ListDataAttributesInput{
@@ -111,9 +111,9 @@ func runListDos(cmd *cobra.Command, args []string) error {
 			}
 
 			if err != nil {
-				fmt.Printf("  %d. %-30s [DAs: <error>]\n", i+1, do)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %-30s [DAs: <error>]\n", i+1, do)
 			} else {
-				fmt.Printf("  %d. %-30s [DAs: %3d]\n", i+1, do, daCount)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %-30s [DAs: %3d]\n", i+1, do, daCount)
 			}
 		}
 	}

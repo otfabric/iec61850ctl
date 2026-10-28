@@ -9,6 +9,7 @@ import (
 )
 
 func TestProjectLogicalDevice_FromCounts(t *testing.T) {
+	t.Parallel()
 	ld := domain.LogicalDevice{Name: "LD0", LNCount: 2, DSCount: 1, URCBCount: 3, BRCBCount: 4}
 	v := ProjectLogicalDevice(ld)
 	if v.Name != "LD0" || v.LNCount != 2 || v.DSCount != 1 || v.URCBCount != 3 || v.BRCBCount != 4 {
@@ -17,6 +18,7 @@ func TestProjectLogicalDevice_FromCounts(t *testing.T) {
 }
 
 func TestProjectLogicalDevice_FromChildren(t *testing.T) {
+	t.Parallel()
 	ld := domain.LogicalDevice{
 		Name: "LD0",
 		LogicalNodes: []domain.LogicalNode{
@@ -40,6 +42,7 @@ func TestProjectLogicalDevice_FromChildren(t *testing.T) {
 }
 
 func TestProjectLogicalDevices(t *testing.T) {
+	t.Parallel()
 	out := ProjectLogicalDevices([]domain.LogicalDevice{{Name: "A"}, {Name: "B"}})
 	if len(out) != 2 || out[0].Name != "A" || out[1].Name != "B" {
 		t.Fatalf("got %+v", out)
@@ -47,6 +50,7 @@ func TestProjectLogicalDevices(t *testing.T) {
 }
 
 func TestProjectDataAttribute(t *testing.T) {
+	t.Parallel()
 	da := domain.DataAttribute{
 		Name:       "mag.f",
 		Ref:        "LD0/LN0.DO.mag.f",
@@ -68,6 +72,7 @@ func TestProjectDataAttribute(t *testing.T) {
 }
 
 func TestProjectDataAttributes(t *testing.T) {
+	t.Parallel()
 	out := ProjectDataAttributes([]domain.DataAttribute{{Name: "a"}, {Name: "b"}})
 	if len(out) != 2 {
 		t.Fatalf("len=%d", len(out))
@@ -75,6 +80,7 @@ func TestProjectDataAttributes(t *testing.T) {
 }
 
 func TestProjectDataSet(t *testing.T) {
+	t.Parallel()
 	ds := domain.DataSet{
 		Name: "Meas",
 		Members: []domain.DataSetMember{
@@ -88,6 +94,7 @@ func TestProjectDataSet(t *testing.T) {
 }
 
 func TestProjectReportControlBlockRefs(t *testing.T) {
+	t.Parallel()
 	refs := []domain.ReportControlBlockRef{{LD: "LD0", LN: "LLN0", Name: "r1", Buffered: true}}
 	out := ProjectReportControlBlockRefs(refs)
 	if len(out) != 1 || out[0].Name != "r1" || !out[0].Buffered {
@@ -96,6 +103,7 @@ func TestProjectReportControlBlockRefs(t *testing.T) {
 }
 
 func TestProjectFileEntry(t *testing.T) {
+	t.Parallel()
 	f := domain.FileEntry{Name: "a.bin", Size: 1024, LastModified: 1}
 	v := ProjectFileEntry(f, func(u uint64) string { return "1KB" }, func(u uint64) string { return "t" })
 	if v.Name != "a.bin" || v.Size != "1KB" || v.LastModified != "t" {
@@ -104,6 +112,7 @@ func TestProjectFileEntry(t *testing.T) {
 }
 
 func TestProjectJournalInfos(t *testing.T) {
+	t.Parallel()
 	out := ProjectJournalInfos([]domain.JournalInfo{{Name: "log1", LogicalNode: "LLN0", FullRef: "LD0/LLN0$log1"}})
 	if len(out) != 1 || out[0].Name != "log1" {
 		t.Fatalf("got %+v", out)
@@ -111,6 +120,7 @@ func TestProjectJournalInfos(t *testing.T) {
 }
 
 func TestProjectJournalEntries(t *testing.T) {
+	t.Parallel()
 	entries := []domain.JournalEntry{{
 		EntryID: "01", OccurrenceTime: "t",
 		Variables: []domain.JournalVariable{{Tag: "x", Value: "1"}},
@@ -122,6 +132,7 @@ func TestProjectJournalEntries(t *testing.T) {
 }
 
 func TestProjectReportControlBlock(t *testing.T) {
+	t.Parallel()
 	en := true
 	rcb := domain.ReportControlBlock{
 		Name:     "rcb1",
@@ -137,6 +148,7 @@ func TestProjectReportControlBlock(t *testing.T) {
 }
 
 func TestProjectJournalEntry(t *testing.T) {
+	t.Parallel()
 	e := domain.JournalEntry{EntryID: "aa", OccurrenceTime: "2024-01-01T00:00:00Z"}
 	v := ProjectJournalEntry(e)
 	if v.EntryID != "aa" {

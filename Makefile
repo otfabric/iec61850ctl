@@ -1,4 +1,4 @@
-.PHONY: help all run fmt lint lint-ci vet test coverage cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs
+.PHONY: help all run fmt lint lint-ci vet test coverage coverage-gate fuzz cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -49,23 +49,31 @@ vet: ## Run go vet on project packages
 	@echo "Running go vet"
 	@go vet ./...
 
-# Library packages under coverage (CLI cmd/ wiring excluded; see .codecov.yml).
-COVERPKGS := ./pkg/... ./internal/...
+# Minimum statement coverage per package (cmd/ included).
+COVERAGE_MIN ?= 90
+# Duration per fuzz target for `make fuzz`.
+FUZZTIME ?= 10s
 
 test: ## Run unit tests with race detector
 	@echo "Running unit tests (race detector)"
 	@CGO_ENABLED=1 go test -count=1 -race ./...
 
-coverage: ## Run tests with coverage for pkg/ and internal/ (writes coverage.out)
-	@echo "Running coverage ($(COVERPKGS))"
-	@CGO_ENABLED=1 go test -count=1 -race -coverprofile=coverage.out -covermode=atomic $(COVERPKGS)
+coverage: ## Run tests with coverage for all packages (writes coverage.out)
+	@echo "Running coverage"
+	@CGO_ENABLED=1 go test -count=1 -race -coverprofile=coverage.out -covermode=atomic ./...
 	@go tool cover -func=coverage.out | tail -1
+
+coverage-gate: ## Fail when any package is below COVERAGE_MIN% (default 90)
+	@COVERAGE_MIN=$(COVERAGE_MIN) ./scripts/coverage-gate.sh
+
+fuzz: ## Run every fuzz target for FUZZTIME (default 10s)
+	@FUZZTIME=$(FUZZTIME) ./scripts/fuzz.sh
 
 cover: coverage ## Open coverage report in browser
 	@echo "Opening coverage report"
 	@go tool cover -html=coverage.out
 
-check: fmt lint lint-ci vet test coverage ## Run all checks (format, lint, vet, test, coverage)
+check: fmt lint lint-ci vet coverage-gate ## Run all checks (format, lint, vet, race tests, coverage gate)
 
 build: check ## Build the application (runs full check first)
 	@$(MAKE) build-nocheck

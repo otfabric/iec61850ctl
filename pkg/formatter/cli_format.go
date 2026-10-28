@@ -3,8 +3,9 @@
 package formatter
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // ParseCLIFormat accepts only text or json. Unknown formats return an error
@@ -16,7 +17,7 @@ func ParseCLIFormat(s string) (OutputFormat, error) {
 	case "json":
 		return OutputFormatJSON, nil
 	default:
-		return OutputFormatText, fmt.Errorf("invalid --format %q (supported: text, json)", s)
+		return OutputFormatText, errs.Invalidf("invalid --format %q (supported: text, json)", s)
 	}
 }
 
@@ -36,6 +37,6 @@ func ParseStreamFormat(s string) (StreamFormat, error) {
 	case "jsonl":
 		return StreamFormatJSONL, nil
 	default:
-		return "", fmt.Errorf("invalid --format %q (supported: text, jsonl)", s)
+		return "", errs.Invalidf("invalid --format %q (supported: text, jsonl)", s)
 	}
 }

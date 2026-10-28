@@ -3,12 +3,15 @@
 package formatter
 
 import (
+	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
 
 func TestScalarJSONValue_Baseline(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		v    *domain.Value
@@ -32,6 +35,7 @@ func TestScalarJSONValue_Baseline(t *testing.T) {
 }
 
 func TestParseCLIFormat(t *testing.T) {
+	t.Parallel()
 	f, err := ParseCLIFormat("json")
 	if err != nil || f != OutputFormatJSON {
 		t.Fatalf("json: %v %q", err, f)
@@ -45,6 +49,7 @@ func TestParseCLIFormat(t *testing.T) {
 }
 
 func TestParseStreamFormat(t *testing.T) {
+	t.Parallel()
 	f, err := ParseStreamFormat("jsonl")
 	if err != nil || f != StreamFormatJSONL {
 		t.Fatalf("jsonl: %v %q", err, f)
@@ -59,6 +64,7 @@ func TestParseStreamFormat(t *testing.T) {
 }
 
 func TestJSONTypeName(t *testing.T) {
+	t.Parallel()
 	cases := map[domain.MmsDataType]string{
 		domain.TypeBoolean:       "boolean",
 		domain.TypeInteger:       "integer",
@@ -80,6 +86,7 @@ func TestJSONTypeName(t *testing.T) {
 }
 
 func TestScalarJSONValue_DeferredComplex(t *testing.T) {
+	t.Parallel()
 	v := domain.NewValue([]byte{0x01}, domain.TypeOctetString)
 	got, err := ScalarJSONValue(v)
 	if err != nil {
@@ -87,5 +94,30 @@ func TestScalarJSONValue_DeferredComplex(t *testing.T) {
 	}
 	if _, ok := got.(string); !ok {
 		t.Fatalf("deferred complex should be interim string, got %T", got)
+	}
+}
+
+// Regression (found by FuzzScalarJSONValue): NaN/Inf floats made json.Marshal
+// fail, silently dropping jsonl report events.
+func TestScalarJSONValue_NonFiniteFloat(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		raw  any
+		want any
+	}{
+		{math.NaN(), "NaN"},
+		{math.Inf(1), "+Inf"},
+		{math.Inf(-1), "-Inf"},
+		{float32(math.Inf(1)), "+Inf"},
+		{1.5, 1.5},
+	}
+	for _, tt := range tests {
+		got, err := ScalarJSONValue(domain.NewValue(tt.raw, domain.TypeFloat))
+		if err != nil || got != tt.want {
+			t.Errorf("ScalarJSONValue(%v) = %v, %v; want %v", tt.raw, got, err, tt.want)
+		}
+		if _, err := json.Marshal(got); err != nil {
+			t.Errorf("json.Marshal(%v): %v", got, err)
+		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 )
 
 func TestTree_RenderDeviceTreeFlat_Shallow(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		logicalNodes:   []string{"MMXU1"},
@@ -27,6 +28,7 @@ func TestTree_RenderDeviceTreeFlat_Shallow(t *testing.T) {
 }
 
 func TestTree_RenderDeviceTree_Shallow(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		logicalNodes:   []string{"MMXU1"},
@@ -43,6 +45,7 @@ func TestTree_RenderDeviceTree_Shallow(t *testing.T) {
 }
 
 func TestTree_BuildSerializableModel_WithDSAndReports(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		logicalNodes:   []string{"LLN0"},
@@ -64,6 +67,7 @@ func TestTree_BuildSerializableModel_WithDSAndReports(t *testing.T) {
 }
 
 func TestTree_Build(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{logicalDevices: []string{"LD0"}, logicalNodes: []string{"LLN0"}, dataObjects: []string{"DO1"}}
 	ied, err := NewTree(mock).Build("LD0", false)
 	if err != nil || ied == nil {

@@ -48,14 +48,14 @@ func runListFiles(cmd *cobra.Command, args []string) error {
 	}
 
 	if filesRecursiveFlag {
-		fmt.Printf("Files matching %q:\n\n", filesPathFlag)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Files matching %q:\n\n", filesPathFlag)
 		for _, entry := range entries {
 			depth := strings.Count(entry.Name, "/") + strings.Count(entry.Name, "\\")
 			indent := strings.Repeat("  ", depth)
 			if filesDetailedFlag {
-				fmt.Printf("%s%s (%s)\n", indent, entry.Name, formatter.FormatFileSize(uint64(entry.Size)))
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s%s (%s)\n", indent, entry.Name, formatter.FormatFileSize(uint64(entry.Size)))
 			} else {
-				fmt.Printf("%s%s\n", indent, entry.Name)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s%s\n", indent, entry.Name)
 			}
 		}
 		return nil
@@ -65,23 +65,23 @@ func runListFiles(cmd *cobra.Command, args []string) error {
 	if filesPathFlag != "" {
 		pathInfo = fmt.Sprintf("%q", filesPathFlag)
 	}
-	fmt.Printf("Found %d file(s) in %s:\n", len(entries), pathInfo)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Found %d file(s) in %s:\n", len(entries), pathInfo)
 	for i, entry := range entries {
 		if filesDetailedFlag {
-			fmt.Printf("  %d. %s\n", i+1, entry.Name)
-			fmt.Printf("     Size: %s\n", formatter.FormatFileSize(uint64(entry.Size)))
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s\n", i+1, entry.Name)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     Size: %s\n", formatter.FormatFileSize(uint64(entry.Size)))
 			if !entry.LastModified.IsZero() {
-				fmt.Printf("     Last Modified: %s\n", entry.LastModified.UTC().Format("2006-01-02T15:04:05Z"))
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "     Last Modified: %s\n", entry.LastModified.UTC().Format("2006-01-02T15:04:05Z"))
 			}
 			if i < len(entries)-1 {
-				fmt.Println()
+				_, _ = fmt.Fprintln(cmd.OutOrStdout())
 			}
 		} else {
-			fmt.Printf("  %d. %s\n", i+1, entry.Name)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s\n", i+1, entry.Name)
 		}
 	}
 	if !filesDetailedFlag {
-		fmt.Println("\nUse --detailed flag to see file metadata")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "\nUse --detailed flag to see file metadata")
 	}
 	return nil
 }

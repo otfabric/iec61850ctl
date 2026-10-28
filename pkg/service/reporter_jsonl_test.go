@@ -12,6 +12,7 @@ import (
 )
 
 func TestReasonToken(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   domain.ReasonForInclusion
 		want string
@@ -31,6 +32,7 @@ func TestReasonToken(t *testing.T) {
 }
 
 func TestReporterConfig_ValidateFormat(t *testing.T) {
+	t.Parallel()
 	cfg := ReporterConfig{ReportRef: "LD/LLN0.RP.urcb01", Format: "yaml"}
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected invalid format error")
@@ -42,6 +44,7 @@ func TestReporterConfig_ValidateFormat(t *testing.T) {
 }
 
 func TestReasonTokens_Dedup(t *testing.T) {
+	t.Parallel()
 	report := &domain.Report{
 		Elements: []domain.ReportElement{
 			{Reason: domain.ReasonGI},
@@ -57,6 +60,7 @@ func TestReasonTokens_Dedup(t *testing.T) {
 }
 
 func TestWriteJSONLAndSummary(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	if err := writeJSONL(&buf, jsonlEvent{Event: "baseline", DataSet: "ds"}); err != nil {
 		t.Fatal(err)
@@ -81,6 +85,7 @@ func TestWriteJSONLAndSummary(t *testing.T) {
 }
 
 func TestReportValuesJSON(t *testing.T) {
+	t.Parallel()
 	report := &domain.Report{
 		Elements: []domain.ReportElement{
 			{Value: domain.NewValue(true, domain.TypeBoolean)},
@@ -97,6 +102,7 @@ func TestReportValuesJSON(t *testing.T) {
 }
 
 func TestBaselineValuesJSON(t *testing.T) {
+	t.Parallel()
 	if baselineValuesJSON(nil, false) != nil {
 		t.Fatal("show=false should omit values")
 	}

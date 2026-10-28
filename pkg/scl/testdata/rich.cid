@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Synthetic SCL exercising every flatten/tree branch: structs, SDOs, SDI
+     values, enums, datasets, reports, missing types and recursive types. -->
+<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
+  <IED name="IED1">
+    <AccessPoint name="NoServer"/>
+    <AccessPoint name="AP0">
+      <Server>
+        <LDevice inst="LD0">
+          <LN0 lnClass="LLN0" lnType="LLN0T">
+            <DOI name="Mod" desc="Mode">
+              <DAI name="stVal"><Val>1</Val></DAI>
+              <SDI name="Oper">
+                <DAI name="ctlVal"><Val>true</Val></DAI>
+                <DAI name="extraDA"><Val>2</Val></DAI>
+                <SDI name="origin">
+                  <DAI name="orCat"><Val>3</Val></DAI>
+                </SDI>
+              </SDI>
+              <SDI name="sub">
+                <DAI name="mag"><Val> 1.5 </Val></DAI>
+              </SDI>
+            </DOI>
+            <DataSet name="DS1"><FCDA ldInst="LD0" lnClass="LLN0" doName="Mod" fc="ST"/></DataSet>
+            <DataSet name="DS2"/>
+            <ReportControl name="brcb01" datSet="DS1" buffered="true"/>
+            <ReportControl name="urcb01" datSet="DS2" buffered="false"/>
+          </LN0>
+          <LN prefix="Q0" lnClass="XCBR" inst="1" lnType="XCBRT" desc="Breaker">
+            <DOI name="Pos"><DAI name="stVal"><Val>2</Val></DAI></DOI>
+          </LN>
+          <LN lnClass="GGIO" inst="1" lnType="XCBRT"/>
+          <LN lnClass="UNKN" inst="1" lnType="DoesNotExist"/>
+          <LN lnClass="LOOP" inst="1" lnType="LoopLN"/>
+        </LDevice>
+        <LDevice inst="LD1">
+          <LN lnClass="GGIO" inst="2" lnType="XCBRT"/>
+        </LDevice>
+        <LDevice inst="LD2">
+          <LN0 lnClass="LLN0" lnType="XCBRT"/>
+        </LDevice>
+      </Server>
+    </AccessPoint>
+  </IED>
+  <DataTypeTemplates>
+    <LNodeType id="LLN0T" lnClass="LLN0">
+      <DO name="Mod" type="DO_Mod"/>
+      <DO name="Beh" type="MissingDOType"/>
+    </LNodeType>
+    <LNodeType id="XCBRT" lnClass="XCBR">
+      <DO name="Pos" type="DO_Pos"/>
+      <DO name="Loc" type="DO_Pos"/>
+    </LNodeType>
+    <LNodeType id="LoopLN" lnClass="LOOP">
+      <DO name="Rec" type="DO_Loop"/>
+    </LNodeType>
+    <DOType id="DO_Mod" cdc="ENC">
+      <DA name="stVal" bType="Enum" type="ModKind" fc="ST"/>
+      <DA name="Oper" bType="Struct" type="Oper_T" fc="CO"/>
+      <DA name="ctlModel" bType="Enum" type="CtlKind" fc="CF"/>
+      <DA name="origin" bType="Struct" type="Origin_T"/>
+      <DA name="plain"/>
+      <DA name="unknownStruct" bType="Struct" type="NoSuchDAType" fc="CF"/>
+      <SDO name="sub" type="DO_Sub"/>
+      <SDO name="gone" type="NoSuchDOType"/>
+    </DOType>
+    <DOType id="DO_Sub" cdc="MV">
+      <DA name="mag" bType="FLOAT32" fc="MX"/>
+      <DA name="t" bType="Timestamp"/>
+    </DOType>
+    <DOType id="DO_Pos" cdc="DPC">
+      <DA name="stVal" bType="Dbpos" fc="ST"/>
+    </DOType>
+    <DOType id="DO_Loop" cdc="X">
+      <DA name="x" bType="INT8" fc="ST"/>
+      <DA name="l" bType="Struct" type="Loop_T" fc="ST"/>
+      <SDO name="again" type="DO_Loop"/>
+    </DOType>
+    <DAType id="Oper_T">
+      <BDA name="ctlVal" bType="BOOLEAN"/>
+      <BDA name="origin" bType="Struct" type="Origin_T"/>
+      <BDA name="withFc" bType="INT8" fc="ST"/>
+      <DA name="extraDA" bType="INT32" type="ModKind"/>
+      <DA name="withFcDA" bType="INT16U" fc="SP"/>
+    </DAType>
+    <DAType id="Origin_T">
+      <BDA name="orCat" bType="Enum" type="OrCat"/>
+      <BDA name="orIdent" bType="Octet64"/>
+    </DAType>
+    <DAType id="Loop_T">
+      <BDA name="self" bType="Struct" type="Loop_T"/>
+      <BDA name="leaf" bType="INT8"/>
+    </DAType>
+    <EnumType id="ModKind">
+      <EnumVal ord="1"> on </EnumVal>
+      <EnumVal ord="5">off</EnumVal>
+    </EnumType>
+    <EnumType id="CtlKind">
+      <EnumVal ord="0">status-only</EnumVal>
+    </EnumType>
+    <EnumType id="OrCat">
+      <EnumVal ord="3">remote-control</EnumVal>
+    </EnumType>
+    <EnumType id="Empty"/>
+  </DataTypeTemplates>
+</SCL>

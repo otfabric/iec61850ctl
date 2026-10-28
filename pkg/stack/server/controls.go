@@ -18,7 +18,12 @@ import (
 //	GGIO1.SPCSO3 — sbo-with-enhanced-security
 //
 // OnOperate updates the corresponding stVal in the value store.
+//
+// Models without the InteropLD logical device are left untouched.
 func registerInteropControls(srv *iec61850.Server) error {
+	if !hasLogicalDevice(srv, interopLD) {
+		return nil
+	}
 	vs := srv.ValueStore()
 	makeOperateHandler := func(stValKey string) iec61850.ControlHandler {
 		return iec61850.ControlHandler{
@@ -47,9 +52,24 @@ func registerInteropControls(srv *iec61850.Server) error {
 		{"GGIO1.SPCSO3", iec61850.CtlModelSBOEnhanced, "InteropLD/GGIO1$ST$SPCSO3$stVal"},
 	}
 	for _, c := range controls {
-		if err := srv.RegisterControl("InteropLD", c.doRef, c.ctlModel, makeOperateHandler(c.stValKey)); err != nil {
+		if err := srv.RegisterControl(interopLD, c.doRef, c.ctlModel, makeOperateHandler(c.stValKey)); err != nil {
 			return fmt.Errorf("register control %s: %w", c.doRef, err)
 		}
 	}
 	return nil
+}
+
+const interopLD = "InteropLD"
+
+func hasLogicalDevice(srv *iec61850.Server, name string) bool {
+	m := srv.Model()
+	if m == nil {
+		return false
+	}
+	for i := range m.LogicalDevices {
+		if m.LogicalDevices[i].Name == name {
+			return true
+		}
+	}
+	return false
 }

@@ -5,6 +5,7 @@ package value
 import "testing"
 
 func TestFormatFileSize(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		bytes uint64

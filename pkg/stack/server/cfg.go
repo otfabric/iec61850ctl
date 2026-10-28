@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
 
@@ -17,7 +19,7 @@ import (
 // See https://libiec61850.com/configuration-file-format and server_example_config_file/model.cfg.
 func IEDToCfg(ied *domain.IED, iedName string) ([]byte, error) {
 	if ied == nil || len(ied.LogicalDevices) == 0 {
-		return nil, fmt.Errorf("IED has no logical devices")
+		return nil, errs.Newf(errs.ErrInvalidConfig, "IED has no logical devices")
 	}
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "MODEL(%s){\n", iedName)

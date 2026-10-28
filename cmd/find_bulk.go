@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/service"
 
@@ -59,7 +61,7 @@ func runFindBulk(cmd *cobra.Command, args []string) error {
 
 	var wrapper mappingFileJSON
 	if err := json.Unmarshal(data, &wrapper); err != nil {
-		return fmt.Errorf("parse mapping file: %w", err)
+		return errs.Mark(fmt.Errorf("parse mapping file: %w", err), errs.ErrInvalidInput)
 	}
 	mapping := wrapper.Iec61850Mappings
 	if len(mapping) == 0 {
@@ -69,7 +71,7 @@ func runFindBulk(cmd *cobra.Command, args []string) error {
 		if err := os.WriteFile(findBulkOutputFile, b, 0644); err != nil {
 			return fmt.Errorf("write output file: %w", err)
 		}
-		fmt.Printf("Total IEC61850 calls made: 0\n")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Total IEC61850 calls made: 0\n")
 		return nil
 	}
 
@@ -95,6 +97,6 @@ func runFindBulk(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("write output file: %w", err)
 	}
 
-	fmt.Printf("Total IEC61850 calls made: %d\n", result.CallCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Total IEC61850 calls made: %d\n", result.CallCount)
 	return nil
 }

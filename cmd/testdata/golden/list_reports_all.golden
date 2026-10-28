@@ -1,0 +1,7 @@
+Found 2 report(s) across all logical devices:
+
+InteropLD/LLN0:
+  - brcb01 (BRCB)
+  - urcb01 (URCB)
+
+Use --detailed flag to see report configuration

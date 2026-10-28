@@ -4,9 +4,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
@@ -90,6 +93,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 			OK:        false,
 			Error:     "status-only: object is not controllable",
 		}}
+		result.Err = errs.Mark(errors.New("status-only: object is not controllable"), iec61850.ErrNotControllable)
 		return result, nil
 	}
 
@@ -101,6 +105,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 			OK:        false,
 			Error:     modeErr.Error(),
 		}}
+		result.Err = modeErr
 		return controlOutcome(result)
 	}
 	result.Mode = resolvedMode
@@ -155,6 +160,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 		if opErr := c.conn.Operate(ctx, ref, params); opErr != nil {
 			ops[len(ops)-1].OK = false
 			ops[len(ops)-1].Error = opErr.Error()
+			result.Err = opErr
 			result.Operations = ops
 			result.Status = domain.ControlStatusFailed
 			result.LastError = c.lookupLastApplError(ctx, ref, req.Object)
@@ -169,8 +175,10 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 			ops[len(ops)-1].OK = false
 			if selErr != nil {
 				ops[len(ops)-1].Error = selErr.Error()
+				result.Err = selErr
 			} else {
 				ops[len(ops)-1].Error = "select denied (empty SBO)"
+				result.Err = errs.Mark(errors.New("select denied (empty SBO)"), iec61850.ErrSelectFailed)
 			}
 			result.Operations = ops
 			result.Status = domain.ControlStatusFailed
@@ -184,6 +192,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 		if opErr := c.conn.Operate(ctx, ref, params); opErr != nil {
 			ops[len(ops)-1].OK = false
 			ops[len(ops)-1].Error = opErr.Error()
+			result.Err = opErr
 			result.Operations = ops
 			result.Status = domain.ControlStatusFailed
 			result.Cleanup = c.tryCancel(ctx, ref, cancelFromOperate(params))
@@ -197,6 +206,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 		if selErr := c.conn.SelectWithValue(ctx, ref, params); selErr != nil {
 			ops[len(ops)-1].OK = false
 			ops[len(ops)-1].Error = selErr.Error()
+			result.Err = selErr
 			result.Operations = ops
 			result.Status = domain.ControlStatusFailed
 			result.LastError = c.lookupLastApplError(ctx, ref, req.Object)
@@ -208,6 +218,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 		if opErr := c.conn.Operate(ctx, ref, params); opErr != nil {
 			ops[len(ops)-1].OK = false
 			ops[len(ops)-1].Error = opErr.Error()
+			result.Err = opErr
 			result.Operations = ops
 			result.Status = domain.ControlStatusFailed
 			result.Cleanup = c.tryCancel(ctx, ref, cancelFromOperate(params))
@@ -245,6 +256,7 @@ func (c *Controller) Operate(ctx context.Context, req domain.ControlRequest) (*d
 	if !ScalarMatchesMMS(req.Value, got.MMS()) {
 		conf.Matched = false
 		result.Confirmation = conf
+		result.Err = errs.Newf(errs.ErrVerifyMismatch, "confirmation %s = %v, want %v", req.ConfirmRef, conf.Value, ScalarRequestedAny(req.Value))
 		result.Status = domain.ControlStatusConfirmationMismatch
 		return controlOutcome(result)
 	}
@@ -322,27 +334,27 @@ func parseControlObjectRef(object string) (iec61850.Ref, error) {
 		return iec61850.Ref{}, fmt.Errorf("parse object: %w", err)
 	}
 	if ref.FC != "" {
-		return iec61850.Ref{}, fmt.Errorf("control object must not include FC; got %q", object)
+		return iec61850.Ref{}, errs.Invalidf("control object must not include FC; got %q", object)
 	}
 	if ref.LD == "" || ref.LN == "" || len(ref.Path) == 0 {
-		return iec61850.Ref{}, fmt.Errorf("control object must be LD/LN.DO; got %q", object)
+		return iec61850.Ref{}, errs.Invalidf("control object must be LD/LN.DO; got %q", object)
 	}
 	return ref, nil
 }
 
 func validateControlRequest(req domain.ControlRequest) error {
 	if strings.TrimSpace(req.Object) == "" {
-		return fmt.Errorf("object is required")
+		return errs.Invalidf("object is required")
 	}
 	if req.CtlNum != 0 && req.CtlNum < 1 {
-		return fmt.Errorf("ctl-num must be 1..255")
+		return errs.Invalidf("ctl-num must be 1..255")
 	}
 	ident := req.Origin.Ident
 	if len([]byte(ident)) > domain.MaxOrIdentBytes {
-		return fmt.Errorf("or-ident exceeds %d bytes", domain.MaxOrIdentBytes)
+		return errs.Invalidf("or-ident exceeds %d bytes", domain.MaxOrIdentBytes)
 	}
 	if req.Value.Kind == "" {
-		return fmt.Errorf("value type is required")
+		return errs.Invalidf("value type is required")
 	}
 	return nil
 }
@@ -357,24 +369,24 @@ func resolveControlMode(mode domain.ControlMode, model iec61850.CtlModel) (domai
 		case iec61850.CtlModelSBOEnhanced:
 			return domain.ControlModeSBOw, nil
 		default:
-			return "", fmt.Errorf("unsupported ctlModel %d", int(model))
+			return "", errs.Invalidf("unsupported ctlModel %d", int(model))
 		}
 	}
 	switch mode {
 	case domain.ControlModeDirect:
 		if model != iec61850.CtlModelDirectNormal && model != iec61850.CtlModelDirectEnhanced {
-			return "", fmt.Errorf("mode direct incompatible with ctlModel %s", model)
+			return "", errs.Invalidf("mode direct incompatible with ctlModel %s", model)
 		}
 	case domain.ControlModeSBO:
 		if model != iec61850.CtlModelSBONormal {
-			return "", fmt.Errorf("mode sbo incompatible with ctlModel %s", model)
+			return "", errs.Invalidf("mode sbo incompatible with ctlModel %s", model)
 		}
 	case domain.ControlModeSBOw:
 		if model != iec61850.CtlModelSBOEnhanced {
-			return "", fmt.Errorf("mode sbow incompatible with ctlModel %s", model)
+			return "", errs.Invalidf("mode sbow incompatible with ctlModel %s", model)
 		}
 	default:
-		return "", fmt.Errorf("invalid mode %q", mode)
+		return "", errs.Invalidf("invalid mode %q", mode)
 	}
 	return mode, nil
 }

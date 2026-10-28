@@ -1,0 +1,8 @@
+object: InteropLD/GGIO1.SPCSO1
+control_model: 1 (direct-with-normal-security)
+mode: direct
+ctl_num: 2
+requested_value: true
+operation operate: true
+confirmation attempted=true matched=true value=true
+status: confirmed

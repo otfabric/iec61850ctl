@@ -1,0 +1,25 @@
+[
+  {
+    "name": "d",
+    "fc": "DC",
+    "type": "STRING"
+  },
+  {
+    "name": "q",
+    "fc": "ST",
+    "type": "BIT_STRING",
+    "value": "[0 0]"
+  },
+  {
+    "name": "stVal",
+    "fc": "ST",
+    "type": "BOOL",
+    "value": "false"
+  },
+  {
+    "name": "t",
+    "fc": "ST",
+    "type": "UTC_TIME",
+    "value": "2042-07-14 01:04:00 +0000 UTC"
+  }
+]

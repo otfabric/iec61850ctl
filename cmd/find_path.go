@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
+	"github.com/otfabric/iec61850ctl/pkg/service"
 )
 
 var (
@@ -89,7 +90,7 @@ func runFindPath(cmd *cobra.Command, args []string) error {
 
 	// Output results
 	if len(result.Matches) == 0 {
-		fmt.Printf("No matches found for LN pattern '%s' and path '%s'\n", findPathLnPattern, findPathPath)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "No matches found for LN pattern '%s' and path '%s'\n", findPathLnPattern, findPathPath)
 		return nil
 	}
 
@@ -99,21 +100,17 @@ func runFindPath(cmd *cobra.Command, args []string) error {
 
 		// When a DA is specified and --include-das is not set, only print the DO.DA path.
 		if daName != "" {
-			fmt.Printf("%s.%s\n", basePath, daName)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s.%s\n", basePath, daName)
 		} else {
-			fmt.Println(basePath)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), basePath)
 		}
 
 		// If including DAs, output them
 		if findPathIncludeDas && match.DataAttributes != nil {
-			for parentName, attributes := range match.DataAttributes {
+			for _, parentName := range sortedKeys(match.DataAttributes) {
+				attributes := match.DataAttributes[parentName]
 				for _, attr := range attributes {
-					var daPath string
-					if attr.Name == "" {
-						daPath = fmt.Sprintf("%s.%s", basePath, parentName)
-					} else {
-						daPath = fmt.Sprintf("%s.%s.%s", basePath, parentName, attr.Name)
-					}
+					daPath := service.DataAttributePath(basePath, parentName, attr)
 
 					if findPathDetailedFlag {
 						// Detailed mode: show FC, Type, Value
@@ -132,11 +129,11 @@ func runFindPath(cmd *cobra.Command, args []string) error {
 								valueStr = attr.Value.String()
 							}
 						}
-						fmt.Printf("  %s [FC=%s] Type: %s Value: %s\n",
+						_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s [FC=%s] Type: %s Value: %s\n",
 							daPath, fcStr, attr.Type.String(), valueStr)
 					} else {
 						// Simple mode: just show path
-						fmt.Printf("  %s\n", daPath)
+						_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", daPath)
 					}
 				}
 			}
@@ -144,7 +141,7 @@ func runFindPath(cmd *cobra.Command, args []string) error {
 	}
 
 	// Always show call count
-	fmt.Printf("\nTotal IEC61850 calls made: %d\n", result.CallCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nTotal IEC61850 calls made: %d\n", result.CallCount)
 
 	return nil
 }

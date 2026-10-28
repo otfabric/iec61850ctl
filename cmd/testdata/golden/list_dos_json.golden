@@ -1,0 +1,26 @@
+[
+  {
+    "name": "DPS1",
+    "da_count": 3
+  },
+  {
+    "name": "SPCSO1",
+    "da_count": 26
+  },
+  {
+    "name": "SPCSO2",
+    "da_count": 26
+  },
+  {
+    "name": "SPCSO3",
+    "da_count": 26
+  },
+  {
+    "name": "SPS1",
+    "da_count": 4
+  },
+  {
+    "name": "SetInt1",
+    "da_count": 3
+  }
+]

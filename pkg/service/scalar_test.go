@@ -12,6 +12,7 @@ import (
 )
 
 func TestParseScalarValue(t *testing.T) {
+	t.Parallel()
 	b, err := ParseScalarValue("true", domain.ScalarBool)
 	if err != nil || !b.Bool {
 		t.Fatalf("bool: %+v %v", b, err)
@@ -45,6 +46,7 @@ func TestParseScalarValue(t *testing.T) {
 }
 
 func TestScalarConversions(t *testing.T) {
+	t.Parallel()
 	kinds := []domain.ScalarValue{
 		{Kind: domain.ScalarBool, Bool: true},
 		{Kind: domain.ScalarInt, Int: 7},
@@ -87,6 +89,7 @@ func TestScalarConversions(t *testing.T) {
 }
 
 func TestScalarMatchesMMS_EdgeCases(t *testing.T) {
+	t.Parallel()
 	if ScalarMatchesMMS(domain.ScalarValue{Kind: domain.ScalarBool}, nil) {
 		t.Fatal("nil got")
 	}
@@ -104,6 +107,7 @@ func TestScalarMatchesMMS_EdgeCases(t *testing.T) {
 }
 
 func TestScalarFromIECValue(t *testing.T) {
+	t.Parallel()
 	if ScalarFromIECValue(nil) != nil {
 		t.Fatal("nil")
 	}

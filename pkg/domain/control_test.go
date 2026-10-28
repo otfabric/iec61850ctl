@@ -5,6 +5,7 @@ package domain
 import "testing"
 
 func TestParseControlMode(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want ControlMode
@@ -30,6 +31,7 @@ func TestParseControlMode(t *testing.T) {
 }
 
 func TestControlStatus_ExitNonZero(t *testing.T) {
+	t.Parallel()
 	if ControlStatusOperated.ExitNonZero() || ControlStatusConfirmed.ExitNonZero() || ControlStatusPlanned.ExitNonZero() {
 		t.Fatal("success statuses must exit 0")
 	}
@@ -45,6 +47,7 @@ func TestControlStatus_ExitNonZero(t *testing.T) {
 }
 
 func TestParseOriginCategoryAndCode(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		code int
@@ -75,6 +78,7 @@ func TestParseOriginCategoryAndCode(t *testing.T) {
 }
 
 func TestParseScalarKind(t *testing.T) {
+	t.Parallel()
 	cases := map[string]ScalarKind{
 		"bool": "bool", "boolean": ScalarBool,
 		"int": ScalarInt, "integer": ScalarInt,

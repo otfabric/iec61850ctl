@@ -24,7 +24,7 @@ func (s *Server) handleFindPath(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.app.FindPath(input)
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (s *Server) handleBulkFind(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.app.BulkFind(input)
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 

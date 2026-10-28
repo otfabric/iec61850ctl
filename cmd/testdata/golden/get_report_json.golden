@@ -1,0 +1,35 @@
+{
+  "report": {
+    "name": "urcb01",
+    "ld": "InteropLD",
+    "ln": "LLN0",
+    "buffered": false,
+    "ref": "InteropLD/LLN0.urcb01",
+    "rpt_id": "interop_urcb01",
+    "dat_set": "InteropLD/LLN0$dsInterop",
+    "enabled": false,
+    "conf_rev": 1,
+    "intg_pd_ms": 0,
+    "buf_tm_ms": 0,
+    "reserved": false,
+    "sq_num": 0,
+    "trigger_options": {
+      "data_change": true,
+      "quality_change": false,
+      "data_update": false,
+      "periodic": false,
+      "gi": true
+    },
+    "optional_fields": {
+      "sequence_number": true,
+      "time_stamp": true,
+      "reason_code": true,
+      "data_set_name": false,
+      "data_reference": false,
+      "buffer_overflow": false,
+      "entry_id": false,
+      "config_revision": false
+    }
+  },
+  "data_set": null
+}

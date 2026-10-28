@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 	"github.com/otfabric/iec61850ctl/pkg/stack/server"
 
@@ -44,7 +46,7 @@ func runServerGenerateConfig(cmd *cobra.Command, args []string) error {
 
 	var ied domain.IED
 	if err := json.Unmarshal(data, &ied); err != nil {
-		return fmt.Errorf("decode IED JSON: %w", err)
+		return errs.Mark(fmt.Errorf("decode IED JSON: %w", err), errs.ErrInvalidInput)
 	}
 
 	cfg, err := server.IEDToCfg(&ied, serverGenerateName)
@@ -60,6 +62,6 @@ func runServerGenerateConfig(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("write output: %w", err)
 	}
 
-	fmt.Printf("Wrote %s (%d bytes)\n", outPath, len(cfg))
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Wrote %s (%d bytes)\n", outPath, len(cfg))
 	return nil
 }

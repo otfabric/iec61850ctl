@@ -112,7 +112,7 @@ Defaults: `--port 102`. Host/port/IED name can also come from `IEC61850_HOST` / 
 
 ```
 iec61850ctl
-├── discover / scan     Scan subnet or IP range for MMS devices
+├── discover / scan     Scan subnet (at most /16) or IP range for MMS devices
 ├── list
 │   ├── lds             List logical devices (alias: domains)
 │   ├── lns             List logical nodes (--ld)
@@ -120,7 +120,7 @@ iec61850ctl
 │   ├── das             List data attributes (--ld --ln --do)
 │   ├── dss             List data sets (--ld --ln)
 │   ├── reports         List report control blocks
-│   ├── journals        List journals (--ld)
+│   ├── journals        List journals (--ld or --domain)
 │   └── files           List remote files
 ├── get
 │   ├── object          Read an object reference (--object --fc)
@@ -131,9 +131,9 @@ iec61850ctl
 ├── tree                Full or scoped model tree (--flatten / --serialize)
 ├── find
 │   ├── path            Find LN/DO paths by pattern
-│   └── bulk            Bulk path resolve from a mapping file
+│   └── bulk            Bulk path resolve from a mapping file (--mapping --output)
 ├── subscribe
-│   └── report          Subscribe to URCB/BRCB (--type RP|BR; BRCB --purge-buf/--entry-id)
+│   └── report          Subscribe to URCB/BRCB (--type RP|BR; BRCB --purge-buf/--entry-id; --keepalive)
 ├── control
 │   ├── inspect         Read ctlModel / controllability
 │   └── operate         Atomic select/operate journey (one association)
@@ -143,7 +143,7 @@ iec61850ctl
 │   ├── parse           Parse SCL to tree or flat paths
 │   └── convert         Convert SCL to CSV
 ├── server
-│   ├── start           Start MMS server from --scl
+│   ├── start           Start MMS server from --scl (--values, --files-dir, --port 0)
 │   └── generate-config Export libiec61850 .cfg (export-only)
 ├── http                REST API fronting one IEC 61850 device
 ├── version             Print version / build metadata
@@ -183,7 +183,7 @@ iec61850ctl subscribe report \
   --purge-buf --interrogation --max-reports 1 --format jsonl
 ```
 
-`--interrogation` triggers GI after enable. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
+`--interrogation` triggers GI after enable. `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically so a dropped association ends the subscription with exit code `3` instead of waiting silently for reports. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
 
 ### Control and scalar write
 
@@ -228,6 +228,11 @@ iec61850ctl find path --ln MMXU --path A.phsA --include-das --detailed
 
 `--ln` is a regex (e.g. `MMXU` matches `FMMXU1`). `--path` is an exact DO or DO.DA match.
 
+```sh
+# Resolve many semantic properties in one pass (example: docs/examples/mapping.json)
+iec61850ctl find bulk --mapping docs/examples/mapping.json --output results.json
+```
+
 ### Tree serialize (for server value seeding)
 
 ```sh
@@ -246,6 +251,8 @@ iec61850ctl http --iec-host 192.0.2.10 --iec-port 102 --listen :8080
 # GET /api/reports/all
 ```
 
+Errors are JSON `{"error": "...", "code": "..."}` with a status derived from the error class: `400` invalid input, `404` not found, `403` rejected/denied, `501` unsupported, `504` timeout, `502`/`503` device connection problems, `500` otherwise. The global `--timeout`, `--connect-timeout` and `--retry` flags apply to the device connection.
+
 ## Global Flags and Environment
 
 | Flag | Env | Description |
@@ -253,9 +260,32 @@ iec61850ctl http --iec-host 192.0.2.10 --iec-port 102 --listen :8080
 | `--host` | `IEC61850_HOST` | IED address (required for most client commands) |
 | `--port` | `IEC61850_PORT` | MMS port (default `102`) |
 | `--ied-name` | `IEC61850_IED_NAME` | IED name for dial (domain prefix) and `server start` SCL selection |
-| `--debug` | — | Log underlying IEC 61850 / MMS calls |
+| `--connect-timeout` | — | Bound on each connect attempt: TCP + COTP + MMS association (default `10s`) |
+| `--timeout` | — | Bound on each MMS request (default `10s`) |
+| `--retry` | — | Connect retries with exponential backoff and jitter (default `0`) |
+| `--retry-max-delay` | — | Cap on the delay between connect retries (default `5s`) |
+| `--log-level` | — | Structured logs on stderr: `debug`, `info`, `warn` (default), `error`, `off` |
+| `--log-format` | — | `text` (default) or `json` |
+| `--debug` | — | Shorthand for `--log-level debug` (ignored when `--log-level` is set) |
 
-Flag values override environment variables. `discover` / `scan` uses `--host` as a CIDR or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
+Flag values override environment variables. `discover` / `scan` uses `--host` as a CIDR (at most `/16`) or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
+
+Retries apply only to establishing the connection; invalid input, authentication failures and interrupts are never retried. Logs never go to stdout.
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Failure (unclassified) |
+| `2` | Usage error or invalid input / reference / configuration |
+| `3` | Connection failed or lost |
+| `4` | Timeout (connect or request) |
+| `5` | Not found (object, file, IED, RCB) |
+| `6` | Rejected or access denied by the server (including failed controls) |
+| `7` | Write verification or control confirmation mismatch |
+| `8` | Service not supported by the server |
+| `130` | Interrupted (SIGINT / SIGTERM) |
 
 ## Output Formats
 
@@ -271,9 +301,11 @@ Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-fai
 ## Development
 
 ```sh
-make check                 # fmt, staticcheck, golangci-lint, vet, test, coverage
+make check                 # fmt, staticcheck, golangci-lint, vet, race tests, coverage gate
 make build-nocheck         # fast binary → bin/iec61850ctl
-make test
+make test                  # unit tests with -race
+make coverage-gate         # every package >= 90% (COVERAGE_MIN=..)
+make fuzz                  # every fuzz target for FUZZTIME (default 10s)
 make vet
 
 make e2e                   # black-box e2e (default: libiec61850, iec61850bean, self)
@@ -284,7 +316,7 @@ make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md
 ```
 
-`CGO_ENABLED=0` for builds; race tests enable CGO temporarily. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
+`CGO_ENABLED=0` for builds; race tests enable CGO temporarily. The `cmd/` tests drive the CLI in-process against an in-repo MMS server and compare output with golden files under `cmd/testdata/golden` (refresh with `go test ./cmd -update`); `cmd/chaos_test.go` puts a fault-injecting proxy (stalls, resets, slow peers) between CLI and server. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Built With
 

@@ -3,12 +3,14 @@
 package service
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
 
 func TestFindPathInput_Validate(t *testing.T) {
+	t.Parallel()
 	if err := (FindPathInput{}).Validate(); err == nil {
 		t.Fatal("expected LNPattern error")
 	}
@@ -24,6 +26,7 @@ func TestFindPathInput_Validate(t *testing.T) {
 }
 
 func TestFinder_FindPath(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		logicalNodes:   []string{"LLN0", "MMXU1"},
@@ -77,6 +80,7 @@ func TestFinder_FindPath(t *testing.T) {
 }
 
 func TestFilterDataAttributes(t *testing.T) {
+	t.Parallel()
 	in := map[string][]domain.DataAttribute{
 		"mag": {{Name: "mag"}},
 		"q":   {{Name: "q"}},
@@ -88,5 +92,59 @@ func TestFilterDataAttributes(t *testing.T) {
 	empty := filterDataAttributes(in, "nope")
 	if len(empty) != 0 {
 		t.Fatalf("expected empty, got %+v", empty)
+	}
+}
+
+// Regression: find path --include-das printed "TotW.mag.mag.f" because the
+// attribute name already carries its parent prefix.
+func TestDataAttributePath(t *testing.T) {
+	t.Parallel()
+	const do = "InteropLD/MMXU1.TotW"
+	tests := []struct {
+		parent, name, want string
+	}{
+		{"mag", "mag.f", do + ".mag.f"},
+		{"q", "q", do + ".q"},
+		{"Oper", "Oper.Check", do + ".Oper.Check"},
+		{"mag", "", do + ".mag"},
+		{"mag", "f", do + ".mag.f"},
+		{"magX", "mag.f", do + ".magX.mag.f"},
+		{"", "stVal", do + ".stVal"},
+	}
+	for _, tt := range tests {
+		got := DataAttributePath(do, tt.parent, domain.DataAttribute{Name: tt.name})
+		if got != tt.want {
+			t.Errorf("DataAttributePath(%q, %q) = %q, want %q", tt.parent, tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestFindPath_DAPathsNotDuplicated(t *testing.T) {
+	t.Parallel()
+	m := newTreeModel()
+	res, err := NewFinder(m).FindPath(FindPathInput{LNPattern: "MMXU.*", DoName: "TotW", DaName: "mag", IncludeDas: true, Detailed: true})
+	if err != nil || len(res.Matches) == 0 {
+		t.Fatalf("res=%+v err=%v", res, err)
+	}
+	match := res.Matches[0]
+	base := match.LD + "/" + match.LN + "." + match.DO
+	var paths []string
+	for parent, attrs := range match.DataAttributes {
+		for _, a := range attrs {
+			paths = append(paths, DataAttributePath(base, parent, a))
+		}
+	}
+	want := "LD0/MMXU1.TotW.mag.f"
+	found := false
+	for _, p := range paths {
+		if strings.Contains(p, "mag.mag") {
+			t.Fatalf("duplicated segment in %q", p)
+		}
+		if p == want {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("%q not in %v", want, paths)
 	}
 }

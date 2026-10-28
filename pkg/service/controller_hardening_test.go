@@ -16,6 +16,7 @@ import (
 // Phase 6: connection fault, concurrency, short endurance.
 
 func TestController_ConnectionFaultAfterSelect(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:      iec61850.CtlModelSBONormal,
 		selectRet:  "ok",
@@ -39,6 +40,7 @@ func TestController_ConnectionFaultAfterSelect(t *testing.T) {
 }
 
 func TestController_ConcurrentDirectOperate(t *testing.T) {
+	t.Parallel()
 	const n = 8
 	var wg sync.WaitGroup
 	errs := make(chan error, n)
@@ -70,6 +72,7 @@ func TestController_ConcurrentDirectOperate(t *testing.T) {
 }
 
 func TestController_EnduranceDirectOperate(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelDirectNormal}
 	c := NewController(m)
 	ctx := context.Background()

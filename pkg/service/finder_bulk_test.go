@@ -7,6 +7,7 @@ import (
 )
 
 func TestParseDoDaPath(t *testing.T) {
+	t.Parallel()
 	do, da := parseDoDaPath("Hz")
 	if do != "Hz" || da != "" {
 		t.Fatalf("got %q %q", do, da)
@@ -22,6 +23,7 @@ func TestParseDoDaPath(t *testing.T) {
 }
 
 func TestFinder_BulkFind(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		logicalNodes:   []string{"LLN0", "FMMXU1"},
