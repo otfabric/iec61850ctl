@@ -41,6 +41,8 @@ Sampled Values support on [go-iec61850 v1.2.1](https://github.com/otfabric/go-ie
 - `goose publish` and `sv publish` share one implementation of the publish guard rails.
 - Three test flakes (GOOSE initial state, report keep-alive cancellation, parallel golangci-lint runs).
 
+---
+
 ## v0.3.0
 
 **Date:** 2026-10-28
