@@ -55,6 +55,12 @@ jobs:
             timeout: 15
           - stack: goose-iec61850-rust
             timeout: 15
+          - stack: sv-libiec61850
+            timeout: 20
+          - stack: sv-dscsystems
+            timeout: 20
+          - stack: sv-iec61850-rust
+            timeout: 20
     timeout-minutes: ${{ matrix.timeout }}
 
     steps:

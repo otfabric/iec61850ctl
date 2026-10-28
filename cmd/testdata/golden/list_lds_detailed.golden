@@ -1,5 +1,5 @@
 Found 1 logical device(s):
 
-  1. InteropLD                       [LNs:   4, DataSets:   1, Reports:   2 (UB:1/B:1)]
+  1. InteropLD                       [LNs:   4, DataSets:   2, Reports:   2 (UB:1/B:1)]
      Logical Nodes with DataSets/Reports:
-       LLN0                  [DataSets:  1, Reports:  2 (UB:1/B:1)]
+       LLN0                  [DataSets:  2, Reports:  2 (UB:1/B:1)]

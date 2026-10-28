@@ -36,6 +36,14 @@ type GoCBConnection interface {
 	SetGoCB(ctx context.Context, ld, gocbItemID string, upd iec61850.GoCBUpdate) error
 }
 
+// MSVCBConnection reads and writes multicast Sampled Values control blocks
+// over MMS. It is optional: connections that do not implement it report
+// ErrUnsupported.
+type MSVCBConnection interface {
+	GetMSVCB(ctx context.Context, ld, msvcbItemID string) (*iec61850.MSVCB, error)
+	SetMSVCB(ctx context.Context, ld, msvcbItemID string, upd iec61850.MSVCBUpdate) error
+}
+
 // IEC61850Connection is the aggregate client boundary used by browse/read services.
 // It embeds ControlConnection and WriteConnection so ClientAdapter satisfies all three.
 type IEC61850Connection interface {
@@ -89,3 +97,4 @@ var _ IEC61850Connection = (*ClientAdapter)(nil)
 var _ ControlConnection = (*ClientAdapter)(nil)
 var _ WriteConnection = (*ClientAdapter)(nil)
 var _ GoCBConnection = (*ClientAdapter)(nil)
+var _ MSVCBConnection = (*ClientAdapter)(nil)

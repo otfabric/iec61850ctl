@@ -3,8 +3,8 @@
   dscount: 0
   rcbcount: 0
 - name: LLN0
-  docount: 4
-  dscount: 1
+  docount: 5
+  dscount: 2
   rcbcount: 2
 - name: MMTR1
   docount: 1

@@ -1,0 +1,68 @@
+[
+  {
+    "ied": "InteropIED",
+    "ld": "InteropLD",
+    "name": "MSVCB01",
+    "svcb_ref": "InteropIEDInteropLD/LLN0$MS$MSVCB01",
+    "sv_id": "InteropSv92LE",
+    "dat_set": "InteropIEDInteropLD/LLN0$PhsMeas1",
+    "conf_rev": 1,
+    "smp_rate": 80,
+    "smp_mod": "SmpPerPeriod",
+    "no_asdu": 1,
+    "opt_flds": [
+      "sample-synchronized"
+    ],
+    "has_address": true,
+    "dst": "01:0c:cd:04:00:00",
+    "app_id": "0x4000",
+    "vlan_id": 0,
+    "vlan_priority": 4,
+    "profile": "9-2LE",
+    "layout": "INT32,Quality,INT32,Quality,INT32,Quality,INT32,Quality,INT32,Quality,INT32,Quality,INT32,Quality,INT32,Quality",
+    "sample_octets": 64,
+    "members": [
+      "InteropLD/TCTR1.Amp[MX] INT32,Quality",
+      "InteropLD/TCTR2.Amp[MX] INT32,Quality",
+      "InteropLD/TCTR3.Amp[MX] INT32,Quality",
+      "InteropLD/TCTR4.Amp[MX] INT32,Quality",
+      "InteropLD/TVTR1.Vol[MX] INT32,Quality",
+      "InteropLD/TVTR2.Vol[MX] INT32,Quality",
+      "InteropLD/TVTR3.Vol[MX] INT32,Quality",
+      "InteropLD/TVTR4.Vol[MX] INT32,Quality"
+    ]
+  },
+  {
+    "ied": "InteropIED",
+    "ld": "InteropLD",
+    "name": "MSVCB02",
+    "svcb_ref": "InteropIEDInteropLD/LLN0$MS$MSVCB02",
+    "sv_id": "InteropSvGeneric",
+    "dat_set": "InteropIEDInteropLD/LLN0$dsSvGeneric",
+    "conf_rev": 1,
+    "smp_rate": 1000,
+    "smp_mod": "SmpPerSec",
+    "no_asdu": 4,
+    "opt_flds": [
+      "refresh-time",
+      "sample-synchronized",
+      "sample-rate",
+      "data-set"
+    ],
+    "has_address": true,
+    "dst": "01:0c:cd:04:00:01",
+    "app_id": "0x4001",
+    "vlan_id": 0,
+    "vlan_priority": 4,
+    "profile": "generic",
+    "layout": "FLOAT32,Quality,INT32U,Quality,INT32",
+    "sample_octets": 20,
+    "members": [
+      "InteropLD/MMXU1.TotW.mag.f[MX] FLOAT32",
+      "InteropLD/MMXU1.TotW.q[MX] Quality",
+      "InteropLD/MMTR1.TotVAh.actVal[ST] INT32U",
+      "InteropLD/MMTR1.TotVAh.q[ST] Quality",
+      "InteropLD/LLN0.Mod.stVal[ST] INT32"
+    ]
+  }
+]

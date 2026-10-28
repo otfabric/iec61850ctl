@@ -169,6 +169,24 @@ func (t *timeoutConn) SetGoCB(ctx context.Context, ld, id string, upd iec61850.G
 	return call0(t, ctx, func(c context.Context) error { return g.SetGoCB(c, ld, id, upd) })
 }
 
+// GetMSVCB forwards to the wrapped connection when it supports MSVCB access.
+func (t *timeoutConn) GetMSVCB(ctx context.Context, ld, id string) (*iec61850.MSVCB, error) {
+	m, ok := t.IEC61850Connection.(service.MSVCBConnection)
+	if !ok {
+		return nil, errs.Newf(errs.ErrUnsupported, "connection does not support MSVCB access")
+	}
+	return call(t, ctx, func(c context.Context) (*iec61850.MSVCB, error) { return m.GetMSVCB(c, ld, id) })
+}
+
+// SetMSVCB forwards to the wrapped connection when it supports MSVCB access.
+func (t *timeoutConn) SetMSVCB(ctx context.Context, ld, id string, upd iec61850.MSVCBUpdate) error {
+	m, ok := t.IEC61850Connection.(service.MSVCBConnection)
+	if !ok {
+		return errs.Newf(errs.ErrUnsupported, "connection does not support MSVCB access")
+	}
+	return call0(t, ctx, func(c context.Context) error { return m.SetMSVCB(c, ld, id, upd) })
+}
+
 func (t *timeoutConn) GetReportControlBlock(ctx context.Context, ld, id string) (*iec61850.ReportControlBlock, error) {
 	return call(t, ctx, func(c context.Context) (*iec61850.ReportControlBlock, error) {
 		return t.IEC61850Connection.GetReportControlBlock(c, ld, id)

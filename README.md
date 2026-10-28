@@ -10,11 +10,11 @@
 
 A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) and [otfabric/go-mms](https://github.com/otfabric/go-mms).
 
-`iec61850ctl` gives operators and developers terminal access to IEC 61850 IEDs: browse the data model, read and write scalar objects, operate controllable objects, subscribe to reports (including BRCB purge/resume), transfer files, query journals, parse SCL offline, run a local MMS server from SCL, and optionally expose a small read-only HTTP/JSON API.
+`iec61850ctl` gives operators and developers terminal access to IEC 61850 IEDs: browse the data model, read and write scalar objects, operate controllable objects, subscribe to reports (including BRCB purge/resume), work with GOOSE and Sampled Values on raw Ethernet, transfer files, query journals, parse SCL offline, run a local MMS server from SCL, and optionally expose a small read-only HTTP/JSON API.
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e exercises the built CLI against all four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and GOOSE in both directions against their publishers and subscribers. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e exercises the built CLI against all four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and GOOSE and Sampled Values in both directions against their publishers and subscribers. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
@@ -41,6 +41,7 @@ Black-box e2e exercises the built CLI against all four independent stacks of [mm
 - **Control** — atomic `control inspect` / `control operate` (auto/direct/SBO/SBOw on one association)
 - **Write** — `set object` for scalar MMS attributes (rejects `FC=CO`; use control for CO)
 - **GOOSE** — list GoCBs from SCL, sniff, supervised subscribe, guarded publish (test frames by default), GoCB read/write over MMS
+- **Sampled Values** — list SVCBs from SCL, sniff, supervised subscribe with live loss/rate statistics, guarded publish (simulation frames by default) with 9-2LE sine waveform injection, MSVCB read/write over MMS
 - **SCL** — offline parse/flatten and CSV convert (no device connection)
 - **Server** — run an MMS server from ICD/CID/SCD (`--scl`); optional value seed from serialized JSON
 - **Export** — generate libiec61850 `.cfg` from serialized JSON (**export-only**, not used by this tool’s runtime)
@@ -152,6 +153,12 @@ iec61850ctl
 │   ├── subscribe       Validated, supervised subscription to one GoCB (--iface --scl --gocb)
 │   ├── publish         Publish a GoCB (--iface --yes; test frames unless --test=false --live)
 │   └── gocb get|set    Read/write a GoCB over MMS (--ld --gocb)
+├── sv
+│   ├── list            SV control blocks from SCL (--scl)
+│   ├── sniff           Decode SV ASDUs on an interface (--iface; --layout or --scl/--svcb to decode)
+│   ├── subscribe       Validated, supervised subscription with statistics (--iface --scl --svcb)
+│   ├── publish         Publish an SVCB (--iface --yes; simulation frames unless --simulation=false --live; --waveform)
+│   └── svcb get|set    Read/write an MSVCB over MMS (--ld --svcb)
 ├── http                REST API fronting one IEC 61850 device
 ├── version             Print version / build metadata
 └── completion          Shell completion (bash|zsh|fish|powershell)
@@ -263,7 +270,24 @@ iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
 iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
 ```
 
-Raw sockets need `CAP_NET_RAW` on Linux or access to `/dev/bpf*` on macOS/BSD. Details: [docs/GOOSE.md](docs/GOOSE.md).
+Raw sockets need `CAP_NET_RAW` on Linux or access to `/dev/bpf*` on macOS/BSD. Details and example sessions: [docs/GOOSE.md](docs/GOOSE.md).
+
+### Sampled Values
+
+```sh
+iec61850ctl sv list --scl merging-unit.cid
+iec61850ctl sv sniff --iface eth0 --appid 0x4000 --layout 9-2LE --sample-every 4000
+iec61850ctl sv subscribe --iface eth0 --scl merging-unit.cid --svcb MSVCB01 --sample-every 4000 --duration 30s
+
+# Publishing injects traffic: explicit --iface and --yes; simulation bit set unless --simulation=false --live
+iec61850ctl sv publish --iface eth0 --scl merging-unit.cid --svcb MSVCB01 --yes --duration 10s \
+  --waveform IA=100 --waveform IB=100,50,-120 --waveform IC=100,50,120 --waveform VA=325
+
+iec61850ctl sv svcb get --host 192.0.2.10 --ld LD0 --svcb MSVCB01
+iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable
+```
+
+Details and example sessions: [docs/SV.md](docs/SV.md).
 
 ### HTTP API
 
@@ -318,7 +342,9 @@ Retries apply only to establishing the connection; invalid input, authentication
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
 | `control inspect`, `control operate`, `set object` | `text`, `json` |
 | `subscribe report`, `goose sniff`, `goose subscribe`, `goose publish` | `text`, `jsonl` |
+| `sv sniff`, `sv subscribe`, `sv publish` | `text`, `jsonl` |
 | `goose list`, `goose gocb get`, `goose gocb set` | `text`, `json` |
+| `sv list`, `sv svcb get`, `sv svcb set` | `text`, `json` |
 
 Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-failure, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
 
@@ -334,7 +360,7 @@ make vet
 
 make e2e                   # black-box e2e (default: the four client stacks + self)
 make e2e-self              # self-server smoke only
-IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader and GOOSE)
+IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader, GOOSE and SV)
 make e2e-verify-fixtures   # check e2e/testdata hashes vs interop.lock.json
 make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md
@@ -346,7 +372,7 @@ make e2e-docs              # regenerate docs/interop-examples.md
 
 | Library | Role |
 |---------|------|
-| [go-iec61850](https://github.com/otfabric/go-iec61850) | IEC 61850 client/server, SCL model, reports, GOOSE |
+| [go-iec61850](https://github.com/otfabric/go-iec61850) | IEC 61850 client/server, SCL model, reports, GOOSE, Sampled Values |
 | [go-mms](https://github.com/otfabric/go-mms) | MMS / ISO-on-TCP transport |
 | [cobra](https://github.com/spf13/cobra) | CLI |
 
@@ -356,7 +382,8 @@ make e2e-docs              # regenerate docs/interop-examples.md
 |-----|----------|
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
 | [docs/SERVER.md](docs/SERVER.md) | SCL server, readiness JSON, value seeding, `.cfg` export |
-| [docs/GOOSE.md](docs/GOOSE.md) | GOOSE list/sniff/subscribe/publish, GoCB access, safety rules |
+| [docs/GOOSE.md](docs/GOOSE.md) | GOOSE list/sniff/subscribe/publish, GoCB access, safety rules, example sessions |
+| [docs/SV.md](docs/SV.md) | Sampled Values list/sniff/subscribe/publish, 9-2LE waveforms, MSVCB access, safety rules, example sessions |
 | [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr and JSON/JSONL contract |
 | [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
 | [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |

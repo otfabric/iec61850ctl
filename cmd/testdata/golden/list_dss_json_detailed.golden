@@ -12,5 +12,31 @@
         "ref": "InteropLD/LLN0.Mod.stVal[ST]"
       }
     ]
+  },
+  {
+    "name": "dsSvGeneric",
+    "member_count": 5,
+    "members": [
+      {
+        "index": 1,
+        "ref": "InteropLD/MMXU1.TotW.mag.f[MX]"
+      },
+      {
+        "index": 2,
+        "ref": "InteropLD/MMXU1.TotW.q[MX]"
+      },
+      {
+        "index": 3,
+        "ref": "InteropLD/MMTR1.TotVAh.actVal[ST]"
+      },
+      {
+        "index": 4,
+        "ref": "InteropLD/MMTR1.TotVAh.q[ST]"
+      },
+      {
+        "index": 5,
+        "ref": "InteropLD/LLN0.Mod.stVal[ST]"
+      }
+    ]
   }
 ]

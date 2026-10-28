@@ -1,21 +1,30 @@
 {
   "source_repository": "otfabric/mms-interop",
-  "source_commit": "425bbc14ea1594d8851dc835da377243666c32aa",
-  "source_tag": "v0.3.0",
-  "fixture_revision": "iec61850-v2",
+  "source_commit": "5789893ddd41939d40cf88a517a1b3dfe90dc914",
+  "source_tag": "v0.4.0",
+  "fixture_revision": "iec61850-v3",
   "goose_fixture_revision": "goose-v1",
+  "sv_fixture_revision": "sv-v1",
+  "svcb_over_mms": {
+    "libiec61850": true,
+    "iec61850bean": false,
+    "dscsystems": true,
+    "iec61850-rust": false
+  },
   "files": {
-    "interop.icd": "sha256:0977b43b7e221deeda1f7f5402f2fac9008bff48256a5fab3fa9541ed6b940c1",
+    "interop.icd": "sha256:d29db3ccc783b94f38c76f9d90be5278469386921f2bed44c18aa0a0faee5436",
     "expected-values.json": "sha256:5a54be4d8cb95ff555fa9546dd89f1c49a239599180a20c298fd9e56171734d9",
     "self-server-values.json": "sha256:5ecf3ae8d29b72e15419256a01b5c115e7329cb65a9bec6af73e1d242b169ab0",
     "interop-goose.cid": "sha256:bc8c9b4ac998df79703219b3095496f2182c7f11c721fa9d74d07861db605425",
-    "goose.json": "sha256:bec12e2f3f98e799d78f19d2e332066bb72affdc09b4fe1cd8a4e9cb27fcc2fa"
+    "goose.json": "sha256:bec12e2f3f98e799d78f19d2e332066bb72affdc09b4fe1cd8a4e9cb27fcc2fa",
+    "interop-sv.cid": "sha256:179f37d42182a320efd1d85696da22f245bc4e3a4445dce3bc0b870f2124c219",
+    "sv.json": "sha256:fd4a6c6238c7b6d23383e2a66b1a9be1e91838f177c56db75a3570804ea1e50a"
   },
   "images": {
-    "libiec61850": "ghcr.io/otfabric/mms-interop-libiec61850@sha256:18e7e5c249f74e708a0699bd64732cd238ad9579574431a16b27b9c6000232a0",
-    "iec61850bean": "ghcr.io/otfabric/mms-interop-iec61850bean@sha256:8d76b3cc065c2b18cc031bb26b2b879a7b433e164f9664ce9a3363241db65514",
-    "dscsystems": "ghcr.io/otfabric/mms-interop-dscsystems@sha256:f0b233737c1bd6e9cc6cfe7338bb287ed0e5b4a6b589b7496ae2409501dc6deb",
-    "iec61850-rust": "ghcr.io/otfabric/mms-interop-iec61850-rust@sha256:ebd09921ef9b22ed9a318256eb2fac74268dde7f18a17f9e8300aba46c624110"
+    "libiec61850": "ghcr.io/otfabric/mms-interop-libiec61850@sha256:966e17e37e7fb5c22b825443ce79565d51067705c8f8485fd63d4001b4bd31ff",
+    "iec61850bean": "ghcr.io/otfabric/mms-interop-iec61850bean@sha256:ab2cda6a77ea054a04a736fdf1c36c5c8f50c766aa41cf5818bd11f3fadfac7d",
+    "dscsystems": "ghcr.io/otfabric/mms-interop-dscsystems@sha256:899e4d96605a921647e7c079db0b0a7f69c05d0582830b81607bc1a152a8d60a",
+    "iec61850-rust": "ghcr.io/otfabric/mms-interop-iec61850-rust@sha256:c46c83c6d7eaa9800bbe48fb6ca9d25a4e9338d0bfc6f31fbba7813d89e4445d"
   },
   "required_commands": {
     "libiec61850-ied-server": true,
@@ -39,6 +48,12 @@
     "dscsystems-goose-publisher": true,
     "dscsystems-goose-subscriber": true,
     "iec61850-rust-goose-publisher": true,
-    "iec61850-rust-goose-subscriber": true
+    "iec61850-rust-goose-subscriber": true,
+    "libiec61850-sv-publisher": true,
+    "libiec61850-sv-subscriber": true,
+    "dscsystems-sv-publisher": true,
+    "dscsystems-sv-subscriber": true,
+    "iec61850-rust-sv-publisher": true,
+    "iec61850-rust-sv-subscriber": true
   }
 }

@@ -50,7 +50,7 @@ Journeys include association/browse, ST/MX reads against `expected-values.json`,
 - ST, MX, CF, DC reads against seeded values;
 - ST write (`Mod.stVal=5`) and dataset read reflecting the write.
 
-Requires mms-interop adapters that declare the `*-ied-client` commands in `fixtures/capabilities.json`. The lock file pins the [mms-interop `v0.3.0`](https://github.com/otfabric/mms-interop/releases/tag/v0.3.0) image digests; local `:local` images are fine for development.
+Requires mms-interop adapters that declare the `*-ied-client` commands in `fixtures/capabilities.json`. The lock file pins the [mms-interop `v0.4.0`](https://github.com/otfabric/mms-interop/releases/tag/v0.4.0) image digests (IED fixture `iec61850-v3`); local `:local` images are fine for development.
 
 ### GOOSE (raw Ethernet)
 
@@ -68,6 +68,26 @@ GOOSE has no IP, so each journey creates its own Docker bridge network and runs 
 | peer → `goose subscribe` | frames of both states (stNum 1 = `values`, stNum 2 = `update`) with every value, gocbRef/datSet/goID/APPID/confRev, increasing sqNum, no `invalid` event, a supervision `timeout` after the publisher stops |
 | peer → `goose sniff` | frames decoded and filtered on APPID |
 | `goose publish` → peer | both states, `test=true`, the control block fields, the seven settable `update` values, sqNum from 0 and increasing, a supervision `timeout` after the run |
+
+### Sampled Values (raw Ethernet)
+
+| Publisher | Subscriber | CI job |
+|-----------|------------|--------|
+| `<stack>-sv-publisher` | `iec61850ctl sv subscribe` and `sv sniff` | `e2e / sv-<stack>` |
+| `iec61850ctl sv publish` | `<stack>-sv-subscriber` | `e2e / sv-<stack>` |
+
+`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no SV support). The fixture is mms-interop `sv-v1` (`interop-sv.cid` and `sv.json`). Every journey runs for both streams: `MSVCB01`, the 9-2LE profile (4000 samples/s, one ASDU per frame, no optional fields), and `MSVCB02`, a generic dataset (1000 samples/s, four ASDUs per frame, datSet/refrTm/smpRate/smpMod sent). The network setup is the GOOSE one.
+
+| Journey | Asserted |
+|---------|----------|
+| peer → `sv subscribe` | sampled ASDUs with svID/APPID/destination/confRev/noASDU, exactly the optional fields the stream sends, smpCnt within the wrap, the fixture `values` and then the `update`; no `invalid` event; at most 1 % lost and no duplicates; at least 90 % of the published samples received; the smpCnt wrap (4000 / 1000); a supervision `timeout` after the publisher stops |
+| peer → `sv sniff` | ASDUs decoded with the SCL layout, matching one of the two value sets |
+| `sv publish` → peer | the header with the simulation bit, the fixture values (qualities as 13-bit strings), the optional fields; at most 1 % lost beyond the samples the publisher reports as `skipped`; at least 90 % of the published samples received |
+| `sv svcb get` (forward stacks) | `MSVCB02` of the IED fixture: MsvID, DatSet, ConfRev, SmpRate, SmpMod, OptFlds, DstAddress, noASDU, for the stacks whose IED server models it (lock `svcb_over_mms`); a failed read for the others |
+
+Registered limitations (mms-interop `capabilities.json`), asserted rather than skipped:
+- **libiec61850 subscriber, two-octet smpMod.** libiec61850's SVReceiver accepts smpMod only as one octet. go-iec61850 sends two, as libiec61850's own publisher does, so `sv publish` of `MSVCB02` → `libiec61850-sv-subscriber` must receive nothing.
+- **SVCB over MMS.** iec61850-rust and IEC61850bean IED servers do not expose `LLN0$MS$MSVCB02`; `sv svcb get` against them must fail.
 
 ### Phase 4 — Control and scalar write
 
@@ -109,7 +129,8 @@ Checked in under `e2e/testdata/`:
 | `expected-values.json` | Expected values for **external** adapter assertions (copy of mms-interop `values.json`) |
 | `self-server-values.json` | Serialized `domain.IED` seed for `server start --values` |
 | `interop-goose.cid`, `goose.json` | GOOSE fixture `goose-v1` (control blocks, members, value sets) |
-| `interop.lock.json` | `source_commit`, optional `source_tag`, fixture revisions, file hashes, image digests per stack, required commands |
+| `interop-sv.cid`, `sv.json` | SV fixture `sv-v1` (streams, members, value sets); `interop-sv.cid` is also `pkg/svops/testdata` |
+| `interop.lock.json` | `source_commit`, optional `source_tag`, fixture revisions, file hashes, image digests per stack, required commands, `svcb_over_mms` per stack |
 | `examples.json` | Declarative examples → `docs/interop-examples.md` |
 
 Never pass `expected-values.json` to `server start --values`.
@@ -137,8 +158,9 @@ IEC61850CTL_E2E_STACKS=dscsystems make e2e            # client → one stack
 IEC61850CTL_E2E_STACKS=server-iec61850-rust make e2e  # reverse control/report
 IEC61850CTL_E2E_STACKS=server-reader-dscsystems make e2e
 IEC61850CTL_E2E_STACKS=goose-libiec61850 make e2e     # GOOSE both directions
+IEC61850CTL_E2E_STACKS=sv-dscsystems make e2e         # Sampled Values both directions, both streams
 make e2e                                              # default: the four client stacks + self
-IEC61850CTL_E2E_STACKS=all make e2e                   # all 20 CI jobs' stacks
+IEC61850CTL_E2E_STACKS=all make e2e                   # all 23 CI jobs' stacks
 ```
 
 Images come from `<STACK>_IMAGE` (`LIBIEC61850_IMAGE`, `IEC61850BEAN_IMAGE`, `DSCSYSTEMS_IMAGE`, `IEC61850RUST_IMAGE`), else the lock digest when `CI` is set, else `mms-interop-<stack>:local`.

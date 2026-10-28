@@ -10,6 +10,7 @@ import (
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-iec61850/goose"
+	"github.com/otfabric/go-iec61850/sv"
 	"github.com/otfabric/go-mms"
 )
 
@@ -78,13 +79,18 @@ func ExitCode(err error) int {
 		errors.Is(err, iec61850.ErrSCLParse),
 		errors.Is(err, goose.ErrInvalidConfig),
 		errors.Is(err, goose.ErrInvalidValue),
-		errors.Is(err, goose.ErrSCL):
+		errors.Is(err, goose.ErrSCL),
+		errors.Is(err, sv.ErrInvalidConfig),
+		errors.Is(err, sv.ErrInvalidValue),
+		errors.Is(err, sv.ErrSCL),
+		errors.Is(err, sv.ErrValidation):
 		return ExitUsage
 	case errors.Is(err, ErrNotFound),
 		errors.Is(err, iec61850.ErrNotFound),
 		errors.Is(err, fs.ErrNotExist),
 		errors.Is(err, goose.ErrNotFound),
-		errors.Is(err, goose.ErrInterfaceNotFound):
+		errors.Is(err, goose.ErrInterfaceNotFound),
+		errors.Is(err, sv.ErrNotFound):
 		return ExitNotFound
 	case errors.Is(err, ErrUnsupported),
 		errors.Is(err, iec61850.ErrUnsupportedService),

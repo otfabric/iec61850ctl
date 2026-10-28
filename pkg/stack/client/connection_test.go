@@ -294,3 +294,40 @@ func TestTimeoutConnGoCB(t *testing.T) {
 		t.Fatalf("set: %v deadline=%v", err, g.hadDeadline)
 	}
 }
+
+// msvcbProbe adds MSVCB access to probeConn and records the request deadline.
+type msvcbProbe struct {
+	*probeConn
+	hadDeadline bool
+}
+
+func (m *msvcbProbe) GetMSVCB(ctx context.Context, ld, id string) (*iec61850.MSVCB, error) {
+	_, m.hadDeadline = ctx.Deadline()
+	return &iec61850.MSVCB{Reference: ld + "/" + id}, nil
+}
+
+func (m *msvcbProbe) SetMSVCB(ctx context.Context, _, _ string, _ iec61850.MSVCBUpdate) error {
+	_, m.hadDeadline = ctx.Deadline()
+	return nil
+}
+
+func TestTimeoutConnMSVCB(t *testing.T) {
+	t.Parallel()
+	plain := &timeoutConn{IEC61850Connection: &probeConn{}, timeout: time.Second}
+	if _, err := plain.GetMSVCB(context.Background(), "LD", "LLN0$MS$m"); !errors.Is(err, errs.ErrUnsupported) {
+		t.Fatalf("get: %v", err)
+	}
+	if err := plain.SetMSVCB(context.Background(), "LD", "LLN0$MS$m", iec61850.MSVCBUpdate{}); !errors.Is(err, errs.ErrUnsupported) {
+		t.Fatalf("set: %v", err)
+	}
+	m := &msvcbProbe{probeConn: &probeConn{}}
+	tc := &timeoutConn{IEC61850Connection: m, timeout: time.Second}
+	cb, err := tc.GetMSVCB(context.Background(), "LD", "LLN0$MS$m")
+	if err != nil || cb.Reference != "LD/LLN0$MS$m" || !m.hadDeadline {
+		t.Fatalf("get: %+v %v deadline=%v", cb, err, m.hadDeadline)
+	}
+	m.hadDeadline = false
+	if err := tc.SetMSVCB(context.Background(), "LD", "LLN0$MS$m", iec61850.MSVCBUpdate{}); err != nil || !m.hadDeadline {
+		t.Fatalf("set: %v deadline=%v", err, m.hadDeadline)
+	}
+}
