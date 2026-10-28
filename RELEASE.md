@@ -44,6 +44,8 @@ Interop e2e moves to the renamed [iec61850-interop v1.0.1](https://github.com/ot
 - `github.com/otfabric/go-iec61850` **v1.2.1** → **v1.2.2**
 - `github.com/otfabric/go-mms` **v1.2.1** → **v1.2.2**
 
+---
+
 ## v0.4.0
 
 **Date:** 2026-10-28
