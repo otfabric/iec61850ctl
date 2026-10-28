@@ -18,9 +18,9 @@ Authoritative machine-facing contract for scripting `iec61850ctl`. Human-oriente
 | `2` | Usage error, invalid flag value, malformed reference/input/config |
 | `3` | Connection failed or lost (including a dropped report subscription) |
 | `4` | Timeout (`--connect-timeout` / `--timeout`) |
-| `5` | Not found (object, file, IED, RCB, journal) |
+| `5` | Not found (object, file, IED, RCB, journal), including a server answer of MMS *object-non-existent* |
 | `6` | Rejected or access denied by the server (including failed select/operate) |
-| `7` | Write verification (`--verify`) or control confirmation (`--confirm-ref`) mismatch |
+| `7` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or `goose gocb set` / `sv svcb set` GoEna/SvEna read-back mismatch |
 | `8` | Service not supported by the server |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 

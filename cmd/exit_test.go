@@ -76,6 +76,8 @@ func TestExitCodes(t *testing.T) {
 		{"server start missing scl", []string{"server", "start", "--scl", "/nonexistent.icd"}, false, errs.ExitNotFound, "SCL file"},
 		{"generate-config missing", []string{"server", "generate-config", "-i", "/nonexistent.json", "-o", filepath.Join(tmp, "x.cfg")}, false, errs.ExitNotFound, "read input"},
 		{"find bulk missing", []string{"find", "bulk", "--mapping", "/nonexistent.json", "--output", filepath.Join(tmp, "o.json")}, false, errs.ExitNotFound, "read mapping"},
+		{"get object missing", []string{"get", "object", "--object", "InteropLD/GGIO1.Nope.stVal", "--fc", "ST"}, true, errs.ExitNotFound, "ObjectNonExistent"},
+		{"get report missing", []string{"get", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "nope"}, true, errs.ExitNotFound, "ObjectNonExistent"},
 		{"get file missing", []string{"get", "file", "--name", "nope.bin"}, true, errs.ExitRejected, "failed to download file"},
 
 		// Server-side rejections.

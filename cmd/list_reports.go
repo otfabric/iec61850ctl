@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/otfabric/iec61850ctl/pkg/domain"
 	"github.com/otfabric/iec61850ctl/pkg/errs"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
@@ -107,7 +108,7 @@ func runListReports(cmd *cobra.Command, args []string) error {
 				LN:       reportsLnFlag,
 				Name:     name,
 				Buffered: false,
-				Ref:      fmt.Sprintf("%s/%s.RP.%s", reportsLdFlag, reportsLnFlag, name),
+				Ref:      domain.RCBRef(reportsLdFlag, reportsLnFlag, name, false),
 			})
 		}
 		for _, name := range buffered {
@@ -116,7 +117,7 @@ func runListReports(cmd *cobra.Command, args []string) error {
 				LN:       reportsLnFlag,
 				Name:     name,
 				Buffered: true,
-				Ref:      fmt.Sprintf("%s/%s.BR.%s", reportsLdFlag, reportsLnFlag, name),
+				Ref:      domain.RCBRef(reportsLdFlag, reportsLnFlag, name, true),
 			})
 		}
 		return writeJSON(cmd, entries)
