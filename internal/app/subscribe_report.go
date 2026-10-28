@@ -3,6 +3,7 @@
 package app
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -18,9 +19,11 @@ type SubscribeReportInput struct {
 	Interrogation bool
 	Sync          bool
 	DatasetRef    string
+	Context       context.Context // cancels the subscription (nil = background)
 	Writer        io.Writer
 	ErrWriter     io.Writer
 	Format        string
+	KeepAlive     time.Duration // liveness probe interval (0 = off)
 
 	PurgeBuf bool
 	EntryID  []byte
@@ -37,9 +40,11 @@ func (a *App) SubscribeReport(input SubscribeReportInput) (*service.Reporter, er
 		Interrogation: input.Interrogation,
 		Sync:          input.Sync,
 		DatasetRef:    input.DatasetRef,
+		Context:       input.Context,
 		Writer:        input.Writer,
 		ErrWriter:     input.ErrWriter,
 		Format:        input.Format,
+		KeepAlive:     input.KeepAlive,
 		PurgeBuf:      input.PurgeBuf,
 		EntryID:       input.EntryID,
 		ResvTms:       input.ResvTms,
@@ -49,6 +54,9 @@ func (a *App) SubscribeReport(input SubscribeReportInput) (*service.Reporter, er
 	}
 	reporter := service.NewReporter(a.conn).WithConfig(cfg)
 	if err := reporter.Run(); err != nil {
+		if reporter.Started() {
+			return reporter, err // stream ran, then failed: stats are still meaningful
+		}
 		return nil, err
 	}
 	return reporter, nil

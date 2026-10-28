@@ -1,0 +1,11 @@
+Parsing host specification: 127.0.0.1-3
+Scanning 3 IP address(es) on port <PORT>...
+
+
+═══════════════════════════════════════════════════════════
+Scan Results
+═══════════════════════════════════════════════════════════
+
+Total IPs scanned:        3
+TCP port <PORT> open:        0
+IEC 61850 devices found:  0

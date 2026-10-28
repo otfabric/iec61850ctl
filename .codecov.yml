@@ -2,16 +2,15 @@ coverage:
   status:
     project:
       default:
-        target: 80%
+        target: 90%
         threshold: 1%
     patch:
       default:
         target: 70%
 
-# CLI Cobra wiring is thin I/O glue; library coverage is measured under pkg/ and internal/.
-# Black-box e2e and helper scripts are process/orchestration, not unit-covered.
+# cmd/ is covered by in-process CLI tests (cmd/*_test.go). Black-box e2e and
+# helper scripts are process/orchestration, not unit-covered.
 ignore:
   - "main.go"
-  - "cmd/**/*"
   - "e2e/**/*"
   - "scripts/**/*"

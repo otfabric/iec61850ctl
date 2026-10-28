@@ -11,13 +11,7 @@ import (
 // Reverse report journeys: mms-interop reporter adapters → iec61850ctl server.
 // Operation names match go-iec61850 interop Test*Server_URCB_DataChange.
 func TestReverse_ServerReport(t *testing.T) {
-	for _, tc := range []struct {
-		stack      string
-		entrypoint string
-	}{
-		{stackServerLib, "libiec61850-ied-reporter"},
-		{stackServerBean, "iec61850bean-ied-reporter"},
-	} {
+	for _, tc := range reverseCases(prefixServer, "ied-reporter") {
 		tc := tc
 		t.Run(tc.stack, func(t *testing.T) {
 			requireReverseStack(t, tc.stack)

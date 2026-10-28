@@ -1,0 +1,23 @@
+{
+  "object": "InteropLD/GGIO1.SPCSO2",
+  "control_model": {
+    "code": 2,
+    "name": "sbo-with-normal-security"
+  },
+  "controllable": true,
+  "requires_select": true,
+  "mode": "sbo",
+  "requested_value": true,
+  "ctl_num": 1,
+  "operations": [
+    {
+      "operation": "select",
+      "ok": true
+    },
+    {
+      "operation": "operate",
+      "ok": true
+    }
+  ],
+  "status": "planned"
+}

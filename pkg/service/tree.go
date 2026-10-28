@@ -10,9 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
+	fmtvalue "github.com/otfabric/iec61850ctl/pkg/formatter/value"
 )
 
 var probeFCs = []iec61850.FunctionalConstraint{
@@ -113,7 +116,7 @@ func (t *Tree) resolveVariableType(ref iec61850.Ref) (iec61850.FunctionalConstra
 			return fc, spec, nil
 		}
 	}
-	return "", nil, fmt.Errorf("no FC found for %s", ref.String())
+	return "", nil, errs.Newf(errs.ErrNotFound, "no FC found for %s", ref.String())
 }
 
 func formatTypeSpec(spec *mms.TypeSpec) string {
@@ -136,15 +139,16 @@ func formatTypeSpec(spec *mms.TypeSpec) string {
 	}
 }
 
+// formatValueDisplay renders a read value with the shared display formatter
+// (pkg/formatter/value), so UTC_TIME etc. print as in other renderers.
 func formatValueDisplay(v *iec61850.Value) string {
-	if v == nil {
+	if v == nil || v.MMS() == nil {
 		return "?"
 	}
-	dv := domain.ValueFromMMS(v.MMS())
-	if dv == nil {
-		return "?"
+	if b, ok := v.MMS().OctetString(); ok {
+		return fmt.Sprintf("%x", b) // keep the tree's established hex form
 	}
-	return dv.String()
+	return fmtvalue.FormatMmsValue(v.MMS())
 }
 
 func (t *Tree) listLogicalDeviceNames(pathLD string) ([]string, error) {
@@ -487,14 +491,14 @@ func (t *Tree) renderFlatAttributes(w io.Writer, ref iec61850.Ref, visited map[s
 		}
 
 		fc, spec, err := t.resolveVariableType(nextRef)
-		fcStr := domain.FromLibFC(fc).String()
+		// readRef.String() already carries the "[FC]" suffix when fc is set.
 		readRef := refWithFC(nextRef, fc)
 
 		if err != nil {
 			v, readErr := t.conn.Read(t.ctx(), readRef)
 			t.recordCall()
 			if readErr == nil {
-				_, _ = fmt.Fprintf(w, "%s[%s]: %v [type:UNKNOWN]\n", readRef.String(), fcStr, formatValueDisplay(v))
+				_, _ = fmt.Fprintf(w, "%s: %v [type:UNKNOWN]\n", readRef.String(), formatValueDisplay(v))
 			}
 			continue
 		}
@@ -503,8 +507,8 @@ func (t *Tree) renderFlatAttributes(w io.Writer, ref iec61850.Ref, visited map[s
 			t.renderFlatAttributes(w, nextRef, visited)
 		} else {
 			typeStr := formatTypeSpec(spec)
-			value := t.readValue(readRef, fc, spec.Type)
-			_, _ = fmt.Fprintf(w, "%s[%s]: %s [type:%s]\n", readRef.String(), fcStr, value, typeStr)
+			value := t.readValue(readRef, fc)
+			_, _ = fmt.Fprintf(w, "%s: %s [type:%s]\n", readRef.String(), value, typeStr)
 		}
 	}
 }
@@ -588,13 +592,13 @@ func (t *Tree) renderAttributeValue(w io.Writer, daRef iec61850.Ref, fc iec61850
 				t.renderAttributeValue(w, subReadRef, subFC, subSpec, childIndent)
 			} else {
 				typeStr := formatTypeSpec(subSpec)
-				value := t.readValue(subReadRef, subFC, subSpec.Type)
+				value := t.readValue(subReadRef, subFC)
 				_, _ = fmt.Fprintf(w, " → %s = %s\n", typeStr, value)
 			}
 		}
 	} else {
 		typeStr := formatTypeSpec(spec)
-		value := t.readValue(daRef, fc, spec.Type)
+		value := t.readValue(daRef, fc)
 		leafName := daRef.String()
 		if idx := strings.LastIndex(leafName, "."); idx >= 0 {
 			leafName = leafName[idx+1:]
@@ -623,19 +627,16 @@ func (t *Tree) renderLeafAttribute(w io.Writer, daRef iec61850.Ref, fc iec61850.
 	_, _ = fmt.Fprintf(w, "%s└─ = %s\n", childIndent, formatValueDisplay(val))
 }
 
-func (t *Tree) readValue(ref iec61850.Ref, fc iec61850.FunctionalConstraint, varType mms.ValueType) string {
-	reader := NewReader(t.conn)
-	value, err := reader.ReadLeafValue(ref.String(), fc, varType)
+func (t *Tree) readValue(ref iec61850.Ref, fc iec61850.FunctionalConstraint) string {
+	if fc == "" {
+		fc = iec61850.FCMX
+	}
+	readRef := refWithFC(ref, fc)
+	debugf("Read(ref=%q)", readRef.String())
+	v, err := t.conn.Read(t.ctx(), readRef)
 	t.recordCall()
 	if err != nil {
 		return "?"
 	}
-	modelVal, errMsg := ValueToModel(value, varType)
-	if errMsg != "" {
-		return "?"
-	}
-	if modelVal == nil {
-		return "?"
-	}
-	return modelVal.String()
+	return formatValueDisplay(v)
 }

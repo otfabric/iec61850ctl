@@ -3,9 +3,12 @@
 package domain
 
 import (
-	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 
 	iec61850 "github.com/otfabric/go-iec61850"
 )
@@ -92,26 +95,37 @@ const TimeFormatForJournal = "2006-01-02 15:04:05.000"
 func ParseTimeToUnixMs(s string) (uint64, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
-		return 0, fmt.Errorf("empty time string")
+		return 0, errs.Invalidf("empty time string")
 	}
 	if isDigitsOnly(s) {
-		var ms uint64
-		if _, err := fmt.Sscanf(s, "%d", &ms); err != nil {
-			return 0, fmt.Errorf("invalid number: %w", err)
+		ms, err := strconv.ParseUint(s, 10, 64)
+		if err != nil || ms > math.MaxInt64 {
+			return 0, errs.Invalidf("invalid number: %q is out of range for milliseconds", s)
 		}
 		return ms, nil
 	}
 	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02T15:04:05Z", "2006-01-02T15:04:05"} {
 		if t, err := time.Parse(layout, s); err == nil {
-			return uint64(t.UnixNano() / 1e6), nil
+			return unixMsFromTime(s, t)
 		}
 	}
 	for _, layout := range []string{"2006-01-02 15:04:05.000", "2006-01-02 15:04:05"} {
 		if t, err := time.ParseInLocation(layout, s, time.UTC); err == nil {
-			return uint64(t.UnixNano() / 1e6), nil
+			return unixMsFromTime(s, t)
 		}
 	}
-	return 0, fmt.Errorf("unsupported time format: use RFC3339 (e.g. 2024-10-30T12:00:00Z), %q, or milliseconds", TimeFormatForJournal)
+	return 0, errs.Invalidf("unsupported time format: use RFC3339 (e.g. 2024-10-30T12:00:00Z), %q, or milliseconds", TimeFormatForJournal)
+}
+
+// unixMsFromTime converts t to Unix milliseconds, rejecting pre-epoch times
+// (which would wrap around as uint64). UnixMilli is used instead of
+// UnixNano/1e6 because UnixNano overflows outside 1678..2262.
+func unixMsFromTime(s string, t time.Time) (uint64, error) {
+	ms := t.UnixMilli()
+	if ms < 0 {
+		return 0, errs.Invalidf("time %q is before the Unix epoch", s)
+	}
+	return uint64(ms), nil
 }
 
 func isDigitsOnly(s string) bool {

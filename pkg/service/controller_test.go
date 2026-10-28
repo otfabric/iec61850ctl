@@ -60,6 +60,7 @@ func (m *controlMock) Read(_ context.Context, _ iec61850.Ref) (*iec61850.Value, 
 }
 
 func TestController_AutoDirect(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:   iec61850.CtlModelDirectNormal,
 		readVal: iec61850.NewValue(mms.NewBoolean(true)),
@@ -83,6 +84,7 @@ func TestController_AutoDirect(t *testing.T) {
 }
 
 func TestController_AutoSBO(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:     iec61850.CtlModelSBONormal,
 		selectRet: "InteropLD/GGIO1.SPCSO2",
@@ -107,6 +109,7 @@ func TestController_AutoSBO(t *testing.T) {
 }
 
 func TestController_SBOwSameCtlNum(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelSBOEnhanced}
 	c := NewController(m)
 	res, err := c.Operate(context.Background(), domain.ControlRequest{
@@ -127,6 +130,7 @@ func TestController_SBOwSameCtlNum(t *testing.T) {
 }
 
 func TestController_DryRun(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelSBONormal}
 	c := NewController(m)
 	res, err := c.Operate(context.Background(), domain.ControlRequest{
@@ -147,6 +151,7 @@ func TestController_DryRun(t *testing.T) {
 }
 
 func TestController_OperateFailureCancels(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:      iec61850.CtlModelSBONormal,
 		selectRet:  "ok",
@@ -173,6 +178,7 @@ func TestController_OperateFailureCancels(t *testing.T) {
 }
 
 func TestController_ConfirmationMismatch(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:   iec61850.CtlModelDirectNormal,
 		readVal: iec61850.NewValue(mms.NewBoolean(false)),
@@ -196,6 +202,7 @@ func TestController_ConfirmationMismatch(t *testing.T) {
 }
 
 func TestController_ModeMismatch(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelDirectNormal}
 	c := NewController(m)
 	res, err := c.Operate(context.Background(), domain.ControlRequest{
@@ -212,6 +219,7 @@ func TestController_ModeMismatch(t *testing.T) {
 }
 
 func TestController_StatusOnly(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelStatusOnly}
 	c := NewController(m)
 	res, err := c.Operate(context.Background(), domain.ControlRequest{
@@ -228,6 +236,7 @@ func TestController_StatusOnly(t *testing.T) {
 }
 
 func TestController_Inspect(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelSBONormal}
 	c := NewController(m)
 	res, err := c.Inspect(context.Background(), "InteropLD/GGIO1.SPCSO2")
@@ -240,6 +249,7 @@ func TestController_Inspect(t *testing.T) {
 }
 
 func TestController_OperatedUnconfirmed(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:   iec61850.CtlModelDirectNormal,
 		readErr: errors.New("timeout"),
@@ -260,6 +270,7 @@ func TestController_OperatedUnconfirmed(t *testing.T) {
 }
 
 func TestController_SelectFailureNoOperate(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:     iec61850.CtlModelSBONormal,
 		selectErr: errors.New("select denied"),
@@ -279,6 +290,7 @@ func TestController_SelectFailureNoOperate(t *testing.T) {
 }
 
 func TestController_LastApplErrorMatched(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:      iec61850.CtlModelDirectNormal,
 		operateErr: errors.New("failed"),
@@ -302,6 +314,7 @@ func TestController_LastApplErrorMatched(t *testing.T) {
 }
 
 func TestController_CancelCleanupError(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{
 		model:      iec61850.CtlModelSBONormal,
 		selectRet:  "ok",
@@ -323,6 +336,7 @@ func TestController_CancelCleanupError(t *testing.T) {
 }
 
 func TestController_DirectEnhancedAndOriginCheck(t *testing.T) {
+	t.Parallel()
 	m := &controlMock{model: iec61850.CtlModelDirectEnhanced}
 	c := NewController(m)
 	res, err := c.Operate(context.Background(), domain.ControlRequest{
@@ -341,6 +355,7 @@ func TestController_DirectEnhancedAndOriginCheck(t *testing.T) {
 }
 
 func TestParseControlObjectRefAndValidate(t *testing.T) {
+	t.Parallel()
 	if _, err := parseControlObjectRef("InteropLD/GGIO1.SPCSO1[ST]"); err == nil {
 		t.Fatal("FC not allowed")
 	}
@@ -360,6 +375,7 @@ func TestParseControlObjectRefAndValidate(t *testing.T) {
 }
 
 func TestResolveControlModeAndPlanned(t *testing.T) {
+	t.Parallel()
 	m, err := resolveControlMode(domain.ControlModeAuto, iec61850.CtlModelDirectEnhanced)
 	if err != nil || m != domain.ControlModeDirect {
 		t.Fatalf("auto direct-enhanced: %v %v", m, err)
@@ -373,6 +389,7 @@ func TestResolveControlModeAndPlanned(t *testing.T) {
 }
 
 func TestLastApplErrorMatches(t *testing.T) {
+	t.Parallel()
 	if !lastApplErrorMatches("InteropLD/GGIO1.SPCSO1", "InteropLD/GGIO1.SPCSO1") {
 		t.Fatal("exact")
 	}

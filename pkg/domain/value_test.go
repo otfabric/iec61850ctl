@@ -11,6 +11,7 @@ import (
 )
 
 func TestNewValue(t *testing.T) {
+	t.Parallel()
 	v := NewValue(42, TypeInteger)
 	if v == nil {
 		t.Fatal("NewValue returned nil")
@@ -21,6 +22,7 @@ func TestNewValue(t *testing.T) {
 }
 
 func TestValue_String(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		v    Value
@@ -42,6 +44,7 @@ func TestValue_String(t *testing.T) {
 }
 
 func TestValueFromMMS(t *testing.T) {
+	t.Parallel()
 	now := time.UnixMilli(1_700_000_000_000).UTC()
 
 	tests := []struct {

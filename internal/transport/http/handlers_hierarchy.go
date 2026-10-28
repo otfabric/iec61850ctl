@@ -17,7 +17,7 @@ func (s *Server) handleListLogicalDevices(w http.ResponseWriter, r *http.Request
 
 	devices, err := s.app.ListLogicalDevices()
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -35,7 +35,7 @@ func (s *Server) handleListLogicalDeviceNames(w http.ResponseWriter, r *http.Req
 
 	names, err := s.app.ListLogicalDeviceNames()
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func (s *Server) handleListLogicalNodes(w http.ResponseWriter, r *http.Request) 
 
 	nodes, err := s.app.ListLogicalNodes(app.ListLogicalNodesInput{LD: ld})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (s *Server) handleListLogicalNodeNames(w http.ResponseWriter, r *http.Reque
 
 	names, err := s.app.ListLogicalNodeNames(app.ListLogicalNodesInput{LD: ld})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (s *Server) handleListDataObjects(w http.ResponseWriter, r *http.Request) {
 
 	objects, err := s.app.ListDataObjects(app.ListDataObjectsInput{LD: ld, LN: ln})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -133,7 +133,7 @@ func (s *Server) handleListDataObjectNames(w http.ResponseWriter, r *http.Reques
 
 	names, err := s.app.ListDataObjectNames(app.ListDataObjectsInput{LD: ld, LN: ln})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (s *Server) handleListDataAttributes(w http.ResponseWriter, r *http.Request
 		Detailed: detailed,
 	})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 

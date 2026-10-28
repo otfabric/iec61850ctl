@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
@@ -44,20 +46,20 @@ func init() {
 }
 
 func runTree(cmd *cobra.Command, args []string) error {
+	d, err := time.ParseDuration(treeInterval)
+	if err != nil {
+		return errs.Mark(fmt.Errorf("--interval: %w (e.g. 100ms, 1s)", err), errs.ErrInvalidInput)
+	}
+	if d < 0 {
+		return errs.Invalidf("--interval must be >= 0")
+	}
+
 	session, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {
 		return err
 	}
 	defer session.Close()
 	conn := session.Conn()
-
-	d, err := time.ParseDuration(treeInterval)
-	if err != nil {
-		return fmt.Errorf("--interval: %w (e.g. 100ms, 1s)", err)
-	}
-	if d < 0 {
-		return fmt.Errorf("--interval must be >= 0")
-	}
 
 	finalHost, finalPort, err := getHostPort()
 	if err != nil {
@@ -82,7 +84,7 @@ func runTree(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("serialize: %w", err)
 		}
-		w := os.Stdout
+		w := cmd.OutOrStdout()
 		var outFile *os.File
 		if treeOutput != "" {
 			f, err := os.Create(treeOutput)
@@ -99,7 +101,7 @@ func runTree(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if outFile != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Wrote serialized IED to %s\n", treeOutput)
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Wrote serialized IED to %s\n", treeOutput)
 			return outFile.Close()
 		}
 		return nil
@@ -107,14 +109,14 @@ func runTree(cmd *cobra.Command, args []string) error {
 
 	var callCount int
 	if treeFlatten {
-		callCount, err = service.NewTree(conn).WithCallInterval(d).RenderDeviceTreeFlat(os.Stdout, finalHost, finalPort, treePath)
+		callCount, err = service.NewTree(conn).WithCallInterval(d).RenderDeviceTreeFlat(cmd.OutOrStdout(), finalHost, finalPort, treePath)
 	} else {
-		callCount, err = a.RenderTree(os.Stdout, input)
+		callCount, err = a.RenderTree(cmd.OutOrStdout(), input)
 	}
 	if err != nil {
 		return err
 	}
-	fmt.Printf("\nTotal IEC61850 calls made: %d\n", callCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nTotal IEC61850 calls made: %d\n", callCount)
 	return nil
 }
 

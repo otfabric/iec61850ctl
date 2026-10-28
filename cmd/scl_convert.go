@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/pkg/scl"
 
 	"github.com/spf13/cobra"
@@ -42,7 +44,7 @@ func runSclConvert(cmd *cobra.Command, args []string) error {
 
 	doc, err := scl.Parse(f)
 	if err != nil {
-		return fmt.Errorf("parse SCL: %w", err)
+		return errs.Mark(fmt.Errorf("parse SCL: %w", err), errs.ErrInvalidInput)
 	}
 
 	entries, err := doc.Flatten()
@@ -60,6 +62,6 @@ func runSclConvert(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("write CSV: %w", err)
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "Wrote %d rows to %s\n", len(entries), sclConvertOutput)
+	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Wrote %d rows to %s\n", len(entries), sclConvertOutput)
 	return nil
 }

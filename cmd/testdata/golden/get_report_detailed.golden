@@ -1,0 +1,32 @@
+Report Control Block: brcb01 (Buffered)
+Reference: InteropLD/LLN0.brcb01
+Enabled: false
+Report ID: interop_brcb01
+Dataset: InteropLD/LLN0$dsInterop
+Integrity Period: 0 ms
+Reserved: false
+PurgeBuf: false
+EntryID: 0000000000000000
+
+Trigger Options:
+  Data Change: ✓
+  Quality Change: ✗
+  Data Update: ✗
+  Periodic: ✗
+  GI (General Interrogation): ✓
+
+Optional Fields:
+  Sequence Number: ✓
+  Time Stamp: ✓
+  Reason Code: ✓
+  Dataset Name: ✗
+  Data Reference: ✗
+  Buffer Overflow: ✓
+  Entry ID: ✓
+  Config Revision: ✗
+
+Dataset: dsInterop
+Deletable: false
+Members (2):
+  1. InteropLD/GGIO1.SPS1.stVal[ST]
+  2. InteropLD/LLN0.Mod.stVal[ST]

@@ -10,6 +10,7 @@ import (
 )
 
 func TestParsePath(t *testing.T) {
+	t.Parallel()
 	ld, ln, do := parsePath("")
 	if ld != "" || ln != "" || do != "" {
 		t.Fatalf("empty: %q %q %q", ld, ln, do)
@@ -29,6 +30,7 @@ func TestParsePath(t *testing.T) {
 }
 
 func TestDedupeStrings(t *testing.T) {
+	t.Parallel()
 	got := dedupeStrings([]string{"a", "b", "a", "c", "b"})
 	if len(got) != 3 || got[0] != "a" || got[1] != "b" || got[2] != "c" {
 		t.Fatalf("got %v", got)
@@ -36,6 +38,7 @@ func TestDedupeStrings(t *testing.T) {
 }
 
 func TestLastSegment(t *testing.T) {
+	t.Parallel()
 	if lastSegment("LD0/LN.DO.mag") != "mag" {
 		t.Fatal(lastSegment("LD0/LN.DO.mag"))
 	}
@@ -45,6 +48,7 @@ func TestLastSegment(t *testing.T) {
 }
 
 func TestRefWithFC(t *testing.T) {
+	t.Parallel()
 	ref := iec61850.Ref{LD: "LD0", LN: "LN", Path: []string{"DO"}}
 	got := refWithFC(ref, iec61850.FCMX)
 	if got.FC != iec61850.FCMX || ref.FC != "" {
@@ -53,6 +57,7 @@ func TestRefWithFC(t *testing.T) {
 }
 
 func TestFormatTypeSpec(t *testing.T) {
+	t.Parallel()
 	if formatTypeSpec(nil) != "UNKNOWN" {
 		t.Fatal(formatTypeSpec(nil))
 	}
@@ -77,6 +82,7 @@ func TestFormatTypeSpec(t *testing.T) {
 }
 
 func TestFormatValueDisplay(t *testing.T) {
+	t.Parallel()
 	if formatValueDisplay(nil) != "?" {
 		t.Fatal("nil")
 	}
@@ -87,6 +93,7 @@ func TestFormatValueDisplay(t *testing.T) {
 }
 
 func TestTree_SetCallInterval(t *testing.T) {
+	t.Parallel()
 	tr := NewTree(&mockConnection{})
 	tr.SetCallInterval(0)
 	if tr.callInterval != 0 {

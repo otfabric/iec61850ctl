@@ -1,0 +1,10 @@
+GoCB InteropLD/LLN0$GO$gcbBool
+  GoEna:      true
+  GoID:       InteropGooseBool
+  DatSet:     InteropLD/LLN0$dsGooseBool
+  ConfRev:    1
+  NdsCom:     false
+  DstAddress: 01:0c:cd:01:00:02 appid 0x1002 vlan 0 prio 4
+  MinTime:    <DUR>
+  MaxTime:    <DUR>
+  FixedOffs:  false

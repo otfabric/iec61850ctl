@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/internal/app"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 
@@ -44,14 +46,18 @@ func init() {
 func runGetJournal(cmd *cobra.Command, args []string) error {
 	fromMs, err := domain.ParseTimeToUnixMs(journalGetFrom)
 	if err != nil {
-		return fmt.Errorf("--from: %w", err)
+		return errs.Mark(fmt.Errorf("--from: %w", err), errs.ErrInvalidInput)
 	}
+
+	// MMS BinaryTime cannot encode instants before 1984-01-01; "--from 0"
+	// means "from the beginning", so clamp instead of failing on the wire.
+	fromMs = max(fromMs, binaryTimeEpochMs)
 
 	var toMs *uint64
 	if journalGetTo != "" {
 		t, err := domain.ParseTimeToUnixMs(journalGetTo)
 		if err != nil {
-			return fmt.Errorf("--to: %w", err)
+			return errs.Mark(fmt.Errorf("--to: %w", err), errs.ErrInvalidInput)
 		}
 		toMs = &t
 	}
@@ -75,22 +81,25 @@ func runGetJournal(cmd *cobra.Command, args []string) error {
 	}
 
 	for i, e := range result.Entries {
-		fmt.Printf("--- Entry %d ---\n", i+1)
-		fmt.Printf("  EntryID:        %s\n", e.EntryID)
-		fmt.Printf("  OccurrenceTime: %s\n", e.OccurrenceTime)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "--- Entry %d ---\n", i+1)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  EntryID:        %s\n", e.EntryID)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  OccurrenceTime: %s\n", e.OccurrenceTime)
 		if len(e.Variables) > 0 {
-			fmt.Println("  Variables:")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  Variables:")
 			for _, v := range e.Variables {
-				fmt.Printf("    %s: %s\n", v.Tag, v.Value)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    %s: %s\n", v.Tag, v.Value)
 			}
 		}
-		fmt.Println()
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	}
 
-	fmt.Printf("Total entries: %d", result.EntryCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Total entries: %d", result.EntryCount)
 	if result.HasMore {
-		fmt.Print(" (more available)")
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), " (more available)")
 	}
-	fmt.Println()
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	return nil
 }
+
+// binaryTimeEpochMs is 1984-01-01T00:00:00Z, the MMS BinaryTime epoch.
+const binaryTimeEpochMs = uint64(441763200000)

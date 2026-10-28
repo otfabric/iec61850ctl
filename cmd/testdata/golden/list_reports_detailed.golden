@@ -1,0 +1,58 @@
+Found 2 report(s) in 'InteropLD/LLN0':
+
+Unbuffered Reports (1):
+  1. urcb01
+Report Control Block: urcb01 (Unbuffered)
+Reference: InteropLD/LLN0.urcb01
+Enabled: false
+Report ID: interop_urcb01
+Dataset: InteropLD/LLN0$dsInterop
+Integrity Period: 0 ms
+Reserved: false
+
+Trigger Options:
+  Data Change: ✓
+  Quality Change: ✗
+  Data Update: ✗
+  Periodic: ✗
+  GI (General Interrogation): ✓
+
+Optional Fields:
+  Sequence Number: ✓
+  Time Stamp: ✓
+  Reason Code: ✓
+  Dataset Name: ✗
+  Data Reference: ✗
+  Buffer Overflow: ✗
+  Entry ID: ✗
+  Config Revision: ✗
+
+Buffered Reports (1):
+  1. brcb01
+Report Control Block: brcb01 (Buffered)
+Reference: InteropLD/LLN0.brcb01
+Enabled: false
+Report ID: interop_brcb01
+Dataset: InteropLD/LLN0$dsInterop
+Integrity Period: 0 ms
+Reserved: false
+PurgeBuf: false
+EntryID: 0000000000000000
+
+Trigger Options:
+  Data Change: ✓
+  Quality Change: ✗
+  Data Update: ✗
+  Periodic: ✗
+  GI (General Interrogation): ✓
+
+Optional Fields:
+  Sequence Number: ✓
+  Time Stamp: ✓
+  Reason Code: ✓
+  Dataset Name: ✗
+  Data Reference: ✗
+  Buffer Overflow: ✓
+  Entry ID: ✓
+  Config Revision: ✗
+

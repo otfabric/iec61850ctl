@@ -4,6 +4,8 @@ package formatter
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
@@ -17,7 +19,21 @@ func ScalarJSONValue(v *domain.Value) (any, error) {
 		return nil, nil
 	}
 	switch v.Type {
-	case domain.TypeBoolean, domain.TypeInteger, domain.TypeUnsigned, domain.TypeFloat,
+	case domain.TypeFloat:
+		// JSON has no NaN/Inf: encoding/json rejects them, which would drop
+		// the whole record. Emit the strconv form ("NaN", "+Inf", "-Inf").
+		switch f := v.Raw.(type) {
+		case float64:
+			if math.IsNaN(f) || math.IsInf(f, 0) {
+				return strconv.FormatFloat(f, 'g', -1, 64), nil
+			}
+		case float32:
+			if math.IsNaN(float64(f)) || math.IsInf(float64(f), 0) {
+				return strconv.FormatFloat(float64(f), 'g', -1, 32), nil
+			}
+		}
+		return v.Raw, nil
+	case domain.TypeBoolean, domain.TypeInteger, domain.TypeUnsigned,
 		domain.TypeVisibleString, domain.TypeMmsString:
 		return v.Raw, nil
 	case domain.TypeUnknown:

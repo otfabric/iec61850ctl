@@ -12,6 +12,7 @@ import (
 )
 
 func TestApp_ControlAndWrite(t *testing.T) {
+	t.Parallel()
 	m := &mockConn{
 		ctlModelSet: true,
 		ctlModel:    iec61850.CtlModelDirectNormal,

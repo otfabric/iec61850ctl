@@ -8,6 +8,7 @@ import (
 )
 
 func TestResolveReportRef(t *testing.T) {
+	t.Parallel()
 	ld, item, buffered, err := resolveReportRef("LD0/LLN0.BR.rcb1")
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
@@ -25,6 +26,7 @@ func TestResolveReportRef(t *testing.T) {
 }
 
 func TestReporter_WithWriterAndValidate(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 	r := NewReporter(nil).WithWriter(&buf).WithReportRef("LD0/LLN0.BR.rcb1")
 	if r.config.Writer != &buf {

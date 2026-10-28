@@ -1,0 +1,13 @@
+Found 4 leaf data attribute(s) in 'InteropLD/GGIO1.SPS1':
+
+  1. d [FC=DC]:
+     d                                                [FC=DC] Type: STRING          Value: (nil)
+
+  2. q [FC=ST]:
+     q                                                [FC=ST] Type: BIT_STRING      Value: [0 0]
+
+  3. stVal [FC=ST]:
+     stVal                                            [FC=ST] Type: BOOL            Value: false
+
+  4. t [FC=ST]:
+     t                                                [FC=ST] Type: UTC_TIME        Value: 2042-07-14 01:04:00 +0000 UTC

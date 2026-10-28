@@ -10,6 +10,7 @@ import (
 )
 
 func TestFormatQuality(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		q    *domain.Quality
@@ -53,6 +54,7 @@ func TestFormatQuality(t *testing.T) {
 }
 
 func TestFormatQualityValue(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		value      interface{}

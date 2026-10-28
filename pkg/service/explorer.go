@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // PageOptions configures pagination for expensive list operations.
@@ -105,6 +106,9 @@ func (e *Explorer) ListLogicalNodes(ldName string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logical nodes: %w", err)
 	}
+	if err := e.checkEmptyLD(ctx, ldName, len(nodes)); err != nil {
+		return nil, err
+	}
 	names := make([]string, len(nodes))
 	for i, n := range nodes {
 		names[i] = n.Name
@@ -112,10 +116,32 @@ func (e *Explorer) ListLogicalNodes(ldName string) ([]string, error) {
 	return names, nil
 }
 
+// checkEmptyLD turns an empty logical node list into ErrNotFound when the
+// LD is not in the server directory. Some servers (dscsystems) answer
+// GetNameList for an unknown domain with an empty list instead of an
+// error; a real LD always has LLN0. A failed probe keeps the empty list.
+func (e *Explorer) checkEmptyLD(ctx context.Context, ldName string, n int) error {
+	if n > 0 {
+		return nil
+	}
+	devices, probeErr := e.conn.ListLogicalDevices(ctx)
+	known := probeErr != nil // unknown directory: keep the empty list
+	for _, d := range devices {
+		known = known || d.Name == ldName
+	}
+	if known {
+		return nil
+	}
+	return errs.Newf(errs.ErrNotFound, "logical device %q not found", ldName)
+}
+
 func (e *Explorer) GetLogicalNodes(ldName string) ([]domain.LogicalNode, error) {
 	ctx := context.Background()
 	nodes, err := e.conn.ListLogicalNodes(ctx, ldName)
 	if err != nil {
+		return nil, err
+	}
+	if err := e.checkEmptyLD(ctx, ldName, len(nodes)); err != nil {
 		return nil, err
 	}
 	out := make([]domain.LogicalNode, 0, len(nodes))

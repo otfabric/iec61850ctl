@@ -3,8 +3,6 @@
 package scl
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -53,49 +51,32 @@ func TestNormalizeBType(t *testing.T) {
 		{"INT8U", "UINT8"},
 		{"INT32U", "UINT32"},
 		{"Check", "BIT_STRING"},
+		{"Octet64", "BIT_STRING"},
+		{"Quality", "BIT_STRING"},
+		{"VisString255", "STRING"},
+		{"Unicode255", "STRING"},
+		{"", "STRING"},
+		{"INT16", "INT16"},
+		{"INT32", "INT32"},
+		{"INT64", "INT64"},
+		{"INT128", "INT128"},
+		{"INT16U", "UINT16"},
+		{"UINT8", "UINT8"},
+		{"UINT32", "UINT32"},
+		{"UINT64", "UINT64"},
+		{"Enum", "INT8"},
+		{"EnumFoo", "INT8"},
+		{"MyEnumKind", "INT8"},
+		{"Float", "Float"},
+		{"Double", "Double"},
+		{"FLOAT32", "FLOAT32"},
+		{"Dbpos", "Dbpos"},
+		{"Struct", "Struct"},
 	}
 	for _, tt := range tests {
 		got := normalizeBType(tt.in)
 		if got != tt.want {
 			t.Errorf("normalizeBType(%q) = %q want %q", tt.in, got, tt.want)
 		}
-	}
-}
-
-func TestParseAndFlattenAllCids(t *testing.T) {
-	// cids/ is at repo root; from pkg/scl that's ../../cids
-	cidsDir := filepath.Join("..", "..", "cids")
-	entries, err := os.ReadDir(cidsDir)
-	if err != nil {
-		t.Skipf("cids dir not found: %v", err)
-	}
-	var files []string
-	for _, e := range entries {
-		if !e.IsDir() && filepath.Ext(e.Name()) == ".cid" {
-			files = append(files, filepath.Join(cidsDir, e.Name()))
-		}
-	}
-	if len(files) == 0 {
-		t.Skip("no .cid files in cids/")
-	}
-	for _, path := range files {
-		t.Run(filepath.Base(path), func(t *testing.T) {
-			f, err := os.Open(path)
-			if err != nil {
-				t.Fatalf("open: %v", err)
-			}
-			defer func() { _ = f.Close() }()
-			doc, err := Parse(f)
-			if err != nil {
-				t.Skipf("parse (malformed XML?): %v", err)
-			}
-			flat, err := doc.Flatten()
-			if err != nil {
-				t.Fatalf("flatten: %v", err)
-			}
-			if len(flat) == 0 && len(doc.IED) > 0 {
-				t.Logf("warning: no flattened entries but IEDs present (may have no DataTypeTemplates)")
-			}
-		})
 	}
 }

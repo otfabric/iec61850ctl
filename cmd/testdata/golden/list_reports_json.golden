@@ -1,0 +1,16 @@
+[
+  {
+    "ld": "InteropLD",
+    "ln": "LLN0",
+    "name": "urcb01",
+    "buffered": false,
+    "ref": "InteropLD/LLN0.RP.urcb01"
+  },
+  {
+    "ld": "InteropLD",
+    "ln": "LLN0",
+    "name": "brcb01",
+    "buffered": true,
+    "ref": "InteropLD/LLN0.BR.brcb01"
+  }
+]

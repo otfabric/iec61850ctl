@@ -15,28 +15,27 @@ import (
 
 // Phase 2 stack expectation table (skips must cite this table).
 //
-// | Assertion                                      | libiec61850 | iec61850bean |
-// |------------------------------------------------|-------------|--------------|
-// | Exit 0                                         | required    | required     |
-// | ≥1 report JSONL event                          | required    | required     |
-// | Expected rpt_id interop_urcb01                 | required    | required     |
-// | GI reason token present                        | required    | required     |
-// | Member values when --show-values               | required    | required     |
-// | summary reports_received == 1                  | required    | required     |
-// | Cleanup within timeout                         | required    | required     |
-// | Follow-up get report enabled == false          | required    | required if Bean exposes RptEna; else skip with table cite |
+// | Assertion                              | libiec61850 | iec61850bean | dscsystems | iec61850-rust |
+// |----------------------------------------|-------------|--------------|------------|---------------|
+// | Exit 0                                 | required    | required     | required   | required      |
+// | ≥1 report JSONL event                  | required    | required     | required   | required      |
+// | Expected rpt_id interop_urcb01         | required    | required     | required   | required      |
+// | GI reason token present                | required    | required     | required   | required      |
+// | Member values when --show-values       | required    | required     | required   | required      |
+// | summary reports_received == 1          | required    | required     | required   | required      |
+// | Cleanup within timeout                 | required    | required     | required   | required      |
+// | Follow-up get report enabled == false  | required    | skip (1)     | required   | required      |
+//
+// (1) iec61850bean does not expose RptEna reliably after disable.
 
 func TestURCBGI_SubscribeJSONL(t *testing.T) {
-	for _, stack := range []string{stackLibIEC61850, stackIEC61850Bean} {
+	for _, stack := range clientStacks() {
 		stack := stack
 		t.Run(stack, func(t *testing.T) {
 			requireStack(t, stack)
 			requireCtlBin(t)
 
-			readyTO := libReadyTimeout
-			if stack == stackIEC61850Bean {
-				readyTO = beanReadyTimeout
-			}
+			readyTO := readyTimeoutFor(stack)
 			h, err := startDockerServer(stack, readyTO)
 			if err != nil {
 				t.Fatalf("start isolated %s server: %v", stack, err)

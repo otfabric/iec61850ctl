@@ -1,31 +1,33 @@
 // SPDX-License-Identifier: MIT
 
-// Package services provides business logic for IEC 61850 device exploration and data reading.
-// This file defines common error types for better error handling in commands.
+// Package service provides business logic for IEC 61850 device exploration and data reading.
+// This file re-exports the shared sentinel errors from pkg/errs so existing
+// callers can keep using service.ErrX with errors.Is.
 package service
 
-import "errors"
+import "github.com/otfabric/iec61850ctl/pkg/errs"
 
-// Common error types that can be checked with errors.Is().
+// Common error types that can be checked with errors.Is(). They are the same
+// values as the pkg/errs sentinels.
 var (
 	// ErrNotFound indicates the requested resource (LD, LN, DO, DA, dataset, report, etc.) does not exist.
-	ErrNotFound = errors.New("resource not found")
+	ErrNotFound = errs.ErrNotFound
 
 	// ErrConnectionFailed indicates the connection to the IEC 61850 server failed or was lost.
-	ErrConnectionFailed = errors.New("connection failed")
+	ErrConnectionFailed = errs.ErrConnectionFailed
 
 	// ErrInvalidInput indicates the provided input parameters are invalid or malformed.
-	ErrInvalidInput = errors.New("invalid input")
+	ErrInvalidInput = errs.ErrInvalidInput
 
 	// ErrTimeout indicates an operation timed out waiting for a response.
-	ErrTimeout = errors.New("operation timed out")
+	ErrTimeout = errs.ErrTimeout
 
 	// ErrPermissionDenied indicates the server rejected the operation (e.g., setting RptEna when access is denied).
-	ErrPermissionDenied = errors.New("permission denied")
+	ErrPermissionDenied = errs.ErrPermissionDenied
 
 	// ErrInvalidReference indicates an object reference string is malformed or unparseable.
-	ErrInvalidReference = errors.New("invalid reference format")
+	ErrInvalidReference = errs.ErrInvalidReference
 
 	// ErrInvalidConfig indicates a configuration struct failed validation.
-	ErrInvalidConfig = errors.New("invalid configuration")
+	ErrInvalidConfig = errs.ErrInvalidConfig
 )

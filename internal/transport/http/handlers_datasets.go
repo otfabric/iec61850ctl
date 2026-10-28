@@ -25,7 +25,7 @@ func (s *Server) handleListDataSets(w http.ResponseWriter, r *http.Request) {
 
 	datasets, err := s.app.ListDataSets(app.ListDataSetsInput{LD: ld, LN: ln})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func (s *Server) handleListDataSetNames(w http.ResponseWriter, r *http.Request) 
 
 	names, err := s.app.ListDataSetNames(app.ListDataSetsInput{LD: ld, LN: ln})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -76,7 +76,7 @@ func (s *Server) handleGetDataSet(w http.ResponseWriter, r *http.Request) {
 
 	dataset, err := s.app.GetDataSet(app.GetDataSetInput{LD: ld, LN: ln, Name: name})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (s *Server) handleGetDataSetWithValues(w http.ResponseWriter, r *http.Reque
 		ReadValues: readValues,
 	})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (s *Server) handleListReports(w http.ResponseWriter, r *http.Request) {
 
 	unbuffered, buffered, err := s.app.ListReportNames(app.ListReportsInput{LD: ld, LN: ln})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (s *Server) handleListAllReports(w http.ResponseWriter, r *http.Request) {
 
 	refs, err := s.app.ListAllReports()
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -174,7 +174,7 @@ func (s *Server) handleListReportNames(w http.ResponseWriter, r *http.Request) {
 
 	unbuffered, buffered, err := s.app.ListReportNames(app.ListReportsInput{LD: ld, LN: ln})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -201,7 +201,7 @@ func (s *Server) handleGetReport(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.app.GetReport(app.GetReportInput{LD: ld, LN: ln, Name: name})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -223,7 +223,7 @@ func (s *Server) handleListJournals(w http.ResponseWriter, r *http.Request) {
 
 	journals, err := s.app.ListJournals(app.ListJournalsInput{LD: ld})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 
@@ -270,7 +270,7 @@ func (s *Server) handleGetJournalEntries(w http.ResponseWriter, r *http.Request)
 		ToMs:        toMs,
 	})
 	if err != nil {
-		s.errorResponse(w, http.StatusInternalServerError, err.Error())
+		s.writeError(w, err)
 		return
 	}
 

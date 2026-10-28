@@ -6,10 +6,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	iec61850 "github.com/otfabric/go-iec61850"
 )
 
 func TestReportService_ListReports(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		reports: []string{"LLN0$BR$rcb1", "LLN0$RP$urcb1", "MMXU1$BR$brcb01"},
 	}
@@ -38,6 +41,7 @@ func TestReportService_ListReports(t *testing.T) {
 }
 
 func TestReportService_GetAllReports(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		logicalDevices: []string{"LD0"},
 		reports:        []string{"LLN0$BR$rcb1", "LLN0$RP$urcb1", "bad", "MMXU1$BR$brcb01"},
@@ -72,6 +76,7 @@ func TestReportService_GetAllReports(t *testing.T) {
 }
 
 func TestReportService_GetReportDetails(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		rcb: &iec61850.ReportControlBlock{
 			RptID:    "id1",
@@ -115,6 +120,7 @@ func TestReportService_GetReportDetails(t *testing.T) {
 }
 
 func TestReportService_ResolveReportDetails(t *testing.T) {
+	t.Parallel()
 	brcb := &iec61850.ReportControlBlock{RptID: "br"}
 	urcb := &iec61850.ReportControlBlock{RptID: "ur"}
 
@@ -144,7 +150,33 @@ func TestReportService_ResolveReportDetails(t *testing.T) {
 	}
 }
 
+func TestReportService_ResolveReportDetails_ErrorPrecedence(t *testing.T) {
+	t.Parallel()
+	unreadable := errors.New("data access error: ObjectAccessUnsupported")
+	missing := errs.Mark(errors.New("ObjectNonExistent"), errs.ErrNotFound)
+
+	// A BRCB the server cannot read is not reported as a missing URCB.
+	m := &mockConnection{getRCBErrByItemID: map[string]error{
+		"LLN0$BR$rcb1": unreadable,
+		"LLN0$RP$rcb1": missing,
+	}}
+	if _, err := NewReportService(m).ResolveReportDetails("LD0", "LLN0", "rcb1"); !errors.Is(err, unreadable) {
+		t.Fatalf("want BR error, got %v", err)
+	}
+
+	// Neither exists: the RP error is returned.
+	missingBR := errs.Mark(errors.New("no BR"), errs.ErrNotFound)
+	m = &mockConnection{getRCBErrByItemID: map[string]error{
+		"LLN0$BR$rcb1": missingBR,
+		"LLN0$RP$rcb1": missing,
+	}}
+	if _, err := NewReportService(m).ResolveReportDetails("LD0", "LLN0", "rcb1"); !errors.Is(err, missing) {
+		t.Fatalf("want RP error, got %v", err)
+	}
+}
+
 func TestMapRCB_Nil(t *testing.T) {
+	t.Parallel()
 	if mapRCB("LD0", "LLN0", "r", true, nil) != nil {
 		t.Fatal("expected nil")
 	}

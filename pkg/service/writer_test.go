@@ -30,6 +30,7 @@ func (m *writeMock) Read(_ context.Context, _ iec61850.Ref) (*iec61850.Value, er
 }
 
 func TestWriter_SetObject(t *testing.T) {
+	t.Parallel()
 	m := &writeMock{readVal: iec61850.NewValue(mms.NewInteger(5))}
 	w := NewWriter(m)
 	res, err := w.SetObject(context.Background(), domain.WriteRequest{
@@ -50,6 +51,7 @@ func TestWriter_SetObject(t *testing.T) {
 }
 
 func TestWriter_RejectCO(t *testing.T) {
+	t.Parallel()
 	w := NewWriter(&writeMock{})
 	_, err := w.SetObject(context.Background(), domain.WriteRequest{
 		Object: "InteropLD/GGIO1.SPCSO1.Oper",
@@ -62,6 +64,7 @@ func TestWriter_RejectCO(t *testing.T) {
 }
 
 func TestWriter_WriteFailure(t *testing.T) {
+	t.Parallel()
 	m := &writeMock{writeErr: errors.New("object-access-denied")}
 	w := NewWriter(m)
 	res, err := w.SetObject(context.Background(), domain.WriteRequest{
@@ -78,6 +81,7 @@ func TestWriter_WriteFailure(t *testing.T) {
 }
 
 func TestWriter_VerifyMismatchAndReadError(t *testing.T) {
+	t.Parallel()
 	m := &writeMock{readVal: iec61850.NewValue(mms.NewInteger(9))}
 	w := NewWriter(m)
 	res, err := w.SetObject(context.Background(), domain.WriteRequest{
@@ -109,6 +113,7 @@ func TestWriter_VerifyMismatchAndReadError(t *testing.T) {
 }
 
 func TestWriter_Validation(t *testing.T) {
+	t.Parallel()
 	w := NewWriter(&writeMock{})
 	if _, err := w.SetObject(context.Background(), domain.WriteRequest{}); err == nil {
 		t.Fatal("object required")

@@ -1,0 +1,8 @@
+object: InteropLD/GGIO1.SPCSO3
+control_model: 4 (sbo-with-enhanced-security)
+mode: sbow
+ctl_num: 9
+requested_value: true
+operation select-with-value: true
+operation operate: true
+status: operated

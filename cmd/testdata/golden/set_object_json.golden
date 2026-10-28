@@ -1,0 +1,12 @@
+{
+  "object": "InteropLD/GGIO1.SetInt1.setVal",
+  "fc": "SP",
+  "type": "int",
+  "requested_value": 7,
+  "write_ok": true,
+  "verification": {
+    "attempted": true,
+    "value": 7,
+    "matched": true
+  }
+}

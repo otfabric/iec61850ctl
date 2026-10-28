@@ -9,6 +9,7 @@ import (
 )
 
 func TestNewReader(t *testing.T) {
+	t.Parallel()
 	var conn IEC61850Connection
 	reader := NewReader(conn)
 
@@ -21,6 +22,7 @@ func TestNewReader(t *testing.T) {
 }
 
 func TestNewExplorer(t *testing.T) {
+	t.Parallel()
 	var conn IEC61850Connection
 	explorer := NewExplorer(conn)
 
@@ -33,6 +35,7 @@ func TestNewExplorer(t *testing.T) {
 }
 
 func TestNewTree(t *testing.T) {
+	t.Parallel()
 	var conn IEC61850Connection
 	tree := NewTree(conn)
 
@@ -45,6 +48,7 @@ func TestNewTree(t *testing.T) {
 }
 
 func TestDataAttribute_Structure(t *testing.T) {
+	t.Parallel()
 	da := domain.DataAttribute{
 		Name:     "mag.f",
 		Ref:      "LD0/LN0.DO.mag.f",
@@ -75,6 +79,7 @@ func TestDataAttribute_Structure(t *testing.T) {
 }
 
 func TestListDataAttributesInput_Structure(t *testing.T) {
+	t.Parallel()
 	input := ListDataAttributesInput{
 		LogicalDevice: "DEV03LD0",
 		LogicalNode:   "CUS1_GGIO3",

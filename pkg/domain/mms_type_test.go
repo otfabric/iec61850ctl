@@ -9,6 +9,7 @@ import (
 )
 
 func TestMmsDataType_String(t *testing.T) {
+	t.Parallel()
 	if got := TypeFloat.String(); got != "FLOAT" {
 		t.Errorf("TypeFloat.String() = %q", got)
 	}
@@ -18,6 +19,7 @@ func TestMmsDataType_String(t *testing.T) {
 }
 
 func TestMmsDataType_Predicates(t *testing.T) {
+	t.Parallel()
 	leafCases := []struct {
 		t    MmsDataType
 		leaf bool
@@ -69,6 +71,7 @@ func TestMmsDataType_Predicates(t *testing.T) {
 }
 
 func TestFromMMSValueType_FromLibMmsType(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		in   mms.ValueType
 		want MmsDataType

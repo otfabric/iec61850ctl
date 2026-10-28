@@ -1,0 +1,7 @@
+object: InteropLD/GGIO1.SPCSO1
+control_model: 1 (direct-with-normal-security)
+mode: direct
+ctl_num: 4
+requested_value: false
+operation operate: true
+status: operated

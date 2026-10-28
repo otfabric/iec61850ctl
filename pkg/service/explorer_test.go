@@ -3,13 +3,16 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // TestLogicalDeviceInfo_Structure verifies domain.LogicalDevice struct fields.
 func TestLogicalDeviceInfo_Structure(t *testing.T) {
+	t.Parallel()
 	info := domain.LogicalDevice{
 		Name:      "MNSREF615CTRL",
 		LNCount:   42,
@@ -37,6 +40,7 @@ func TestLogicalDeviceInfo_Structure(t *testing.T) {
 
 // TestGetLogicalDevices_NilClient tests that GetLogicalDevices returns an error when client is nil.
 func TestGetLogicalDevices_NilClient(t *testing.T) {
+	t.Parallel()
 	explorer := NewExplorer(nil)
 	if explorer == nil {
 		t.Fatal("NewExplorer(nil) returned nil")
@@ -45,5 +49,26 @@ func TestGetLogicalDevices_NilClient(t *testing.T) {
 	_, err := explorer.GetLogicalDevices()
 	if err == nil {
 		t.Error("GetLogicalDevices with nil client: expected error, got nil")
+	}
+}
+
+func TestExplorer_EmptyLDIsNotFound(t *testing.T) {
+	t.Parallel()
+	m := &mockConnection{logicalNodes: []string{}, logicalDevices: []string{"LD0"}}
+	e := NewExplorer(m)
+	if _, err := e.ListLogicalNodes("NoSuchLD"); !errors.Is(err, errs.ErrNotFound) {
+		t.Fatalf("ListLogicalNodes unknown LD: want ErrNotFound, got %v", err)
+	}
+	if _, err := e.GetLogicalNodes("NoSuchLD"); !errors.Is(err, errs.ErrNotFound) {
+		t.Fatalf("GetLogicalNodes unknown LD: want ErrNotFound, got %v", err)
+	}
+	if names, err := e.ListLogicalNodes("LD0"); err != nil || len(names) != 0 {
+		t.Fatalf("known empty LD: names=%v err=%v", names, err)
+	}
+
+	// A failed directory probe keeps the empty list.
+	m.listLDsErr = errors.New("probe failed")
+	if names, err := e.ListLogicalNodes("NoSuchLD"); err != nil || len(names) != 0 {
+		t.Fatalf("probe failure: names=%v err=%v", names, err)
 	}
 }

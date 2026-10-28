@@ -12,6 +12,7 @@ import (
 )
 
 func TestLnMatches(t *testing.T) {
+	t.Parallel()
 	if !lnMatches("LLN0$ds1", "LLN0") {
 		t.Error("expected prefix match")
 	}
@@ -24,6 +25,7 @@ func TestLnMatches(t *testing.T) {
 }
 
 func TestDataSetService_ListDataSets(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		dataSets: []string{"LLN0$ds1", "LLN0$ds2", "MMXU1$meas", "orphan"},
 	}
@@ -67,6 +69,7 @@ func TestDataSetService_ListDataSets(t *testing.T) {
 }
 
 func TestDataSetService_GetDataSet(t *testing.T) {
+	t.Parallel()
 	ref, _ := iec61850.ParseRef("LD0/LLN0.DO1.mag.f")
 	ds := &iec61850.DataSet{
 		Deletable: true,
@@ -122,6 +125,7 @@ func TestDataSetService_GetDataSet(t *testing.T) {
 }
 
 func TestDataSetService_GetDataSetDetails(t *testing.T) {
+	t.Parallel()
 	ref, _ := iec61850.ParseRef("LD0/LLN0.DO1.mag.f")
 	mock := &mockConnection{
 		dataSet: &iec61850.DataSet{

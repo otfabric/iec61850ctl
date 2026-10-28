@@ -1,0 +1,15 @@
+IEC 61850 Device Tree for 127.0.0.1:<PORT>
+================================================================================
+
+📦 InteropLD
+  ├─ 📋 MMXU1
+  │  └─ 📊 TotW
+  │     ├─ [MX] mag
+  │     │  └─ [MX] f → FLOAT = 1234.5
+  │     ├─ [MX] q
+  │     │   → BIT_STRING = 0x0000
+  │     └─ [MX] t
+  │         → UTC_TIME = 2042-07-14 01:04:00.000 UTC [leap-unknown acc<=<DUR>]
+
+
+Total IEC61850 calls made: 13

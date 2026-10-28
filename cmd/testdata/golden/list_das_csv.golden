@@ -1,0 +1,5 @@
+Name,Type,FC,Value
+d,STRING,DC,
+q,BIT_STRING,ST,[0 0]
+stVal,BOOL,ST,false
+t,UTC_TIME,ST,2042-07-14 01:04:00 +0000 UTC

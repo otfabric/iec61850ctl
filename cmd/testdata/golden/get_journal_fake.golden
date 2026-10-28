@@ -1,0 +1,13 @@
+--- Entry 1 ---
+  EntryID:        00010203
+  OccurrenceTime: 2026-01-02 03:04:05.000
+  Variables:
+    InteropLD/GGIO1$ST$SPCSO1$stVal: 
+
+--- Entry 2 ---
+  EntryID:        00010203
+  OccurrenceTime: 2026-01-02 03:04:05.000
+  Variables:
+    InteropLD/GGIO1$ST$SPCSO1$stVal: 
+
+Total entries: 2 (more available)

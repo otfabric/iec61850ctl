@@ -2,25 +2,36 @@
 
 package service
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"sync/atomic"
+)
 
-// debugEnabled controls whether low-level IEC 61850 calls are logged.
-// It is configured once at the start of each CLI invocation via the
-// top-level --debug flag (see cmd/root.go).
-var debugEnabled bool
+// logger receives low-level service diagnostics. It is configured once per
+// CLI invocation from the global --log-level/--log-format flags (see cmd/root.go).
+// A nil value (the default) discards all diagnostics.
+var logger atomic.Pointer[slog.Logger]
 
-// SetDebug configures debug logging for IEC 61850 calls.
-// This is intended to be called from the CLI layer before any
-// connections are created or service methods are invoked.
-func SetDebug(enabled bool) {
-	debugEnabled = enabled
+// SetLogger installs the logger used for service-level diagnostics.
+// Passing nil disables them. Safe for concurrent use.
+func SetLogger(l *slog.Logger) {
+	logger.Store(l)
 }
 
-// debugf prints a formatted debug message when debug logging is enabled.
-// All logging goes to stdout so that it is visible in CLI output.
-func debugf(format string, args ...interface{}) {
-	if !debugEnabled {
+// Logger returns the logger installed with SetLogger, or nil.
+func Logger() *slog.Logger {
+	return logger.Load()
+}
+
+// debugf logs a formatted message at debug level when a logger is installed
+// and debug logging is enabled. Diagnostics never go to stdout, so they cannot
+// corrupt json/csv/yaml output.
+func debugf(format string, args ...any) {
+	l := logger.Load()
+	if l == nil || !l.Enabled(context.Background(), slog.LevelDebug) {
 		return
 	}
-	fmt.Printf("[IEC61850 DEBUG] "+format+"\n", args...)
+	l.Debug(fmt.Sprintf(format, args...), "component", "service")
 }

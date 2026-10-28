@@ -1,0 +1,16 @@
+- name: GGIO1
+  docount: 6
+  dscount: 0
+  rcbcount: 0
+- name: LLN0
+  docount: 4
+  dscount: 1
+  rcbcount: 2
+- name: MMTR1
+  docount: 1
+  dscount: 0
+  rcbcount: 0
+- name: MMXU1
+  docount: 1
+  dscount: 0
+  rcbcount: 0

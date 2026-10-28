@@ -11,6 +11,7 @@ import (
 )
 
 func TestReportControlBlock_Methods(t *testing.T) {
+	t.Parallel()
 	empty := &ReportControlBlock{Name: "urcb01", Buffered: false}
 	if empty.IsFullyPopulated() {
 		t.Error("empty RCB IsFullyPopulated() = true")
@@ -43,6 +44,7 @@ func TestReportControlBlock_Methods(t *testing.T) {
 }
 
 func TestFromReportIndication(t *testing.T) {
+	t.Parallel()
 	if got := FromReportIndication(nil, true); got != nil {
 		t.Fatalf("FromReportIndication(nil) = %+v, want nil", got)
 	}
@@ -124,6 +126,7 @@ func TestFromReportIndication(t *testing.T) {
 }
 
 func TestReasonFromCode(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		rc   iec61850.ReasonCode
 		want ReasonForInclusion

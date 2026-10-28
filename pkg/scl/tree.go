@@ -190,7 +190,7 @@ func writeDONode(w io.Writer, prefix, doName, doDesc string, doType *DOType, doi
 
 	// Leaf DAs
 	var leaves []string
-	collectDOLeaves(doType, doi, sdiPath, "", doTypes, daTypes, enumTypes, detailed, &leaves)
+	collectDOLeaves(doType, doi, sdiPath, "", doTypes, daTypes, enumTypes, detailed, typeStack{}, &leaves)
 
 	subPrefix := childPrefix
 	for i, line := range leaves {
@@ -204,7 +204,11 @@ func writeDONode(w io.Writer, prefix, doName, doDesc string, doType *DOType, doi
 }
 
 // collectDOLeaves appends leaf lines (format depends on detailed) for all leaf attributes under a DO.
-func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix string, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, out *[]string) {
+func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix string, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, stack typeStack, out *[]string) {
+	if !stack.push("DO:" + doType.ID) {
+		return // recursive DOType reference
+	}
+	defer stack.pop("DO:" + doType.ID)
 	for i := range doType.DA {
 		da := &doType.DA[i]
 		fc := da.Fc
@@ -219,7 +223,7 @@ func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix stri
 			if parentFC == "" {
 				parentFC = fc
 			}
-			collectDATypeLeaves(daTypes[da.Type], doi, structSDI, structPath, parentFC, daTypes, enumTypes, detailed, out)
+			collectDATypeLeaves(daTypes[da.Type], doi, structSDI, structPath, parentFC, daTypes, enumTypes, detailed, stack, out)
 			continue
 		}
 		val := getDAIValue(doi, sdiPath, da.Name)
@@ -236,21 +240,25 @@ func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix stri
 		}
 		subPath := pathPrefix + sdo.Name + "."
 		var subDOI *DOI
-		var subSDI []string
 		if doi != nil {
 			for j := range doi.SDI {
 				if doi.SDI[j].Name == sdo.Name {
+					// subDOI is rooted at the matching SDI, so value lookups below it
+					// start from an empty SDI path (not sdiPath+sdo.Name).
 					subDOI = &DOI{Name: sdo.Name, DAI: doi.SDI[j].DAI, SDI: doi.SDI[j].SDI}
-					subSDI = appendPath(sdiPath, sdo.Name)
 					break
 				}
 			}
 		}
-		collectDOLeaves(sdoType, subDOI, subSDI, subPath, doTypes, daTypes, enumTypes, detailed, out)
+		collectDOLeaves(sdoType, subDOI, nil, subPath, doTypes, daTypes, enumTypes, detailed, stack, out)
 	}
 }
 
-func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix string, parentFC string, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, out *[]string) {
+func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix string, parentFC string, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, stack typeStack, out *[]string) {
+	if !stack.push("DA:" + dt.ID) {
+		return // recursive DAType reference
+	}
+	defer stack.pop("DA:" + dt.ID)
 	for i := range dt.BDA {
 		bda := &dt.BDA[i]
 		path := pathPrefix + bda.Name
@@ -262,7 +270,7 @@ func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix stri
 			fc = inferFC(bda.BType)
 		}
 		if bda.Type != "" && daTypes[bda.Type] != nil {
-			collectDATypeLeaves(daTypes[bda.Type], doi, appendPath(sdiPath, bda.Name), path+".", fc, daTypes, enumTypes, detailed, out)
+			collectDATypeLeaves(daTypes[bda.Type], doi, appendPath(sdiPath, bda.Name), path+".", fc, daTypes, enumTypes, detailed, stack, out)
 			continue
 		}
 		val := getDAIValue(doi, sdiPath, bda.Name)

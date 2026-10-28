@@ -59,11 +59,11 @@ func runGetFile(cmd *cobra.Command, args []string) error {
 			if entry != nil {
 				size = uint64(entry.Size)
 			}
-			_, _ = fmt.Fprintf(os.Stderr, "File: %s\n", fileName)
-			_, _ = fmt.Fprintf(os.Stderr, "Size: %s\n", formatter.FormatFileSize(size))
-			_, _ = fmt.Fprintf(os.Stderr, "Checksum (SHA256): %x\n\n", sha256.Sum256(data))
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "File: %s\n", fileName)
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Size: %s\n", formatter.FormatFileSize(size))
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Checksum (SHA256): %x\n\n", sha256.Sum256(data))
 		}
-		if _, err = os.Stdout.Write(data); err != nil {
+		if _, err = cmd.OutOrStdout().Write(data); err != nil {
 			return fmt.Errorf("failed to write to stdout: %w", err)
 		}
 		return nil
@@ -73,10 +73,10 @@ func runGetFile(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	if fileDetailedFlag {
-		fmt.Printf("Downloaded %s -> %s (%s)\n", fileName, outputPath, formatter.FormatFileSize(uint64(len(data))))
-		fmt.Printf("Checksum (SHA256): %x\n", sha256.Sum256(data))
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Downloaded %s -> %s (%s)\n", fileName, outputPath, formatter.FormatFileSize(uint64(len(data))))
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Checksum (SHA256): %x\n", sha256.Sum256(data))
 	} else {
-		fmt.Printf("Downloaded %s -> %s\n", fileName, outputPath)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Downloaded %s -> %s\n", fileName, outputPath)
 	}
 	return nil
 }

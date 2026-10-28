@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/otfabric/iec61850ctl/pkg/scl"
 
 	"github.com/spf13/cobra"
@@ -41,7 +43,7 @@ func runSclParse(cmd *cobra.Command, args []string) error {
 
 	doc, err := scl.Parse(f)
 	if err != nil {
-		return fmt.Errorf("parse SCL: %w", err)
+		return errs.Mark(fmt.Errorf("parse SCL: %w", err), errs.ErrInvalidInput)
 	}
 
 	if sclParseFlatten {
@@ -50,10 +52,10 @@ func runSclParse(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("flatten: %w", err)
 		}
 		for _, e := range entries {
-			fmt.Println(scl.FormatEntry(e, sclParseDetail))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), scl.FormatEntry(e, sclParseDetail))
 		}
 		return nil
 	}
 
-	return doc.WriteTree(os.Stdout, sclParseDetail)
+	return doc.WriteTree(cmd.OutOrStdout(), sclParseDetail)
 }

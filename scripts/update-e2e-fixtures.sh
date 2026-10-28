@@ -9,20 +9,26 @@ MMS_INTEROP_DIR="${MMS_INTEROP_DIR:-}"
 
 if [[ -z "$MMS_INTEROP_DIR" ]]; then
   echo "usage: MMS_INTEROP_DIR=/path/to/mms-interop $0" >&2
-  echo "optional: LIBIEC61850_IMAGE=... IEC61850BEAN_IMAGE=..." >&2
+  echo "optional: LIBIEC61850_IMAGE=... IEC61850BEAN_IMAGE=... DSCSYSTEMS_IMAGE=... IEC61850RUST_IMAGE=..." >&2
   exit 1
 fi
 
 ICD_SRC="$MMS_INTEROP_DIR/fixtures/iec61850/interop.icd"
 VAL_SRC="$MMS_INTEROP_DIR/fixtures/iec61850/values.json"
-if [[ ! -f "$ICD_SRC" || ! -f "$VAL_SRC" ]]; then
-  echo "mms-interop fixtures not found under $MMS_INTEROP_DIR" >&2
-  exit 1
-fi
+GOOSE_CID_SRC="$MMS_INTEROP_DIR/fixtures/goose/interop-goose.cid"
+GOOSE_JSON_SRC="$MMS_INTEROP_DIR/fixtures/goose/goose.json"
+for f in "$ICD_SRC" "$VAL_SRC" "$GOOSE_CID_SRC" "$GOOSE_JSON_SRC"; do
+  if [[ ! -f "$f" ]]; then
+    echo "mms-interop fixture not found: $f" >&2
+    exit 1
+  fi
+done
 
 mkdir -p "$DIR"
 cp "$ICD_SRC" "$DIR/interop.icd"
 cp "$VAL_SRC" "$DIR/expected-values.json"
+cp "$GOOSE_CID_SRC" "$DIR/interop-goose.cid"
+cp "$GOOSE_JSON_SRC" "$DIR/goose.json"
 
 if [[ ! -f "$DIR/self-server-values.json" ]]; then
   echo "missing self-server-values.json — create it before updating the lock" >&2
@@ -32,54 +38,43 @@ fi
 SOURCE_COMMIT="$(git -C "$MMS_INTEROP_DIR" rev-parse HEAD)"
 SOURCE_TAG="$(git -C "$MMS_INTEROP_DIR" describe --tags --exact-match 2>/dev/null || git -C "$MMS_INTEROP_DIR" describe --tags 2>/dev/null || true)"
 
-ICD_HASH="sha256:$(shasum -a 256 "$DIR/interop.icd" | awk '{print $1}')"
-VAL_HASH="sha256:$(shasum -a 256 "$DIR/expected-values.json" | awk '{print $1}')"
-SELF_HASH="sha256:$(shasum -a 256 "$DIR/self-server-values.json" | awk '{print $1}')"
-
-LIB_IMAGE="${LIBIEC61850_IMAGE:-}"
-BEAN_IMAGE="${IEC61850BEAN_IMAGE:-}"
-if [[ -f "$LOCK" ]]; then
-  if [[ -z "$LIB_IMAGE" ]]; then
-    LIB_IMAGE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["images"]["libiec61850"])' "$LOCK")"
-  fi
-  if [[ -z "$BEAN_IMAGE" ]]; then
-    BEAN_IMAGE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["images"]["iec61850bean"])' "$LOCK")"
-  fi
-fi
-LIB_IMAGE="${LIB_IMAGE:-mms-interop-libiec61850:local}"
-BEAN_IMAGE="${BEAN_IMAGE:-mms-interop-iec61850bean:local}"
-
-python3 - <<PY
-import json
-lock = {
-  "source_repository": "otfabric/mms-interop",
-  "source_commit": "$SOURCE_COMMIT",
-  "source_tag": "$SOURCE_TAG",
-  "fixture_revision": "iec61850-v2",
-  "files": {
-    "interop.icd": "$ICD_HASH",
-    "expected-values.json": "$VAL_HASH",
-    "self-server-values.json": "$SELF_HASH",
-  },
-  "images": {
-    "libiec61850": "$LIB_IMAGE",
-    "iec61850bean": "$BEAN_IMAGE",
-  },
-  "required_commands": {
-    "libiec61850-ied-server": True,
-    "libiec61850-ied-client": True,
-    "libiec61850-ied-controller": True,
-    "libiec61850-ied-reporter": True,
-    "iec61850bean-ied-server": True,
-    "iec61850bean-ied-client": True,
-    "iec61850bean-ied-controller": True,
-    "iec61850bean-ied-reporter": True,
-  },
+# Images: <STACK>_IMAGE overrides, else the digest already in the lock, else
+# the local build tag. The image digests of a release are in the
+# mms-interop release manifest.json.
+SOURCE_COMMIT="$SOURCE_COMMIT" SOURCE_TAG="$SOURCE_TAG" python3 - "$DIR" "$LOCK" <<'PY2'
+import hashlib, json, os, sys
+d, lock_path = sys.argv[1:]
+old = {}
+if os.path.exists(lock_path):
+    old = json.load(open(lock_path)).get("images", {})
+stacks = {
+    "libiec61850": "LIBIEC61850_IMAGE",
+    "iec61850bean": "IEC61850BEAN_IMAGE",
+    "dscsystems": "DSCSYSTEMS_IMAGE",
+    "iec61850-rust": "IEC61850RUST_IMAGE",
 }
-with open("$LOCK", "w") as f:
-  json.dump(lock, f, indent=2)
-  f.write("\n")
-print("updated", "$LOCK")
-print("source_commit", "$SOURCE_COMMIT")
-print("source_tag", "$SOURCE_TAG")
-PY
+goose = ["libiec61850", "dscsystems", "iec61850-rust"]
+files = ["interop.icd", "expected-values.json", "self-server-values.json", "interop-goose.cid", "goose.json"]
+lock = {
+    "source_repository": "otfabric/mms-interop",
+    "source_commit": os.environ["SOURCE_COMMIT"],
+    "source_tag": os.environ["SOURCE_TAG"],
+    "fixture_revision": "iec61850-v2",
+    "goose_fixture_revision": json.load(open(os.path.join(d, "goose.json")))["revision"],
+    "files": {f: "sha256:" + hashlib.sha256(open(os.path.join(d, f), "rb").read()).hexdigest() for f in files},
+    "images": {s: os.environ.get(env) or old.get(s) or f"mms-interop-{s}:local" for s, env in stacks.items()},
+    "required_commands": {},
+}
+for s in stacks:
+    for c in ("ied-server", "ied-client", "ied-controller", "ied-reporter"):
+        lock["required_commands"][f"{s}-{c}"] = True
+for s in goose:
+    for c in ("goose-publisher", "goose-subscriber"):
+        lock["required_commands"][f"{s}-{c}"] = True
+with open(lock_path, "w") as f:
+    json.dump(lock, f, indent=2)
+    f.write("\n")
+print("updated", lock_path)
+print("source_commit", lock["source_commit"])
+print("source_tag", lock["source_tag"])
+PY2

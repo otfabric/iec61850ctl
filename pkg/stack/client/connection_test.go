@@ -3,133 +3,294 @@
 package client
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"io"
+	"log/slog"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
+	"time"
+
+	iec61850 "github.com/otfabric/go-iec61850"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+	"github.com/otfabric/iec61850ctl/pkg/service"
+	"github.com/otfabric/iec61850ctl/pkg/stack/server"
 )
 
-// TestConnectionInput_Validation tests the ConnectionInput struct construction.
-// Per CLAUDE.md T-1, uses table-driven tests.
-func TestConnectionInput_Validation(t *testing.T) {
-	tests := []struct {
-		name  string
-		input ConnectionInput
-		valid bool
-	}{
-		{
-			name: "valid configuration",
-			input: ConnectionInput{
-				Host:           "localhost",
-				Port:           102,
-				ConnectTimeout: 10,
-				RequestTimeout: 10,
-			},
-			valid: true,
-		},
-		{
-			name: "custom port",
-			input: ConnectionInput{
-				Host:           "192.168.1.100",
-				Port:           8080,
-				ConnectTimeout: 5,
-				RequestTimeout: 15,
-			},
-			valid: true,
-		},
-		{
-			name: "zero timeouts",
-			input: ConnectionInput{
-				Host:           "example.com",
-				Port:           102,
-				ConnectTimeout: 0,
-				RequestTimeout: 0,
-			},
-			valid: true, // Library will handle timeout validation
-		},
-	}
+// callAll invokes every IEC61850Connection method once with ctx.
+func callAll(c service.IEC61850Connection, ctx context.Context) {
+	ref := iec61850.Ref{}
+	_, _ = c.ReadCtlModel(ctx, ref)
+	_, _ = c.Select(ctx, ref)
+	_ = c.SelectWithValue(ctx, ref, iec61850.OperateParams{})
+	_ = c.Operate(ctx, ref, iec61850.OperateParams{})
+	_ = c.Cancel(ctx, ref, iec61850.CancelParams{})
+	_, _ = c.ReadLastApplError(ctx, ref)
+	_, _ = c.Read(ctx, ref)
+	_ = c.Write(ctx, ref, nil)
+	_, _ = c.ListLogicalDevices(ctx)
+	_, _ = c.ListLogicalNodes(ctx, "LD")
+	_, _ = c.ListDataObjects(ctx, "LD", "LN")
+	_, _ = c.ListChildren(ctx, ref)
+	_, _ = c.TreeWithOptions(ctx, iec61850.TreeOptions{})
+	_, _ = c.FindPaths(ctx, iec61850.FindQuery{})
+	_, _ = c.ReadMultiple(ctx, nil)
+	_, _ = c.GetVariableType(ctx, ref)
+	_, _ = c.ListDataSets(ctx, "LD")
+	_, _ = c.GetDataSet(ctx, "LD", "DS")
+	_, _ = c.ReadDataSet(ctx, "LD", "DS")
+	_, _ = c.ListReports(ctx, "LD")
+	_, _ = c.GetReportControlBlock(ctx, "LD", "RCB")
+	_ = c.SetReportControlBlock(ctx, "LD", "RCB", iec61850.RCBUpdate{})
+	_ = c.TriggerGI(ctx, "LD", "RCB")
+	_, _ = c.SubscribeReport(ctx, "rpt", iec61850.SubscribeReportOptions{})
+	_, _ = c.ListFiles(ctx, "*")
+	_, _ = c.DownloadFile(ctx, "f", io.Discard)
+	_, _ = c.GetFileAttributes(ctx, "f")
+	_, _ = c.ListJournals(ctx, "LD")
+	_, _ = c.ReadJournal(ctx, "LD", "J", time.Time{}, time.Time{})
+	_, _ = c.ReadJournalAfter(ctx, "LD", "J", time.Time{}, nil)
+	_ = c.Close(ctx)
+	_ = c.Abort(ctx)
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Verify struct fields are properly set
-			if tt.input.Host == "" && tt.valid {
-				t.Error("Expected valid input to have non-empty Host")
-			}
-			if tt.input.Port <= 0 && tt.valid {
-				t.Error("Expected valid input to have positive Port")
+func TestTimeoutConnAppliesDeadlines(t *testing.T) {
+	t.Parallel()
+	noDeadline := map[string]bool{"SubscribeReport": true, "DownloadFile": true, "Close": true, "Abort": true}
+	p := &probeConn{}
+	base, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	callAll(&timeoutConn{IEC61850Connection: p, base: base, timeout: time.Minute}, context.Background())
+	for _, m := range probeMethods {
+		got, ok := p.deadline[m]
+		if !ok {
+			t.Errorf("%s not forwarded", m)
+			continue
+		}
+		if want := !noDeadline[m]; got != want {
+			t.Errorf("%s: deadline=%v, want %v", m, got, want)
+		}
+	}
+}
+
+func TestTimeoutConnKeepsCallerDeadlineAndNilContext(t *testing.T) {
+	t.Parallel()
+	p := &probeConn{}
+	tc := &timeoutConn{IEC61850Connection: p, timeout: 0}
+	//nolint:staticcheck // nil context is tolerated on purpose
+	callAll(tc, nil)
+	if p.deadline["Read"] {
+		t.Fatal("timeout 0 must not add a deadline")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+	tc.timeout = time.Millisecond
+	_, _ = tc.Read(ctx, iec61850.Ref{})
+	if !p.deadline["Read"] {
+		t.Fatal("caller deadline lost")
+	}
+}
+
+func TestTimeoutConnBoundsSilentPeer(t *testing.T) {
+	t.Parallel()
+	p := &probeConn{block: true}
+	tc := &timeoutConn{IEC61850Connection: p, base: context.Background(), timeout: 20 * time.Millisecond}
+	start := time.Now()
+	_, err := tc.Read(context.Background(), iec61850.Ref{})
+	if !errs.IsTimeout(err) || errs.ExitCode(err) != errs.ExitTimeout {
+		t.Fatalf("err=%v", err)
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Fatal("timeout not applied")
+	}
+}
+
+func TestTimeoutConnBaseCancellation(t *testing.T) {
+	t.Parallel()
+	for _, method := range []string{"Read", "DownloadFile", "SubscribeReport"} {
+		t.Run(method, func(t *testing.T) {
+			t.Parallel()
+			p := &probeConn{block: true}
+			base, cancel := context.WithCancel(context.Background())
+			tc := &timeoutConn{IEC61850Connection: p, base: base, timeout: time.Hour}
+			done := make(chan error, 1)
+			go func() {
+				var err error
+				switch method {
+				case "Read":
+					_, err = tc.Read(context.Background(), iec61850.Ref{})
+				case "DownloadFile":
+					_, err = tc.DownloadFile(context.Background(), "f", io.Discard)
+				default:
+					_, err = tc.SubscribeReport(context.Background(), "r", iec61850.SubscribeReportOptions{})
+				}
+				done <- err
+			}()
+			time.Sleep(10 * time.Millisecond)
+			cancel()
+			select {
+			case err := <-done:
+				if !errors.Is(err, context.Canceled) || errs.ExitCode(err) != errs.ExitInterrupted {
+					t.Fatalf("err=%v", err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("base cancel did not abort request")
 			}
 		})
 	}
 }
 
-// TestNewConnection_InvalidHost tests connection failure scenarios.
-// Note: This requires a mock or integration test environment.
-// For unit testing, we verify the function signature and error wrapping.
-func TestNewConnection_ErrorWrapping(t *testing.T) {
-	// Test that NewConnection properly wraps errors (ERR-1)
-	input := ConnectionInput{
-		Host:           "nonexistent-host-12345.invalid",
-		Port:           102,
-		ConnectTimeout: 1,
-		RequestTimeout: 1,
+func TestConnectionInputAddr(t *testing.T) {
+	t.Parallel()
+	if got := (ConnectionInput{Host: "::1", Port: 102}).Addr(); got != "[::1]:102" {
+		t.Fatalf("ipv6 addr %q", got)
 	}
-
-	_, err := NewConnection(input)
-	if err == nil {
-		t.Log("Warning: Expected connection to fail for invalid host, but may succeed in some environments")
-		return
-	}
-
-	// Verify error message contains context per ERR-1
-	errMsg := err.Error()
-	if errMsg == "" {
-		t.Error("Expected non-empty error message")
-	}
-	// Error should be wrapped with context
-	if len(errMsg) < 10 {
-		t.Errorf("Expected detailed error message, got: %q", errMsg)
+	if got := (ConnectionInput{Host: "10.0.0.1", Port: 8102}).Addr(); got != "10.0.0.1:8102" {
+		t.Fatalf("ipv4 addr %q", got)
 	}
 }
 
-// TestConnectionInput_TimeoutConversion verifies timeout type conversion.
-func TestConnectionInput_TimeoutConversion(t *testing.T) {
-	tests := []struct {
-		name           string
-		connectTimeout int
-		requestTimeout int
-	}{
-		{name: "standard timeouts", connectTimeout: 10, requestTimeout: 10},
-		{name: "short timeouts", connectTimeout: 1, requestTimeout: 1},
-		{name: "long timeouts", connectTimeout: 60, requestTimeout: 120},
-		{name: "zero timeouts", connectTimeout: 0, requestTimeout: 0},
+func TestNewConnectionValidation(t *testing.T) {
+	t.Parallel()
+	for _, in := range []ConnectionInput{{Port: 102}, {Host: "h", Port: 0}, {Host: "h", Port: 70000}} {
+		_, err := NewConnection(context.Background(), in)
+		if errs.ExitCode(err) != errs.ExitUsage {
+			t.Errorf("%+v: err=%v", in, err)
+		}
 	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			input := ConnectionInput{
-				Host:           "test-host",
-				Port:           102,
-				ConnectTimeout: tt.connectTimeout,
-				RequestTimeout: tt.requestTimeout,
+func TestNewConnectionDialFailures(t *testing.T) {
+	t.Parallel()
+	refused := errors.New("connection refused")
+	t.Run("retries then classifies", func(t *testing.T) {
+		t.Parallel()
+		var buf bytes.Buffer
+		calls := 0
+		_, err := newConnection(context.Background(), ConnectionInput{
+			Host: "h", Port: 1, Retry: RetryPolicy{Retries: 2, BaseDelay: time.Millisecond, MaxDelay: time.Millisecond},
+			Logger: slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})),
+		}, func(ctx context.Context, addr string, _ iec61850.DialOptions) (*iec61850.Client, error) {
+			calls++
+			if _, ok := ctx.Deadline(); !ok {
+				t.Error("dial attempt without deadline")
 			}
-
-			if input.Host != "test-host" {
-				t.Errorf("Host = %q, want %q", input.Host, "test-host")
+			if addr != "h:1" {
+				t.Errorf("addr %q", addr)
 			}
-			if input.Port != 102 {
-				t.Errorf("Port = %d, want %d", input.Port, 102)
-			}
-			if input.ConnectTimeout != tt.connectTimeout {
-				t.Errorf("ConnectTimeout = %d, want %d", input.ConnectTimeout, tt.connectTimeout)
-			}
-			if input.RequestTimeout != tt.requestTimeout {
-				t.Errorf("RequestTimeout = %d, want %d", input.RequestTimeout, tt.requestTimeout)
-			}
-
-			// Verify conversion to uint would work (as done in NewConnection)
-			if input.ConnectTimeout < 0 {
-				t.Error("Negative ConnectTimeout would cause issues in uint conversion")
-			}
-			if input.RequestTimeout < 0 {
-				t.Error("Negative RequestTimeout would cause issues in uint conversion")
-			}
+			return nil, refused
 		})
+		if calls != 3 || !errors.Is(err, refused) || !errors.Is(err, errs.ErrConnectionFailed) {
+			t.Fatalf("calls=%d err=%v", calls, err)
+		}
+		if errs.ExitCode(err) != errs.ExitConnection {
+			t.Fatalf("exit=%d", errs.ExitCode(err))
+		}
+		if !strings.Contains(buf.String(), "retrying") || !strings.Contains(err.Error(), "gave up after 3") {
+			t.Fatalf("log=%q err=%q", buf.String(), err)
+		}
+	})
+	t.Run("nil client", func(t *testing.T) {
+		t.Parallel()
+		//lint:ignore SA1012 nil context is tolerated on purpose
+		_, err := newConnection(nil, //nolint:staticcheck // see lint:ignore above
+			ConnectionInput{Host: "h", Port: 1},
+			func(context.Context, string, iec61850.DialOptions) (*iec61850.Client, error) { return nil, nil })
+		if !errors.Is(err, errs.ErrConnectionFailed) {
+			t.Fatalf("err=%v", err)
+		}
+	})
+	t.Run("timeout", func(t *testing.T) {
+		t.Parallel()
+		_, err := newConnection(context.Background(), ConnectionInput{Host: "h", Port: 1, ConnectTimeout: 10 * time.Millisecond},
+			func(ctx context.Context, _ string, _ iec61850.DialOptions) (*iec61850.Client, error) {
+				<-ctx.Done()
+				return nil, ctx.Err()
+			})
+		if errs.ExitCode(err) != errs.ExitTimeout {
+			t.Fatalf("err=%v exit=%d", err, errs.ExitCode(err))
+		}
+	})
+	t.Run("refused port", func(t *testing.T) {
+		t.Parallel()
+		_, err := NewConnection(context.Background(), ConnectionInput{Host: "127.0.0.1", Port: 1, ConnectTimeout: 2 * time.Second})
+		if code := errs.ExitCode(err); code != errs.ExitConnection {
+			t.Fatalf("err=%v exit=%d", err, code)
+		}
+	})
+}
+
+func testdataSCL(t *testing.T) string {
+	t.Helper()
+	_, file, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(file), "..", "..", "..", "e2e", "testdata", "interop.icd")
+}
+
+func TestNewConnectionRealServer(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	srv, err := server.Start(ctx, server.RunConfig{SclPath: testdataSCL(t), Host: "127.0.0.1", Port: 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = srv.Close() }()
+
+	host, portStr, _ := strings.Cut(srv.Addr(), ":")
+	var port int
+	for _, c := range portStr {
+		port = port*10 + int(c-'0')
+	}
+	conn, err := NewConnection(ctx, ConnectionInput{Host: host, Port: port, IEDName: srv.IEDName()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lds, err := conn.ListLogicalDevices(context.Background())
+	if err != nil || len(lds) == 0 {
+		t.Fatalf("lds=%v err=%v", lds, err)
+	}
+	if err := conn.Close(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// gocbProbe adds GoCB access to probeConn and records the request deadline.
+type gocbProbe struct {
+	*probeConn
+	hadDeadline bool
+}
+
+func (g *gocbProbe) GetGoCB(ctx context.Context, ld, id string) (*iec61850.GoCB, error) {
+	_, g.hadDeadline = ctx.Deadline()
+	return &iec61850.GoCB{Reference: ld + "/" + id}, nil
+}
+
+func (g *gocbProbe) SetGoCB(ctx context.Context, _, _ string, _ iec61850.GoCBUpdate) error {
+	_, g.hadDeadline = ctx.Deadline()
+	return nil
+}
+
+func TestTimeoutConnGoCB(t *testing.T) {
+	t.Parallel()
+	plain := &timeoutConn{IEC61850Connection: &probeConn{}, timeout: time.Second}
+	if _, err := plain.GetGoCB(context.Background(), "LD", "LLN0$GO$g"); !errors.Is(err, errs.ErrUnsupported) {
+		t.Fatalf("get: %v", err)
+	}
+	if err := plain.SetGoCB(context.Background(), "LD", "LLN0$GO$g", iec61850.GoCBUpdate{}); !errors.Is(err, errs.ErrUnsupported) {
+		t.Fatalf("set: %v", err)
+	}
+	g := &gocbProbe{probeConn: &probeConn{}}
+	tc := &timeoutConn{IEC61850Connection: g, timeout: time.Second}
+	cb, err := tc.GetGoCB(context.Background(), "LD", "LLN0$GO$g")
+	if err != nil || cb.Reference != "LD/LLN0$GO$g" || !g.hadDeadline {
+		t.Fatalf("get: %+v %v deadline=%v", cb, err, g.hadDeadline)
+	}
+	g.hadDeadline = false
+	if err := tc.SetGoCB(context.Background(), "LD", "LLN0$GO$g", iec61850.GoCBUpdate{}); err != nil || !g.hadDeadline {
+		t.Fatalf("set: %v deadline=%v", err, g.hadDeadline)
 	}
 }

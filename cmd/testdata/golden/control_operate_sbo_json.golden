@@ -1,0 +1,31 @@
+{
+  "object": "InteropLD/GGIO1.SPCSO2",
+  "control_model": {
+    "code": 2,
+    "name": "sbo-with-normal-security"
+  },
+  "controllable": true,
+  "requires_select": true,
+  "mode": "sbo",
+  "requested_value": true,
+  "ctl_num": 3,
+  "operations": [
+    {
+      "operation": "select",
+      "ok": true,
+      "detail": "InteropLD/GGIO1.SPCSO2"
+    },
+    {
+      "operation": "operate",
+      "ok": true
+    }
+  ],
+  "confirmation": {
+    "attempted": true,
+    "object": "InteropLD/GGIO1.SPCSO2.stVal[ST]",
+    "fc": "ST",
+    "value": true,
+    "matched": true
+  },
+  "status": "confirmed"
+}

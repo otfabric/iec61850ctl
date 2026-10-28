@@ -26,6 +26,7 @@ type mockConnection struct {
 	dataSets       []string
 	reports        []string
 	journals       []string
+	listLDsErr     error
 
 	readFunc            func(ref iec61850.Ref) (*iec61850.Value, error)
 	getVariableTypeFunc func(ref iec61850.Ref) (*mms.TypeSpec, error)
@@ -51,6 +52,9 @@ type mockConnection struct {
 }
 
 func (m *mockConnection) ListLogicalDevices(_ context.Context) ([]iec61850.LogicalDevice, error) {
+	if m.listLDsErr != nil {
+		return nil, m.listLDsErr
+	}
 	if m.logicalDevices == nil {
 		return []iec61850.LogicalDevice{{Name: "LD0"}, {Name: "LD1"}}, nil
 	}
@@ -310,6 +314,7 @@ func (m *mockConnection) Close(_ context.Context) error { return nil }
 func (m *mockConnection) Abort(_ context.Context) error { return nil }
 
 func TestIEC61850ConnectionInterface(t *testing.T) {
+	t.Parallel()
 	t.Run("MockImplementsInterface", func(t *testing.T) {
 		var _ IEC61850Connection = &mockConnection{}
 	})
@@ -335,6 +340,7 @@ func TestIEC61850ConnectionInterface(t *testing.T) {
 }
 
 func TestReaderWithMock(t *testing.T) {
+	t.Parallel()
 	t.Run("ReadObjectWithMock", func(t *testing.T) {
 		mock := &mockConnection{
 			readFunc: func(ref iec61850.Ref) (*iec61850.Value, error) {
@@ -354,6 +360,7 @@ func TestReaderWithMock(t *testing.T) {
 }
 
 func TestFormatterService(t *testing.T) {
+	t.Parallel()
 	t.Run("FileSizeFormattingSI", func(t *testing.T) {
 		f := formatter.NewFormatter().WithByteFormat(formatter.ByteFormatSI)
 
@@ -385,6 +392,7 @@ func TestFormatterService(t *testing.T) {
 }
 
 func TestNewClientAdapter(t *testing.T) {
+	t.Parallel()
 	conn := NewClientAdapter(nil)
 	if conn == nil {
 		t.Fatal("NewClientAdapter(nil) returned nil")

@@ -13,6 +13,7 @@ import (
 )
 
 func TestNewJournal(t *testing.T) {
+	t.Parallel()
 	j := NewJournal(&mockConnection{})
 	if j == nil || j.conn == nil {
 		t.Fatal("NewJournal failed")
@@ -20,6 +21,7 @@ func TestNewJournal(t *testing.T) {
 }
 
 func TestJournal_ListJournals(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{
 		journals: []string{"LLN0$EventLog", "LLN0.GeneralLog", "plainLog"},
 	}
@@ -52,6 +54,7 @@ func TestJournal_ListJournals(t *testing.T) {
 }
 
 func TestJournal_ReadTimeRangeAndStartAfter(t *testing.T) {
+	t.Parallel()
 	mock := &mockConnection{}
 	j := NewJournal(mock)
 
@@ -85,6 +88,7 @@ func TestJournal_ReadTimeRangeAndStartAfter(t *testing.T) {
 }
 
 func TestJournal_GetEntries(t *testing.T) {
+	t.Parallel()
 	end := uint64(2_000_000_000_000)
 	mock := &mockConnection{}
 	res, err := NewJournal(mock).GetEntries("LD0", "LLN0$EventLog", 0, &end)
@@ -131,6 +135,7 @@ func TestJournal_GetEntries(t *testing.T) {
 }
 
 func TestMapJournalResult(t *testing.T) {
+	t.Parallel()
 	entries, more, err := mapJournalResult(nil)
 	if err != nil || more || entries != nil {
 		t.Fatalf("nil result: %v %v %v", entries, more, err)
@@ -162,6 +167,7 @@ func TestMapJournalResult(t *testing.T) {
 }
 
 func TestJournal_GetEntries_StartAfterPaging(t *testing.T) {
+	t.Parallel()
 	page1 := &iec61850.JournalReadResult{
 		MoreFollows: true,
 		Entries: []iec61850.JournalEntry{{

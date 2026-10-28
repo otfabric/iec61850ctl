@@ -14,6 +14,7 @@ import (
 )
 
 func TestFormatTypeSpec(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		spec     *mms.TypeSpec
@@ -40,6 +41,7 @@ func TestFormatTypeSpec(t *testing.T) {
 }
 
 func TestFormatTypeSpec_UnknownType(t *testing.T) {
+	t.Parallel()
 	spec := &mms.TypeSpec{Type: mms.ValueType(999)}
 	result := FormatTypeSpec(spec)
 	if result != "TYPE_999" {
@@ -48,6 +50,7 @@ func TestFormatTypeSpec_UnknownType(t *testing.T) {
 }
 
 func TestFormatUtcTimeValue(t *testing.T) {
+	t.Parallel()
 	s := FormatUtcTimeValue(1737646499123, 0x00)
 	if s == "" {
 		t.Errorf("FormatUtcTimeValue() = %q", s)
@@ -61,6 +64,7 @@ func TestFormatUtcTimeValue(t *testing.T) {
 }
 
 func TestFormatMmsValue(t *testing.T) {
+	t.Parallel()
 	structVal := mms.NewStructure([]*mms.Value{
 		mms.NewInteger(42),
 		mms.NewVisibleString("hello"),
@@ -78,6 +82,7 @@ func TestFormatMmsValue(t *testing.T) {
 }
 
 func TestParseTimeToUnixMs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		input   string
@@ -104,6 +109,7 @@ func TestParseTimeToUnixMs(t *testing.T) {
 }
 
 func TestParseOutputFormat(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		s    string
 		want OutputFormat
@@ -128,6 +134,7 @@ func TestParseOutputFormat(t *testing.T) {
 }
 
 func TestFormatLogicalDevices_JSON_YAML_CSV_Table(t *testing.T) {
+	t.Parallel()
 	devices := []view.LogicalDevice{
 		{Name: "LD1", LNCount: 2, DSCount: 1, URCBCount: 0, BRCBCount: 1},
 		{Name: "LD2", LNCount: 1, DSCount: 0, URCBCount: 1, BRCBCount: 0},
@@ -221,6 +228,7 @@ func outputFormatName(f OutputFormat) string {
 }
 
 func TestRenderLogicalNodes_DataObjects_DataAttributes(t *testing.T) {
+	t.Parallel()
 	nodes := []view.LogicalNode{{Name: "LLN0", DOCount: 3, DSCount: 1, RCBCount: 2}}
 	objects := []view.DataObject{{Name: "Mod", DACount: 4}}
 	attrs := []view.DataAttribute{
@@ -260,6 +268,7 @@ func TestRenderLogicalNodes_DataObjects_DataAttributes(t *testing.T) {
 }
 
 func TestRenderDataSetAndReportControlBlock(t *testing.T) {
+	t.Parallel()
 	ds := &view.DataSet{
 		Name:        "ds1",
 		IsDeletable: true,
@@ -313,6 +322,7 @@ func TestRenderDataSetAndReportControlBlock(t *testing.T) {
 }
 
 func TestFormatWrappers(t *testing.T) {
+	t.Parallel()
 	if got := FormatFileSize(2048); !strings.Contains(got, "KB") {
 		t.Errorf("FormatFileSize = %q", got)
 	}
@@ -341,6 +351,7 @@ func TestFormatWrappers(t *testing.T) {
 }
 
 func TestFormatterMethods(t *testing.T) {
+	t.Parallel()
 	t.Run("FileSize formats", func(t *testing.T) {
 		if got := NewFormatter().WithByteFormat(ByteFormatBytes).FileSize(500); got != "500 bytes" {
 			t.Errorf("bytes = %q", got)
@@ -460,6 +471,7 @@ func TestFormatterMethods(t *testing.T) {
 }
 
 func TestNewRenderer(t *testing.T) {
+	t.Parallel()
 	for _, format := range []OutputFormat{
 		OutputFormatJSON, OutputFormatCSV, OutputFormatTable, OutputFormatYAML, OutputFormatText, OutputFormat(99),
 	} {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
@@ -93,7 +95,7 @@ func runControlInspect(cmd *cobra.Command, _ []string) error {
 	}
 	defer session.Close()
 
-	ctx, cancel := context.WithTimeout(cmd.Context(), defaultRequestTimeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), requestTimeout())
 	defer cancel()
 
 	res, err := app.New(session.Conn()).ControlInspect(ctx, controlObjectFlag)
@@ -135,10 +137,10 @@ func runControlOperate(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if controlCtlNumFlag != 0 && (controlCtlNumFlag < 1 || controlCtlNumFlag > 255) {
-		return fmt.Errorf("ctl-num must be 1..255")
+		return errs.Invalidf("ctl-num must be 1..255")
 	}
 	if len([]byte(controlOrIdentFlag)) > domain.MaxOrIdentBytes {
-		return fmt.Errorf("or-ident exceeds %d bytes", domain.MaxOrIdentBytes)
+		return errs.Invalidf("or-ident exceeds %d bytes", domain.MaxOrIdentBytes)
 	}
 
 	session, err := openClientSession(cmd, clientSessionOptions{})
@@ -147,7 +149,7 @@ func runControlOperate(cmd *cobra.Command, _ []string) error {
 	}
 	defer session.Close()
 
-	ctx, cancel := context.WithTimeout(cmd.Context(), defaultRequestTimeout)
+	ctx, cancel := context.WithTimeout(cmd.Context(), requestTimeout())
 	defer cancel()
 
 	req := domain.ControlRequest{
@@ -180,7 +182,10 @@ func runControlOperate(cmd *cobra.Command, _ []string) error {
 	}
 
 	if res.Status.ExitNonZero() {
-		return fmt.Errorf("control status %s", res.Status)
+		if res.Err != nil {
+			return errs.Mark(fmt.Errorf("control status %s: %w", res.Status, res.Err), errs.ErrRejected)
+		}
+		return errs.Newf(errs.ErrRejected, "control status %s", res.Status)
 	}
 	return nil
 }

@@ -3,9 +3,11 @@
 package service
 
 import (
-	"fmt"
+	"math"
 	"strconv"
 	"strings"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
@@ -19,31 +21,31 @@ func ParseScalarValue(raw string, kind domain.ScalarKind) (domain.ScalarValue, e
 	case domain.ScalarBool:
 		b, err := strconv.ParseBool(strings.TrimSpace(raw))
 		if err != nil {
-			return v, fmt.Errorf("invalid bool value %q", raw)
+			return v, errs.Invalidf("invalid bool value %q", raw)
 		}
 		v.Bool = b
 	case domain.ScalarInt, domain.ScalarEnum:
 		n, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
 		if err != nil {
-			return v, fmt.Errorf("invalid int value %q", raw)
+			return v, errs.Invalidf("invalid int value %q", raw)
 		}
 		v.Int = n
 	case domain.ScalarUint:
 		n, err := strconv.ParseUint(strings.TrimSpace(raw), 10, 64)
 		if err != nil {
-			return v, fmt.Errorf("invalid uint value %q", raw)
+			return v, errs.Invalidf("invalid uint value %q", raw)
 		}
 		v.Uint = n
 	case domain.ScalarFloat:
 		f, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
 		if err != nil {
-			return v, fmt.Errorf("invalid float value %q", raw)
+			return v, errs.Invalidf("invalid float value %q", raw)
 		}
 		v.Float = f
 	case domain.ScalarString:
 		v.String = raw
 	default:
-		return v, fmt.Errorf("unsupported scalar kind %q", kind)
+		return v, errs.Invalidf("unsupported scalar kind %q", kind)
 	}
 	return v, nil
 }
@@ -80,7 +82,7 @@ func ScalarToMMS(v domain.ScalarValue) (*mms.Value, error) {
 	case domain.ScalarString:
 		return mms.NewVisibleString(v.String), nil
 	default:
-		return nil, fmt.Errorf("unsupported scalar kind %q", v.Kind)
+		return nil, errs.Invalidf("unsupported scalar kind %q", v.Kind)
 	}
 }
 
@@ -91,25 +93,28 @@ func ScalarToCtlVal(v domain.ScalarValue) (*mms.Value, error) {
 		return iec61850.BoolCtlVal(v.Bool), nil
 	case domain.ScalarInt:
 		if v.Int < -2147483648 || v.Int > 2147483647 {
-			return nil, fmt.Errorf("int value %d out of int32 range", v.Int)
+			return nil, errs.Invalidf("int value %d out of int32 range", v.Int)
 		}
 		return iec61850.IntCtlVal(int32(v.Int)), nil
 	case domain.ScalarEnum:
 		if v.Int < -2147483648 || v.Int > 2147483647 {
-			return nil, fmt.Errorf("enum value %d out of int32 range", v.Int)
+			return nil, errs.Invalidf("enum value %d out of int32 range", v.Int)
 		}
 		return iec61850.EnumCtlVal(int32(v.Int)), nil
 	case domain.ScalarFloat:
+		if !math.IsInf(v.Float, 0) && !math.IsNaN(v.Float) && math.Abs(v.Float) > math.MaxFloat32 {
+			return nil, errs.Invalidf("float value %g out of float32 range", v.Float)
+		}
 		return iec61850.FloatCtlVal(float32(v.Float)), nil
 	case domain.ScalarString:
 		return iec61850.StringCtlVal(v.String), nil
 	case domain.ScalarUint:
 		if v.Uint > 2147483647 {
-			return nil, fmt.Errorf("uint value %d out of int32 range for control", v.Uint)
+			return nil, errs.Invalidf("uint value %d out of int32 range for control", v.Uint)
 		}
 		return iec61850.IntCtlVal(int32(v.Uint)), nil
 	default:
-		return nil, fmt.Errorf("unsupported control scalar kind %q", v.Kind)
+		return nil, errs.Invalidf("unsupported control scalar kind %q", v.Kind)
 	}
 }
 

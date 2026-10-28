@@ -1,0 +1,16 @@
+Parsing host specification: 127.0.0.1
+Scanning 1 IP address(es) on port <PORT>...
+
+✓ 127.0.0.1:<PORT> - TCP open (IEC 61850 OK)
+
+═══════════════════════════════════════════════════════════
+Scan Results
+═══════════════════════════════════════════════════════════
+
+Total IPs scanned:        1
+TCP port <PORT> open:        1
+IEC 61850 devices found:  1
+
+IEC 61850 Devices:
+───────────────────────────────────────────────────────────
+  127.0.0.1:<PORT>

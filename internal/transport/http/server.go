@@ -5,13 +5,17 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 )
 
@@ -24,19 +28,14 @@ type Server struct {
 
 // Config contains server configuration.
 type Config struct {
-	ListenAddr string // HTTP listen address (e.g., ":8080")
-	IECHost    string // IEC 61850 device host
-	IECPort    int    // IEC 61850 device port
+	ListenAddr string                 // HTTP listen address (e.g., ":8080")
+	Connection client.ConnectionInput // IEC 61850 device connection (host, port, timeouts, retry, logger)
 }
 
-// NewServer creates a new HTTP server with the given configuration.
-func NewServer(cfg Config) (*Server, error) {
-	conn, err := client.NewConnection(client.ConnectionInput{
-		Host:           cfg.IECHost,
-		Port:           cfg.IECPort,
-		ConnectTimeout: 10,
-		RequestTimeout: 10,
-	})
+// NewServer connects to the IEC 61850 device and creates an HTTP server.
+// Cancelling ctx aborts the connect and any in-flight device request.
+func NewServer(ctx context.Context, cfg Config) (*Server, error) {
+	conn, err := client.NewConnection(ctx, cfg.Connection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to IEC 61850 device: %w", err)
 	}
@@ -63,8 +62,50 @@ func NewServerWithApp(listenAddr string, a *app.App) *Server {
 
 // Start starts the HTTP server (blocking).
 func (s *Server) Start() error {
-	log.Printf("Starting HTTP server on %s", s.httpServer.Addr)
-	return s.httpServer.ListenAndServe()
+	return s.Serve(context.Background(), nil)
+}
+
+// Serve serves HTTP until ctx is done, then shuts down gracefully and closes
+// the device connection. A nil ln listens on the configured address.
+// It returns nil after a ctx-initiated shutdown.
+func (s *Server) Serve(ctx context.Context, ln net.Listener) error {
+	if ln == nil {
+		var err error
+		ln, err = net.Listen("tcp", s.httpServer.Addr)
+		if err != nil {
+			return errs.Mark(fmt.Errorf("listen on %s: %w", s.httpServer.Addr, err), errs.ErrConnectionFailed)
+		}
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- s.httpServer.Serve(ln) }()
+	select {
+	case err := <-errCh:
+		s.closeConn()
+		return err
+	case <-ctx.Done():
+	}
+	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := s.httpServer.Shutdown(shCtx)
+	if serveErr := <-errCh; err == nil && serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+		err = serveErr
+	}
+	s.closeConn()
+	return err
+}
+
+// Close closes the device connection without serving (used when startup fails).
+func (s *Server) Close() { s.closeConn() }
+
+func (s *Server) closeConn() {
+	if s.app == nil || s.app.Connection() == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := s.app.Connection().Close(ctx); err != nil {
+		_ = s.app.Connection().Abort(ctx)
+	}
 }
 
 // registerRoutes sets up all HTTP endpoints.
@@ -101,7 +142,7 @@ func (s *Server) jsonResponse(w http.ResponseWriter, status int, data interface{
 }
 
 func (s *Server) errorResponse(w http.ResponseWriter, status int, message string) {
-	s.jsonResponse(w, status, map[string]string{"error": message})
+	s.jsonResponse(w, status, errorBody{Error: message, Code: codeForStatus(status)})
 }
 
 // Health check endpoint.

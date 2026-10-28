@@ -1,0 +1,32 @@
+- name: d
+  ref: ""
+  fc: DC
+  type: STRING
+  value: ""
+  time: ""
+  quality: ""
+  children: []
+- name: q
+  ref: ""
+  fc: ST
+  type: BIT_STRING
+  value: '[0 0]'
+  time: ""
+  quality: ""
+  children: []
+- name: stVal
+  ref: ""
+  fc: ST
+  type: BOOL
+  value: "false"
+  time: ""
+  quality: ""
+  children: []
+- name: t
+  ref: ""
+  fc: ST
+  type: UTC_TIME
+  value: 2042-07-14 01:04:00 +0000 UTC
+  time: ""
+  quality: ""
+  children: []

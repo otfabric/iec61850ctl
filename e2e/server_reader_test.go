@@ -11,13 +11,7 @@ import (
 
 // Reverse general-reader journeys (Phase 3B): mms-interop IED clients → iec61850ctl server.
 func TestReverse_ServerReader(t *testing.T) {
-	for _, tc := range []struct {
-		stack      string
-		entrypoint string
-	}{
-		{stackServerReaderLib, "libiec61850-ied-client"},
-		{stackServerReaderBean, "iec61850bean-ied-client"},
-	} {
+	for _, tc := range reverseCases(prefixServerReader, "ied-client") {
 		tc := tc
 		t.Run(tc.stack, func(t *testing.T) {
 			requireReverseStack(t, tc.stack)

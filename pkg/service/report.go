@@ -9,6 +9,7 @@ import (
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // ReportService discovers and reads report control blocks.
@@ -95,13 +96,22 @@ func (r *ReportService) GetReportDetails(ldName, lnName, reportName string, buff
 	return mapRCB(ldName, lnName, reportName, buffered, rcb), nil
 }
 
-// ResolveReportDetails tries BR then RP when the RCB type is unknown.
+// ResolveReportDetails tries BR then RP when the RCB type is unknown. When
+// both fail, the BR error wins unless it only says the BRCB does not exist,
+// so a BRCB the server cannot read is not reported as a missing URCB.
 func (r *ReportService) ResolveReportDetails(ldName, lnName, reportName string) (*domain.ReportControlBlock, error) {
-	rcb, err := r.GetReportDetails(ldName, lnName, reportName, true)
-	if err == nil {
+	rcb, brErr := r.GetReportDetails(ldName, lnName, reportName, true)
+	if brErr == nil {
 		return rcb, nil
 	}
-	return r.GetReportDetails(ldName, lnName, reportName, false)
+	rcb, rpErr := r.GetReportDetails(ldName, lnName, reportName, false)
+	if rpErr == nil {
+		return rcb, nil
+	}
+	if errs.ExitCode(brErr) != errs.ExitNotFound {
+		return nil, brErr
+	}
+	return nil, rpErr
 }
 
 func mapRCB(ld, ln, name string, buffered bool, rcb *iec61850.ReportControlBlock) *domain.ReportControlBlock {

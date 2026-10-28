@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
@@ -36,6 +36,16 @@ type ReporterConfig struct {
 	ErrWriter     io.Writer     // diagnostics when Format is jsonl (default os.Stderr)
 	Format        string        // "text" (default) or "jsonl"
 
+	// KeepAlive, when positive, re-reads the RCB at this interval while the
+	// subscription runs. A failed probe means the association is gone and
+	// ends the run with ErrConnectionFailed; the report channel alone does
+	// not signal transport loss.
+	KeepAlive time.Duration
+
+	// Context bounds the run; cancelling it (e.g. SIGINT) stops the
+	// subscription gracefully. Nil uses context.Background().
+	Context context.Context
+
 	// BRCB pre-enable configuration (ignored for URCB).
 	PurgeBuf bool   // write PurgeBuf=true before enable
 	EntryID  []byte // write resume EntryID before enable (nil = omit)
@@ -52,6 +62,9 @@ func (c ReporterConfig) Validate() error {
 	}
 	if c.Duration < 0 {
 		return fmt.Errorf("%w: Duration cannot be negative", ErrInvalidConfig)
+	}
+	if c.KeepAlive < 0 {
+		return fmt.Errorf("%w: KeepAlive cannot be negative", ErrInvalidConfig)
 	}
 	if c.MaxReports < 0 {
 		return fmt.Errorf("%w: MaxReports cannot be negative", ErrInvalidConfig)
@@ -70,6 +83,9 @@ type Reporter struct {
 	config       ReporterConfig
 	doneChan     chan struct{} // closed when we should stop (signal, duration, or max-reports)
 	stopOnce     sync.Once
+	lost         atomic.Bool // report stream ended before we asked it to stop
+	lostErr      atomic.Pointer[error]
+	started      atomic.Bool // SubscribeReport succeeded
 	count        atomic.Int64
 	startTime    time.Time
 	onReportHook func(*domain.Report) // custom callback with parsed domain.Report
@@ -150,7 +166,7 @@ func (r *Reporter) OnReport(callback func(*domain.Report)) *Reporter {
 func resolveReportRef(reportRef string) (ld, rcbItemID string, buffered bool, err error) {
 	ld, ln, fc, rcbName, ok := domain.ParseReportRef(reportRef)
 	if !ok {
-		return "", "", false, fmt.Errorf("invalid report reference %q", reportRef)
+		return "", "", false, errs.Invalidf("invalid report reference %q", reportRef)
 	}
 	fcStr := string(fc)
 	switch fcStr {
@@ -159,15 +175,20 @@ func resolveReportRef(reportRef string) (ld, rcbItemID string, buffered bool, er
 	case "RP":
 		buffered = false
 	default:
-		return "", "", false, fmt.Errorf("report FC must be BR or RP, got %q", fcStr)
+		return "", "", false, errs.Invalidf("report FC must be BR or RP, got %q", fcStr)
 	}
 	rcbItemID = fmt.Sprintf("%s$%s$%s", ln, fcStr, rcbName)
 	return ld, rcbItemID, buffered, nil
 }
 
 // Run subscribes to the RCB, runs until duration/max-reports/signal, then closes the subscription.
+// It returns an error wrapping ErrConnectionFailed when the report stream ends
+// unexpectedly (connection loss).
 func (r *Reporter) Run() error {
-	ctx := context.Background()
+	ctx := r.config.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	w := r.config.Writer
 	r.startTime = time.Now()
 
@@ -210,6 +231,7 @@ func (r *Reporter) Run() error {
 		return fmt.Errorf("subscribe report: %w", err)
 	}
 
+	r.started.Store(true)
 	diag := r.diag()
 	_, _ = fmt.Fprintf(diag, "Subscribing to: %s (RptID=%s)\n", r.config.ReportRef, rcb.RptID)
 	_, _ = fmt.Fprintln(diag, "Report enabled. Waiting for reports... (Press Ctrl+C to stop)")
@@ -224,25 +246,31 @@ func (r *Reporter) Run() error {
 		_, _ = fmt.Fprintln(w)
 	}
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(sigChan)
-
 	if r.config.Duration > 0 {
-		time.AfterFunc(r.config.Duration, func() {
-			r.stopOnce.Do(func() { close(r.doneChan) })
-		})
+		t := time.AfterFunc(r.config.Duration, r.stop)
+		defer t.Stop()
 	}
 
-	go r.runReportReader(sub.Reports())
+	readerDone := make(chan struct{})
+	go func() {
+		defer close(readerDone)
+		r.runReportReader(sub.Reports())
+	}()
+	keepAliveDone := make(chan struct{})
+	go func() {
+		defer close(keepAliveDone)
+		r.runKeepAlive(ctx, ld, rcbItemID)
+	}()
 
 	select {
-	case <-sigChan:
+	case <-ctx.Done():
 		_, _ = fmt.Fprintln(diag, "\nShutting down gracefully...")
 	case <-r.doneChan:
 	}
 
-	r.stopOnce.Do(func() { close(r.doneChan) })
+	r.stop()
+	<-readerDone // no concurrent writes to w after this point
+	<-keepAliveDone
 
 	closeErr := sub.Close()
 	clean := closeErr == nil
@@ -250,9 +278,55 @@ func (r *Reporter) Run() error {
 		_, _ = fmt.Fprintf(diag, "warning: subscription close: %v\n", closeErr)
 	}
 	if r.jsonl() {
-		_ = writeJSONLSummary(w, r.count.Load(), clean, time.Since(r.startTime))
+		_ = writeJSONLSummary(w, r.count.Load(), clean && !r.lost.Load(), time.Since(r.startTime))
+	}
+	if r.lost.Load() {
+		if e := r.lostErr.Load(); e != nil {
+			return errs.Mark(fmt.Errorf("report subscription %s: connection lost: %w", r.config.ReportRef, *e), errs.ErrConnectionFailed)
+		}
+		return errs.Newf(errs.ErrConnectionFailed, "report stream for %s ended unexpectedly (connection lost?)", r.config.ReportRef)
 	}
 	return nil
+}
+
+// runKeepAlive probes the association until the run stops; a failed probe
+// marks the stream lost and stops the run.
+func (r *Reporter) runKeepAlive(ctx context.Context, ld, rcbItemID string) {
+	if r.config.KeepAlive <= 0 {
+		return
+	}
+	t := time.NewTicker(r.config.KeepAlive)
+	defer t.Stop()
+	for {
+		select {
+		case <-r.doneChan:
+			return
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		if _, err := r.conn.GetReportControlBlock(ctx, ld, rcbItemID); err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			select {
+			case <-r.doneChan:
+				return
+			default:
+			}
+			r.lostErr.Store(&err)
+			r.lost.Store(true)
+			r.stop()
+			return
+		}
+	}
+}
+
+// Started reports whether the subscription was established (reports may have been received).
+func (r *Reporter) Started() bool { return r.started.Load() }
+
+func (r *Reporter) stop() {
+	r.stopOnce.Do(func() { close(r.doneChan) })
 }
 
 // applyBRCBPreEnable writes PurgeBuf / EntryID / ResvTms before RptEna.
@@ -298,13 +372,18 @@ func (r *Reporter) runBaselineSync(ctx context.Context, w io.Writer) {
 	diag := r.diag()
 	_, _ = fmt.Fprintf(diag, "Reading dataset for baseline sync: %s\n", ref)
 
-	ld, _, dsName, ok := domain.ParseDataSetRef(ref)
+	ld, ln, dsName, ok := domain.ParseDataSetRef(ref)
 	if !ok {
 		_, _ = fmt.Fprintf(diag, "Warning: baseline sync failed (cannot parse dataset ref %q); continuing subscription.\n", ref)
 		return
 	}
 
-	values, err := r.conn.ReadDataSet(ctx, ld, dsName)
+	// The MMS item ID of an LN-scoped dataset is "LN$name"; fall back to the
+	// bare name for servers that expose it that way (same as DataSetService).
+	values, err := r.conn.ReadDataSet(ctx, ld, ln+"$"+dsName)
+	if err != nil {
+		values, err = r.conn.ReadDataSet(ctx, ld, dsName)
+	}
 	if err != nil {
 		_, _ = fmt.Fprintf(diag, "Warning: baseline sync failed (%v); continuing subscription.\n", err)
 		return
@@ -350,6 +429,12 @@ func (r *Reporter) runReportReader(reports <-chan *iec61850.ReportIndication) {
 			return
 		case report, ok := <-reports:
 			if !ok {
+				select {
+				case <-r.doneChan:
+				default:
+					r.lost.Store(true)
+				}
+				r.stop()
 				return
 			}
 			r.printReport(w, report, showValues)
@@ -358,7 +443,7 @@ func (r *Reporter) runReportReader(reports <-chan *iec61850.ReportIndication) {
 				_, _ = fmt.Fprintln(r.diag(), "Initial state received (GI)")
 			}
 			if maxReports > 0 && int(n) >= maxReports {
-				r.stopOnce.Do(func() { close(r.doneChan) })
+				r.stop()
 				return
 			}
 		}

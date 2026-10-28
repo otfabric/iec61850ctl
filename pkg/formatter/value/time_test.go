@@ -12,6 +12,7 @@ import (
 )
 
 func TestFormatUtcTimeValue(t *testing.T) {
+	t.Parallel()
 	const ms = uint64(1737646499123) // 2025-01-23 15:34:59.123 UTC
 
 	tests := []struct {
@@ -76,6 +77,7 @@ func TestFormatUtcTimeValue(t *testing.T) {
 }
 
 func TestFormatUtcTimeFromTime(t *testing.T) {
+	t.Parallel()
 	tm := time.UnixMilli(1737646499123).UTC()
 	got := FormatUtcTimeFromTime(tm, 0x80)
 	if !strings.Contains(got, "2025-01-23 15:34:59.123 UTC") {
@@ -87,6 +89,7 @@ func TestFormatUtcTimeFromTime(t *testing.T) {
 }
 
 func TestFormatUtcTimestamp(t *testing.T) {
+	t.Parallel()
 	ts := domain.Timestamp{UnixMs: 1737646499123, TimeQuality: 0x00}
 	got := FormatUtcTimestamp(ts)
 	if !strings.Contains(got, "UTC") || !strings.Contains(got, "leap-unknown") {
@@ -95,6 +98,7 @@ func TestFormatUtcTimestamp(t *testing.T) {
 }
 
 func TestFormatBinaryTime(t *testing.T) {
+	t.Parallel()
 	four := make([]byte, 4)
 	binary.BigEndian.PutUint32(four, 3661001) // 01:01:01.001
 
@@ -171,6 +175,7 @@ func TestFormatBinaryTime(t *testing.T) {
 }
 
 func TestFormatUnixTimestamp(t *testing.T) {
+	t.Parallel()
 	const sec int64 = 1730289600 // 2024-10-30 12:00:00 UTC
 
 	tests := []struct {

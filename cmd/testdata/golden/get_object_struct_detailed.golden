@@ -1,0 +1,8 @@
+Object: InteropLD/GGIO1.SPS1
+FC: ST
+Type: STRUCT(3)
+Value:
+  InteropLD/GGIO1.SPS1.d [FC=DC] Type: STRING Value: 
+  InteropLD/GGIO1.SPS1.q [FC=ST] Type: BIT_STRING Value: [0 0]
+  InteropLD/GGIO1.SPS1.stVal [FC=ST] Type: BOOL Value: false
+  InteropLD/GGIO1.SPS1.t [FC=ST] Type: UTC_TIME Value: 2042-07-14 01:04:00 +0000 UTC

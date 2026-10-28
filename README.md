@@ -14,7 +14,7 @@ A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e exercises the built CLI independently against [libiec61850](https://libiec61850.com) and [IEC61850bean](https://www.beanit.com/iec-61850/) adapter servers from [mms-interop](https://github.com/otfabric/mms-interop), plus reverse controller/reporter/client journeys against `server start`. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e exercises the built CLI against all four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and GOOSE in both directions against their publishers and subscribers. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
@@ -40,6 +40,7 @@ Black-box e2e exercises the built CLI independently against [libiec61850](https:
 - **Subscribe** — report control blocks (BR/RP) with GI, optional dataset sync, BRCB purge/resume EntryID, clean disable on exit
 - **Control** — atomic `control inspect` / `control operate` (auto/direct/SBO/SBOw on one association)
 - **Write** — `set object` for scalar MMS attributes (rejects `FC=CO`; use control for CO)
+- **GOOSE** — list GoCBs from SCL, sniff, supervised subscribe, guarded publish (test frames by default), GoCB read/write over MMS
 - **SCL** — offline parse/flatten and CSV convert (no device connection)
 - **Server** — run an MMS server from ICD/CID/SCD (`--scl`); optional value seed from serialized JSON
 - **Export** — generate libiec61850 `.cfg` from serialized JSON (**export-only**, not used by this tool’s runtime)
@@ -112,7 +113,7 @@ Defaults: `--port 102`. Host/port/IED name can also come from `IEC61850_HOST` / 
 
 ```
 iec61850ctl
-├── discover / scan     Scan subnet or IP range for MMS devices
+├── discover / scan     Scan subnet (at most /16) or IP range for MMS devices
 ├── list
 │   ├── lds             List logical devices (alias: domains)
 │   ├── lns             List logical nodes (--ld)
@@ -120,7 +121,7 @@ iec61850ctl
 │   ├── das             List data attributes (--ld --ln --do)
 │   ├── dss             List data sets (--ld --ln)
 │   ├── reports         List report control blocks
-│   ├── journals        List journals (--ld)
+│   ├── journals        List journals (--ld or --domain)
 │   └── files           List remote files
 ├── get
 │   ├── object          Read an object reference (--object --fc)
@@ -131,9 +132,9 @@ iec61850ctl
 ├── tree                Full or scoped model tree (--flatten / --serialize)
 ├── find
 │   ├── path            Find LN/DO paths by pattern
-│   └── bulk            Bulk path resolve from a mapping file
+│   └── bulk            Bulk path resolve from a mapping file (--mapping --output)
 ├── subscribe
-│   └── report          Subscribe to URCB/BRCB (--type RP|BR; BRCB --purge-buf/--entry-id)
+│   └── report          Subscribe to URCB/BRCB (--type RP|BR; BRCB --purge-buf/--entry-id; --keepalive)
 ├── control
 │   ├── inspect         Read ctlModel / controllability
 │   └── operate         Atomic select/operate journey (one association)
@@ -143,8 +144,14 @@ iec61850ctl
 │   ├── parse           Parse SCL to tree or flat paths
 │   └── convert         Convert SCL to CSV
 ├── server
-│   ├── start           Start MMS server from --scl
+│   ├── start           Start MMS server from --scl (--values, --files-dir, --port 0)
 │   └── generate-config Export libiec61850 .cfg (export-only)
+├── goose
+│   ├── list            GOOSE control blocks from SCL (--scl)
+│   ├── sniff           Decode GOOSE frames on an interface (--iface)
+│   ├── subscribe       Validated, supervised subscription to one GoCB (--iface --scl --gocb)
+│   ├── publish         Publish a GoCB (--iface --yes; test frames unless --test=false --live)
+│   └── gocb get|set    Read/write a GoCB over MMS (--ld --gocb)
 ├── http                REST API fronting one IEC 61850 device
 ├── version             Print version / build metadata
 └── completion          Shell completion (bash|zsh|fish|powershell)
@@ -183,7 +190,7 @@ iec61850ctl subscribe report \
   --purge-buf --interrogation --max-reports 1 --format jsonl
 ```
 
-`--interrogation` triggers GI after enable. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
+`--interrogation` triggers GI after enable. `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically so a dropped association ends the subscription with exit code `3` instead of waiting silently for reports. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
 
 ### Control and scalar write
 
@@ -228,6 +235,11 @@ iec61850ctl find path --ln MMXU --path A.phsA --include-das --detailed
 
 `--ln` is a regex (e.g. `MMXU` matches `FMMXU1`). `--path` is an exact DO or DO.DA match.
 
+```sh
+# Resolve many semantic properties in one pass (example: docs/examples/mapping.json)
+iec61850ctl find bulk --mapping docs/examples/mapping.json --output results.json
+```
+
 ### Tree serialize (for server value seeding)
 
 ```sh
@@ -236,6 +248,22 @@ iec61850ctl server start --scl device.cid --values device.json --port 102
 ```
 
 Details: [docs/SERVER.md](docs/SERVER.md).
+
+### GOOSE
+
+```sh
+iec61850ctl goose list --scl station.scd
+iec61850ctl goose sniff --iface eth0 --appid 0x1001 --count 10 --format jsonl
+iec61850ctl goose subscribe --iface eth0 --scl station.scd --gocb IED1/LD0/gcb1 --duration 30s
+
+# Publishing injects traffic: explicit --iface and --yes; test=true unless --test=false --live
+iec61850ctl goose publish --iface eth0 --scl device.cid --gocb gcb1 --value 0=true --changes 3 --interval 1s --yes
+
+iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
+iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
+```
+
+Raw sockets need `CAP_NET_RAW` on Linux or access to `/dev/bpf*` on macOS/BSD. Details: [docs/GOOSE.md](docs/GOOSE.md).
 
 ### HTTP API
 
@@ -246,6 +274,8 @@ iec61850ctl http --iec-host 192.0.2.10 --iec-port 102 --listen :8080
 # GET /api/reports/all
 ```
 
+Errors are JSON `{"error": "...", "code": "..."}` with a status derived from the error class: `400` invalid input, `404` not found, `403` rejected/denied, `501` unsupported, `504` timeout, `502`/`503` device connection problems, `500` otherwise. The global `--timeout`, `--connect-timeout` and `--retry` flags apply to the device connection.
+
 ## Global Flags and Environment
 
 | Flag | Env | Description |
@@ -253,9 +283,32 @@ iec61850ctl http --iec-host 192.0.2.10 --iec-port 102 --listen :8080
 | `--host` | `IEC61850_HOST` | IED address (required for most client commands) |
 | `--port` | `IEC61850_PORT` | MMS port (default `102`) |
 | `--ied-name` | `IEC61850_IED_NAME` | IED name for dial (domain prefix) and `server start` SCL selection |
-| `--debug` | — | Log underlying IEC 61850 / MMS calls |
+| `--connect-timeout` | — | Bound on each connect attempt: TCP + COTP + MMS association (default `10s`) |
+| `--timeout` | — | Bound on each MMS request (default `10s`) |
+| `--retry` | — | Connect retries with exponential backoff and jitter (default `0`) |
+| `--retry-max-delay` | — | Cap on the delay between connect retries (default `5s`) |
+| `--log-level` | — | Structured logs on stderr: `debug`, `info`, `warn` (default), `error`, `off` |
+| `--log-format` | — | `text` (default) or `json` |
+| `--debug` | — | Shorthand for `--log-level debug` (ignored when `--log-level` is set) |
 
-Flag values override environment variables. `discover` / `scan` uses `--host` as a CIDR or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
+Flag values override environment variables. `discover` / `scan` uses `--host` as a CIDR (at most `/16`) or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
+
+Retries apply only to establishing the connection; invalid input, authentication failures and interrupts are never retried. Logs never go to stdout.
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | Failure (unclassified) |
+| `2` | Usage error or invalid input / reference / configuration |
+| `3` | Connection failed or lost |
+| `4` | Timeout (connect or request) |
+| `5` | Not found (object, file, IED, RCB) |
+| `6` | Rejected or access denied by the server (including failed controls) |
+| `7` | Write verification or control confirmation mismatch |
+| `8` | Service not supported by the server |
+| `130` | Interrupted (SIGINT / SIGTERM) |
 
 ## Output Formats
 
@@ -264,33 +317,36 @@ Flag values override environment variables. `discover` / `scan` uses `--host` as
 | `list lds`, `list lns`, `list dos`, `list das` | `text`, `json`, `csv`, `table`, `yaml` |
 | `list dss`, `list reports`, `get object`, `get ds`, `get report` | `text`, `json` |
 | `control inspect`, `control operate`, `set object` | `text`, `json` |
-| `subscribe report` | `text`, `jsonl` |
+| `subscribe report`, `goose sniff`, `goose subscribe`, `goose publish` | `text`, `jsonl` |
+| `goose list`, `goose gocb get`, `goose gocb set` | `text`, `json` |
 
 Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-failure, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
 
 ## Development
 
 ```sh
-make check                 # fmt, staticcheck, golangci-lint, vet, test, coverage
+make check                 # fmt, staticcheck, golangci-lint, vet, race tests, coverage gate
 make build-nocheck         # fast binary → bin/iec61850ctl
-make test
+make test                  # unit tests with -race
+make coverage-gate         # every package >= 90% (COVERAGE_MIN=..), cgo-free
+make fuzz                  # every fuzz target for FUZZTIME (default 10s)
 make vet
 
-make e2e                   # black-box e2e (default: libiec61850, iec61850bean, self)
+make e2e                   # black-box e2e (default: the four client stacks + self)
 make e2e-self              # self-server smoke only
-IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader)
+IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader and GOOSE)
 make e2e-verify-fixtures   # check e2e/testdata hashes vs interop.lock.json
 make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md
 ```
 
-`CGO_ENABLED=0` for builds; race tests enable CGO temporarily. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
+`CGO_ENABLED=0` for builds and the coverage gate; only `make test` enables CGO, because Go's race detector needs it on Linux (the code itself is cgo-free). The `cmd/` tests drive the CLI in-process against an in-repo MMS server and compare output with golden files under `cmd/testdata/golden` (refresh with `go test ./cmd -update`); `cmd/chaos_test.go` puts a fault-injecting proxy (stalls, resets, slow peers) between CLI and server. External/reverse e2e needs Docker. See `Makefile` and [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Built With
 
 | Library | Role |
 |---------|------|
-| [go-iec61850](https://github.com/otfabric/go-iec61850) | IEC 61850 client/server, SCL model, reports |
+| [go-iec61850](https://github.com/otfabric/go-iec61850) | IEC 61850 client/server, SCL model, reports, GOOSE |
 | [go-mms](https://github.com/otfabric/go-mms) | MMS / ISO-on-TCP transport |
 | [cobra](https://github.com/spf13/cobra) | CLI |
 
@@ -300,6 +356,7 @@ make e2e-docs              # regenerate docs/interop-examples.md
 |-----|----------|
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
 | [docs/SERVER.md](docs/SERVER.md) | SCL server, readiness JSON, value seeding, `.cfg` export |
+| [docs/GOOSE.md](docs/GOOSE.md) | GOOSE list/sniff/subscribe/publish, GoCB access, safety rules |
 | [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr and JSON/JSONL contract |
 | [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
 | [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "GGIO1",
+    "do_count": 6,
+    "ds_count": 0,
+    "rcb_count": 0
+  },
+  {
+    "name": "LLN0",
+    "do_count": 4,
+    "ds_count": 1,
+    "rcb_count": 2
+  },
+  {
+    "name": "MMTR1",
+    "do_count": 1,
+    "ds_count": 0,
+    "rcb_count": 0
+  },
+  {
+    "name": "MMXU1",
+    "do_count": 1,
+    "ds_count": 0,
+    "rcb_count": 0
+  }
+]

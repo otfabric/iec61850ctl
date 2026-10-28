@@ -15,23 +15,24 @@ import (
 
 // Phase 5 forward BRCB journeys (isolated servers).
 //
-// | Assertion                                      | libiec61850 | iec61850bean |
-// |------------------------------------------------|-------------|--------------|
-// | get report exposes BRCB EntryID opt field      | required    | required     |
-// | subscribe --type BR --purge-buf + GI           | required    | required     |
-// | resume with --entry-id from prior report       | required    | best-effort  |
+// | Assertion                                 | libiec61850 | iec61850bean | dscsystems | iec61850-rust |
+// |-------------------------------------------|-------------|--------------|------------|---------------|
+// | get report exposes BRCB EntryID opt field | required    | required     | required   | known fail    |
+// | subscribe --type BR --purge-buf + GI      | required    | required     | required   | known fail    |
+// | resume with --entry-id from prior report  | required    | best-effort  | required   | n/a           |
+//
+// iec61850-rust: the server answers a read of BRCB TimeOfEntry (and so of the
+// whole BRCB) with object-access-unsupported; both commands must fail
+// deterministically naming it (adapterStack.brcbUnreadable).
 
 func TestBRCB_ClientPurgeAndResume(t *testing.T) {
-	for _, stack := range []string{stackLibIEC61850, stackIEC61850Bean} {
+	for _, stack := range clientStacks() {
 		stack := stack
 		t.Run(stack, func(t *testing.T) {
 			requireStack(t, stack)
 			requireCtlBin(t)
 
-			readyTO := libReadyTimeout
-			if stack == stackIEC61850Bean {
-				readyTO = beanReadyTimeout
-			}
+			readyTO := readyTimeoutFor(stack)
 			h, err := startDockerServer(stack, readyTO)
 			if err != nil {
 				t.Fatalf("start isolated %s: %v", stack, err)
@@ -46,6 +47,15 @@ func TestBRCB_ClientPurgeAndResume(t *testing.T) {
 				"--report", brcbName,
 				"--format", "json",
 			)
+			if brcbUnreadable(stack) {
+				requireBRCBUnreadable(t, get, h)
+				sub := runCtl(t, h.ctlEnv(), 30*time.Second,
+					"subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", brcbName,
+					"--type", "BR", "--purge-buf", "--interrogation", "--max-reports", "1",
+					"--duration", "5s", "--format", "jsonl")
+				requireBRCBUnreadable(t, sub, h)
+				return
+			}
 			requireExitZero(t, get, h)
 			var envelope struct {
 				Report struct {
@@ -84,8 +94,8 @@ func TestBRCB_ClientPurgeAndResume(t *testing.T) {
 				t.Fatalf("purge subscribe exit=%d", sub1.ExitCode)
 			}
 			entryID := firstReportEntryID(t, sub1.Stdout)
-			if entryID == "" && stack == stackLibIEC61850 {
-				t.Fatal("libiec61850 BRCB report missing entry_id")
+			if entryID == "" && stack != stackIEC61850Bean {
+				t.Fatalf("%s BRCB report missing entry_id", stack)
 			}
 
 			if entryID == "" {

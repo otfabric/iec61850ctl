@@ -12,6 +12,7 @@ import (
 )
 
 func TestValueToModel_UTCTime_SerializesTimeQuality(t *testing.T) {
+	t.Parallel()
 	ts := time.UnixMilli(1662761017061) // 2022-09-09 22:03:37.061 UTC
 	val, errMsg := ValueToModel(ts, mms.ValueTypeUTCTime)
 	if errMsg != "" {
@@ -41,6 +42,7 @@ func TestValueToModel_UTCTime_SerializesTimeQuality(t *testing.T) {
 }
 
 func TestValueToModel_BitStringOctetBinary(t *testing.T) {
+	t.Parallel()
 	bs, errMsg := ValueToModel(uint16(0x1234), mms.ValueTypeBitString)
 	if errMsg != "" || bs == nil || bs.Raw != "0x1234" {
 		t.Fatalf("bitstring uint16: %+v %q", bs, errMsg)
@@ -82,6 +84,7 @@ func TestValueToModel_BitStringOctetBinary(t *testing.T) {
 }
 
 func TestValueToModel_UTCTimePointerAndNil(t *testing.T) {
+	t.Parallel()
 	ts := time.UnixMilli(1_000).UTC()
 	val, errMsg := ValueToModel(&ts, mms.ValueTypeUTCTime)
 	if errMsg != "" || val == nil {
@@ -98,6 +101,7 @@ func TestValueToModel_UTCTimePointerAndNil(t *testing.T) {
 }
 
 func TestValueToModel_CommonScalars(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		val  interface{}
 		typ  mms.ValueType
@@ -118,6 +122,7 @@ func TestValueToModel_CommonScalars(t *testing.T) {
 }
 
 func TestFormatHelpersDirect(t *testing.T) {
+	t.Parallel()
 	if formatBitStringForJSON([]byte{0x01}) != "0x0001" {
 		t.Fatal(formatBitStringForJSON([]byte{0x01}))
 	}

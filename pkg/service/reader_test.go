@@ -13,6 +13,7 @@ import (
 )
 
 func TestReader_ReadObject_Errors(t *testing.T) {
+	t.Parallel()
 	if _, err := NewReader(nil).ReadObject("LD0/LN.DO", domain.FC_MX); err == nil {
 		t.Fatal("expected nil client error")
 	}
@@ -36,6 +37,7 @@ func TestReader_ReadObject_Errors(t *testing.T) {
 }
 
 func TestReader_ReadLeafValue(t *testing.T) {
+	t.Parallel()
 	if _, err := NewReader(nil).ReadLeafValue("LD0/LN.DO.a", iec61850.FCMX, mms.ValueTypeFloat); err == nil {
 		t.Fatal("expected nil client error")
 	}
@@ -55,6 +57,7 @@ func TestReader_ReadLeafValue(t *testing.T) {
 }
 
 func TestValueToInterface(t *testing.T) {
+	t.Parallel()
 	if v, err := valueToInterface(nil, mms.ValueTypeFloat); v != nil || err != nil {
 		t.Fatalf("nil: %v %v", v, err)
 	}

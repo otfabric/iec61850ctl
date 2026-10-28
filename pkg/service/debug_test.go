@@ -2,21 +2,34 @@
 
 package service
 
-import "testing"
+import (
+	"bytes"
+	"log/slog"
+	"strings"
+	"testing"
+)
 
-func TestSetDebug(t *testing.T) {
-	prev := debugEnabled
-	t.Cleanup(func() { debugEnabled = prev })
+func TestSetLogger(t *testing.T) {
+	prev := Logger()
+	t.Cleanup(func() { SetLogger(prev) })
 
-	SetDebug(true)
-	if !debugEnabled {
-		t.Fatal("expected debugEnabled=true")
+	var buf bytes.Buffer
+	SetLogger(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	debugf("hello %s", "world")
+	if !strings.Contains(buf.String(), "hello world") || !strings.Contains(buf.String(), "component=service") {
+		t.Fatalf("debug line missing: %q", buf.String())
 	}
-	debugf("hello %s", "world") // exercise enabled path
 
-	SetDebug(false)
-	if debugEnabled {
-		t.Fatal("expected debugEnabled=false")
+	buf.Reset()
+	SetLogger(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	debugf("filtered")
+	if buf.Len() != 0 {
+		t.Fatalf("debug should be filtered at info: %q", buf.String())
 	}
-	debugf("silent") // exercise disabled path
+
+	SetLogger(nil)
+	if Logger() != nil {
+		t.Fatal("expected nil logger")
+	}
+	debugf("silent") // disabled path
 }

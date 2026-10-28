@@ -4,7 +4,11 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	"net"
+	"strconv"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+	"github.com/otfabric/iec61850ctl/pkg/stack/client"
 
 	httpTransport "github.com/otfabric/iec61850ctl/internal/transport/http"
 
@@ -46,26 +50,37 @@ func init() {
 }
 
 func runHTTP(cmd *cobra.Command, args []string) error {
-	fmt.Printf("Connecting to IEC 61850 device at %s:%d\n", httpIECHost, httpIECPort)
-	fmt.Printf("Starting HTTP server on %s\n\n", httpListenAddr)
+	out := cmd.OutOrStdout()
+	_, _ = fmt.Fprintf(out, "Connecting to IEC 61850 device at %s\n", net.JoinHostPort(httpIECHost, strconv.Itoa(httpIECPort)))
 
-	srv, err := httpTransport.NewServer(httpTransport.Config{
+	srv, err := httpTransport.NewServer(cmd.Context(), httpTransport.Config{
 		ListenAddr: httpListenAddr,
-		IECHost:    httpIECHost,
-		IECPort:    httpIECPort,
+		Connection: client.ConnectionInput{
+			Host:           httpIECHost,
+			Port:           httpIECPort,
+			ConnectTimeout: connectTimeoutFlag,
+			RequestTimeout: requestTimeout(),
+			IEDName:        getIEDName(),
+			Retry:          client.RetryPolicy{Retries: retryFlag, MaxDelay: retryMaxDelayFlag},
+			Logger:         cmdLogger(),
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 
-	log.Printf("HTTP server ready. Example requests:")
-	log.Printf("  curl http://localhost%s/health", httpListenAddr)
-	log.Printf("  curl http://localhost%s/api/logical-devices", httpListenAddr)
-	log.Println()
+	ln, err := net.Listen("tcp", httpListenAddr)
+	if err != nil {
+		srv.Close()
+		return errs.Mark(fmt.Errorf("listen on %s: %w", httpListenAddr, err), errs.ErrConnectionFailed)
+	}
+	addr := ln.Addr().String()
+	_, _ = fmt.Fprintf(out, "HTTP server listening on %s. Example requests:\n", addr)
+	_, _ = fmt.Fprintf(out, "  curl http://%s/health\n", addr)
+	_, _ = fmt.Fprintf(out, "  curl http://%s/api/logical-devices\n\n", addr)
 
-	if err := srv.Start(); err != nil {
+	if err := srv.Serve(cmd.Context(), ln); err != nil {
 		return fmt.Errorf("server error: %w", err)
 	}
-
 	return nil
 }

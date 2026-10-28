@@ -96,6 +96,11 @@ func TestReportConfig_ListAndGet(t *testing.T) {
 			}
 
 			assertGetReport(urcbName, false)
+			if brcbUnreadable(stack) {
+				requireBRCBUnreadable(t, runCtl(t, h.ctlEnv(), commandTimeout,
+					"get", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", brcbName, "--format", "json"), h)
+				return
+			}
 			assertGetReport(brcbName, true)
 		})
 	}

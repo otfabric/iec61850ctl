@@ -4,12 +4,14 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // ListDataAttributesInput contains parameters for listing data attributes.
@@ -45,10 +47,19 @@ func (e *Explorer) GetDataAttributes(input ListDataAttributesInput) ([]domain.Da
 	doRef := fmt.Sprintf("%s/%s.%s", input.LogicalDevice, input.LogicalNode, input.DataObject)
 
 	var result []domain.DataAttribute
+	var firstErr, firstHardErr error
 	seen := map[string]bool{}
 	for _, fc := range []string{"ST", "MX", "CF", "DC", "SP", "SV", "CO", "SG", "SE", "EX"} {
 		leaves, err := e.collectLeaves(ctx, doRef, "", domain.ParseFC(fc))
 		if err != nil {
+			// A DO normally exists under only some FCs, so per-FC failures
+			// are tolerated; remember them in case every FC fails.
+			if firstErr == nil {
+				firstErr = err
+			}
+			if firstHardErr == nil && !isAbsentFCError(err) {
+				firstHardErr = err
+			}
 			continue
 		}
 		for _, leaf := range leaves {
@@ -60,7 +71,27 @@ func (e *Explorer) GetDataAttributes(input ListDataAttributesInput) ([]domain.Da
 			result = append(result, leaf)
 		}
 	}
+	if len(result) == 0 {
+		// Nothing collected: surface device/connection failures instead of
+		// silently returning an empty list.
+		if firstHardErr != nil {
+			return nil, fmt.Errorf("get data attributes %s: %w", doRef, firstHardErr)
+		}
+		if firstErr != nil {
+			return nil, errs.Mark(fmt.Errorf("get data attributes %s: %w", doRef, firstErr), errs.ErrNotFound)
+		}
+	}
 	return result, nil
+}
+
+// isAbsentFCError reports whether err means "this object does not exist under
+// the probed FC" (as opposed to a connection/device failure).
+func isAbsentFCError(err error) bool {
+	return errors.Is(err, iec61850.ErrNotFound) ||
+		errors.Is(err, iec61850.ErrDataAccess) ||
+		errors.Is(err, mms.ErrDataAccess) ||
+		errors.Is(err, mms.ErrServiceRejected) ||
+		errors.Is(err, errs.ErrNotFound)
 }
 
 // GetDataObjectDANames returns top-level data attribute names under a data object.

@@ -1,0 +1,5 @@
+object: InteropLD/GGIO1.SPCSO3
+control_model: 4 (sbo-with-enhanced-security)
+controllable: true
+requires_select: true
+enhanced_security: true

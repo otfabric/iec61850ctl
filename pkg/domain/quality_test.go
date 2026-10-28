@@ -10,6 +10,7 @@ import (
 )
 
 func TestQuality_GetValidity_IsGood(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		q        Quality
 		validity Validity
@@ -33,6 +34,7 @@ func TestQuality_GetValidity_IsGood(t *testing.T) {
 }
 
 func TestQuality_DetailFlags(t *testing.T) {
+	t.Parallel()
 	all := QualityOverflow | QualityOutOfRange | QualityBadReference | QualityOscillatory |
 		QualityFailure | QualityOldData | QualityInconsistent | QualityInaccurate |
 		QualitySubstituted | QualityTest | QualityOperatorBlocked | QualityDerived
@@ -58,6 +60,7 @@ func TestQuality_DetailFlags(t *testing.T) {
 }
 
 func TestQuality_String(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		q    Quality
@@ -87,6 +90,7 @@ func TestQuality_String(t *testing.T) {
 }
 
 func TestFromLibQuality(t *testing.T) {
+	t.Parallel()
 	lib := iec61850.Quality(QualityOverflow | Quality(ValidityQuestionable))
 	got := FromLibQuality(lib)
 	if got != Quality(lib) {

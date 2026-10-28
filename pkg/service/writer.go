@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/iec61850ctl/pkg/domain"
 )
@@ -24,16 +26,16 @@ func NewWriter(conn WriteConnection) *Writer {
 // SetObject writes a scalar attribute. FC=CO is rejected.
 func (w *Writer) SetObject(ctx context.Context, req domain.WriteRequest) (*domain.WriteResult, error) {
 	if strings.TrimSpace(req.Object) == "" {
-		return nil, fmt.Errorf("object is required")
+		return nil, errs.Invalidf("object is required")
 	}
 	if !req.FC.IsValid() {
-		return nil, fmt.Errorf("invalid functional constraint: %s", req.FC)
+		return nil, errs.Invalidf("invalid functional constraint: %s", req.FC)
 	}
 	if req.FC == domain.FC_CO {
-		return nil, fmt.Errorf("FC=CO is not allowed for set object; use control operate")
+		return nil, errs.Invalidf("FC=CO is not allowed for set object; use control operate")
 	}
 	if req.Value.Kind == "" {
-		return nil, fmt.Errorf("value type is required")
+		return nil, errs.Invalidf("value type is required")
 	}
 
 	ref, err := iec61850.ParseRef(req.Object)
@@ -41,7 +43,7 @@ func (w *Writer) SetObject(ctx context.Context, req domain.WriteRequest) (*domai
 		return nil, fmt.Errorf("parse object: %w", err)
 	}
 	if ref.FC != "" && string(ref.FC) != string(req.FC) {
-		return nil, fmt.Errorf("object FC %q conflicts with --fc %s", ref.FC, req.FC)
+		return nil, errs.Invalidf("object FC %q conflicts with --fc %s", ref.FC, req.FC)
 	}
 	ref.FC = iec61850.FunctionalConstraint(req.FC)
 

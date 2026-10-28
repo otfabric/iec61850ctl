@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
@@ -20,6 +22,7 @@ var (
 	subscribeReportName          string
 	subscribeReportType          string
 	subscribeReportDuration      string
+	subscribeReportKeepAlive     time.Duration
 	subscribeReportMax           int
 	subscribeReportValues        bool
 	subscribeReportInterrogation bool
@@ -61,6 +64,7 @@ func init() {
 	subscribeReportCmd.Flags().StringVar(&subscribeReportName, "report", "", "Report control block name (required)")
 	subscribeReportCmd.Flags().StringVar(&subscribeReportType, "type", "BR", "Report type: BR (buffered/BRCB) or RP (unbuffered/URCB)")
 	subscribeReportCmd.Flags().StringVar(&subscribeReportDuration, "duration", "", "Auto-terminate after duration (e.g. 30s, 5m, 1h)")
+	subscribeReportCmd.Flags().DurationVar(&subscribeReportKeepAlive, "keepalive", 5*time.Second, "Probe the connection at this interval and fail with exit 3 when it is lost (0 disables)")
 	subscribeReportCmd.Flags().IntVar(&subscribeReportMax, "max-reports", 0, "Exit after receiving this many reports (0 = no limit)")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportValues, "show-values", false, "Show data set values in each report")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportInterrogation, "interrogation", false, "Trigger General Interrogation (GI) on the RCB after enabling to request an immediate report (may include 0 items)")
@@ -83,18 +87,18 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 	if subscribeReportDuration != "" {
 		duration, err = time.ParseDuration(subscribeReportDuration)
 		if err != nil {
-			return fmt.Errorf("--duration: %w (e.g. 30s, 5m, 1h)", err)
+			return errs.Mark(fmt.Errorf("--duration: %w (e.g. 30s, 5m, 1h)", err), errs.ErrInvalidInput)
 		}
 		if duration <= 0 {
-			return fmt.Errorf("--duration must be positive")
+			return errs.Invalidf("--duration must be positive")
 		}
 	}
 	if subscribeReportMax < 0 {
-		return fmt.Errorf("--max-reports must be >= 0")
+		return errs.Invalidf("--max-reports must be >= 0")
 	}
 	fc := strings.ToUpper(strings.TrimSpace(subscribeReportType))
 	if fc != "BR" && fc != "RP" {
-		return fmt.Errorf("--type must be BR (buffered) or RP (unbuffered), got %q", subscribeReportType)
+		return errs.Invalidf("--type must be BR (buffered) or RP (unbuffered), got %q", subscribeReportType)
 	}
 
 	var entryID []byte
@@ -102,7 +106,7 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		raw := strings.ReplaceAll(strings.TrimSpace(subscribeReportEntryID), " ", "")
 		entryID, err = hex.DecodeString(raw)
 		if err != nil {
-			return fmt.Errorf("--entry-id: %w (expect hex octets)", err)
+			return errs.Mark(fmt.Errorf("--entry-id: %w (expect hex octets)", err), errs.ErrInvalidInput)
 		}
 	}
 	var resvTms *int32
@@ -111,7 +115,7 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		resvTms = &v
 	}
 	if fc != "BR" && (subscribeReportPurgeBuf || len(entryID) > 0 || resvTms != nil) {
-		return fmt.Errorf("--purge-buf/--entry-id/--resv-tms require --type BR")
+		return errs.Invalidf("--purge-buf/--entry-id/--resv-tms require --type BR")
 	}
 
 	session, err := openClientSession(cmd, clientSessionOptions{RequestTimeout: 30 * time.Second})
@@ -150,17 +154,21 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 		Interrogation: subscribeReportInterrogation,
 		Sync:          subscribeReportSync,
 		DatasetRef:    datasetRef,
+		Context:       cmd.Context(),
 		Writer:        cmd.OutOrStdout(),
 		ErrWriter:     cmd.ErrOrStderr(),
 		Format:        string(streamFmt),
+		KeepAlive:     subscribeReportKeepAlive,
 		PurgeBuf:      subscribeReportPurgeBuf,
 		EntryID:       entryID,
 		ResvTms:       resvTms,
 	})
+	if reporter != nil {
+		reporter.WriteStats(cmd.OutOrStdout())
+	}
 	if err != nil {
 		return err
 	}
-	reporter.WriteStats(cmd.OutOrStdout())
 	if streamFmt != formatter.StreamFormatJSONL {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Connection closed.")
 	}

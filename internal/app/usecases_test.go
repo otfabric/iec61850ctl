@@ -13,6 +13,7 @@ import (
 )
 
 func TestAppAccessors(t *testing.T) {
+	t.Parallel()
 	m := &mockConn{}
 	a := New(m)
 	if a.Connection() != m {
@@ -24,6 +25,7 @@ func TestAppAccessors(t *testing.T) {
 }
 
 func TestListLogicalDevicesAndNames(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{lds: []string{"LD0", "LD1"}})
 	names, err := a.ListLogicalDeviceNames()
 	if err != nil || len(names) != 2 {
@@ -36,6 +38,7 @@ func TestListLogicalDevicesAndNames(t *testing.T) {
 }
 
 func TestListLogicalDevices_Error(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{err: errors.New("boom")})
 	if _, err := a.ListLogicalDevices(); err == nil {
 		t.Fatal("expected error")
@@ -43,6 +46,7 @@ func TestListLogicalDevices_Error(t *testing.T) {
 }
 
 func TestListLogicalNodes(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{})
 	names, err := a.ListLogicalNodeNames(ListLogicalNodesInput{LD: "LD0"})
 	if err != nil || len(names) < 1 {
@@ -55,6 +59,7 @@ func TestListLogicalNodes(t *testing.T) {
 }
 
 func TestListDataObjectNames(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{})
 	names, err := a.ListDataObjectNames(ListDataObjectsInput{LD: "LD0", LN: "MMXU1"})
 	if err != nil || len(names) < 1 {
@@ -63,6 +68,7 @@ func TestListDataObjectNames(t *testing.T) {
 }
 
 func TestGetObject(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{})
 	obj, err := a.GetObject(GetObjectInput{Object: "LD0/MMXU1.Hz.mag.f", FC: domain.FC_MX})
 	if err != nil || obj == nil {
@@ -71,6 +77,7 @@ func TestGetObject(t *testing.T) {
 }
 
 func TestListFilesAndDownload(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{})
 	files, err := a.ListFiles("")
 	if err != nil || len(files) < 1 {
@@ -84,6 +91,7 @@ func TestListFilesAndDownload(t *testing.T) {
 }
 
 func TestListAndGetReports(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{reports: []string{"LLN0$BR$rcb1", "LLN0$RP$urcb1"}})
 	refs, err := a.ListAllReports()
 	if err != nil || len(refs) < 1 {
@@ -104,6 +112,7 @@ func TestListAndGetReports(t *testing.T) {
 }
 
 func TestDataSetNames(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{datasets: []string{"LLN0$Meas"}})
 	names, err := a.ListDataSetNames(ListDataSetsInput{LD: "LD0", LN: "LLN0"})
 	if err != nil || len(names) < 1 {
@@ -116,6 +125,7 @@ func TestDataSetNames(t *testing.T) {
 }
 
 func TestJournals(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{journals: []string{"LLN0$EventLog"}})
 	infos, err := a.ListJournals(ListJournalsInput{LD: "LD0"})
 	if err != nil || len(infos) < 1 {
@@ -131,6 +141,7 @@ func TestJournals(t *testing.T) {
 }
 
 func TestFindPath(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{lds: []string{"LD0"}, lns: []string{"MMXU1"}, dos: []string{"Hz", "Mod"}})
 	res, err := a.FindPath(FindPathInput{LNPattern: "MMXU", DOName: "Hz"})
 	if err != nil || res == nil || len(res.Matches) < 1 {
@@ -139,6 +150,7 @@ func TestFindPath(t *testing.T) {
 }
 
 func TestListDataAttributes(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{})
 	attrs, err := a.ListDataAttributes(ListDataAttributesInput{LD: "LD0", LN: "MMXU1", DO: "Hz"})
 	if err != nil {
@@ -153,6 +165,7 @@ func TestListDataAttributes(t *testing.T) {
 }
 
 func TestListDataSets(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{datasets: []string{"LLN0$Meas"}})
 	list, err := a.ListDataSets(ListDataSetsInput{LD: "LD0", LN: "LLN0"})
 	if err != nil || len(list) < 1 {
@@ -161,6 +174,7 @@ func TestListDataSets(t *testing.T) {
 }
 
 func TestRenderAndBuildTree(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{lds: []string{"LD0"}})
 	var buf bytes.Buffer
 	n, err := a.RenderTree(&buf, TreeInput{Host: "h", Port: 102, Path: "LD0/LLN0"})
@@ -178,6 +192,7 @@ func TestRenderAndBuildTree(t *testing.T) {
 }
 
 func TestListDataObjects(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{dos: []string{"Hz", "Mod"}})
 	dos, err := a.ListDataObjects(ListDataObjectsInput{LD: "LD0", LN: "MMXU1"})
 	if err != nil {
@@ -192,6 +207,7 @@ func TestListDataObjects(t *testing.T) {
 }
 
 func TestBulkFind(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{
 		lds: []string{"LD0"},
 		lns: []string{"LLN0", "FMMXU1"},
@@ -217,6 +233,7 @@ func TestBulkFind(t *testing.T) {
 }
 
 func TestGetDataSetWithValues(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{datasets: []string{"LLN0$Meas"}})
 	ds, err := a.GetDataSetWithValues(GetDataSetWithValuesInput{
 		LD: "LD0", LN: "LLN0", Name: "Meas", ReadValues: false,
@@ -239,6 +256,7 @@ func TestGetDataSetWithValues(t *testing.T) {
 }
 
 func TestSubscribeReport(t *testing.T) {
+	t.Parallel()
 	a := New(&mockConn{})
 	var buf bytes.Buffer
 

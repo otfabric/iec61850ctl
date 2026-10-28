@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
 // Target represents a discovered IEC 61850 target.
@@ -43,16 +45,26 @@ func ParseHostSpec(hostSpec string) ([]string, error) {
 	// Single IP
 	ip := net.ParseIP(hostSpec)
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address: %s", hostSpec)
+		return nil, errs.Invalidf("invalid IP address: %s", hostSpec)
 	}
 	return []string{hostSpec}, nil
 }
+
+// maxCIDRHostBits bounds how many addresses parseCIDR expands (2^16 = 65536).
+const maxCIDRHostBits = 16
 
 // parseCIDR parses CIDR notation and returns all IPs in the subnet.
 func parseCIDR(cidr string) ([]string, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid CIDR notation: %w", err)
+		return nil, errs.Mark(fmt.Errorf("invalid CIDR notation: %w", err), errs.ErrInvalidInput)
+	}
+
+	// Refuse subnets whose expansion would exhaust memory (e.g. 0.0.0.0/0 or
+	// an IPv6 /64): at most maxCIDRHostBits host bits are expanded.
+	ones, bits := ipnet.Mask.Size()
+	if bits-ones > maxCIDRHostBits {
+		return nil, errs.Invalidf("CIDR %s too large (at most %d host bits, e.g. /%d for IPv4)", cidr, maxCIDRHostBits, 32-maxCIDRHostBits)
 	}
 
 	var ips []string
@@ -72,12 +84,12 @@ func parseCIDR(cidr string) ([]string, error) {
 func parseRange(rangeSpec string) ([]string, error) {
 	parts := strings.Split(rangeSpec, "-")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid range format: %s (expected format: 10.0.0.5-25)", rangeSpec)
+		return nil, errs.Invalidf("invalid range format: %s (expected format: 10.0.0.5-25)", rangeSpec)
 	}
 
 	startIP := net.ParseIP(parts[0])
 	if startIP == nil {
-		return nil, fmt.Errorf("invalid start IP: %s", parts[0])
+		return nil, errs.Invalidf("invalid start IP: %s", parts[0])
 	}
 
 	// Determine if end is a full IP or just the last octet
@@ -85,19 +97,19 @@ func parseRange(rangeSpec string) ([]string, error) {
 	if strings.Contains(parts[1], ".") {
 		endIP = net.ParseIP(parts[1])
 		if endIP == nil {
-			return nil, fmt.Errorf("invalid end IP: %s", parts[1])
+			return nil, errs.Invalidf("invalid end IP: %s", parts[1])
 		}
 	} else {
 		// Just last octet - build full IP
 		lastOctet, err := strconv.Atoi(parts[1])
 		if err != nil || lastOctet < 0 || lastOctet > 255 {
-			return nil, fmt.Errorf("invalid end octet: %s (must be 0-255)", parts[1])
+			return nil, errs.Invalidf("invalid end octet: %s (must be 0-255)", parts[1])
 		}
 
 		// Parse start IP to get first 3 octets
 		startIPv4 := startIP.To4()
 		if startIPv4 == nil {
-			return nil, fmt.Errorf("range notation only supports IPv4")
+			return nil, errs.Invalidf("range notation only supports IPv4")
 		}
 
 		endIP = net.IPv4(startIPv4[0], startIPv4[1], startIPv4[2], byte(lastOctet))
@@ -109,15 +121,16 @@ func parseRange(rangeSpec string) ([]string, error) {
 		copy(ip, startIP)
 		ips = append(ips, ip.String())
 
+		// Sanity check to prevent infinite loops; checked before the end
+		// test so a 257-address range is rejected rather than returned.
+		if len(ips) > 256 {
+			return nil, errs.Invalidf("range too large (max 256 addresses)")
+		}
+
 		if ip.Equal(endIP) {
 			break
 		}
 		inc(startIP)
-
-		// Sanity check to prevent infinite loops
-		if len(ips) > 256 {
-			return nil, fmt.Errorf("range too large (max 256 addresses)")
-		}
 	}
 
 	return ips, nil
@@ -158,7 +171,7 @@ func GetMACAddress(ip string) (string, error) {
 	case "windows":
 		cmd = exec.Command("arp", "-a", ip)
 	default:
-		return "", fmt.Errorf("MAC resolution not supported on %s", runtime.GOOS)
+		return "", errs.Newf(errs.ErrUnsupported, "MAC resolution not supported on %s", runtime.GOOS)
 	}
 
 	output, err := cmd.CombinedOutput()
@@ -169,7 +182,7 @@ func GetMACAddress(ip string) (string, error) {
 	// Parse ARP output to extract MAC address
 	mac := parseARPOutput(string(output), runtime.GOOS)
 	if mac == "" {
-		return "", fmt.Errorf("MAC address not found in ARP cache for %s", ip)
+		return "", errs.Newf(errs.ErrNotFound, "MAC address not found in ARP cache for %s", ip)
 	}
 
 	return mac, nil
