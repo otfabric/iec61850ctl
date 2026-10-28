@@ -245,15 +245,25 @@ func parseAdapterOpLine(line []byte) (adapterOpResult, bool) {
 	return res, true
 }
 
+// resolveImageForReverseStack maps server-<stack>, server-reader-<stack>
+// and goose-<stack> to the image of <stack>.
 func resolveImageForReverseStack(stack string) string {
-	switch stack {
-	case stackServerLib, stackServerReaderLib:
-		return resolveImage(stackLibIEC61850)
-	case stackServerBean, stackServerReaderBean:
-		return resolveImage(stackIEC61850Bean)
-	default:
-		return ""
+	for _, prefix := range []string{prefixServerReader, prefixServer, prefixGoose} {
+		if name, ok := strings.CutPrefix(stack, prefix); ok {
+			return resolveImage(name)
+		}
 	}
+	return ""
+}
+
+// reverseCases lists one case per adapter stack: the stack name
+// prefix+<stack> and the adapter command <stack>-<command>.
+func reverseCases(prefix, command string) []struct{ stack, entrypoint string } {
+	out := make([]struct{ stack, entrypoint string }, len(adapterStacks))
+	for i, a := range adapterStacks {
+		out[i] = struct{ stack, entrypoint string }{prefix + a.name, a.name + "-" + command}
+	}
+	return out
 }
 
 // runAdapterJSONL runs an adapter entrypoint against host.docker.internal:hostPort

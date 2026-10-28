@@ -14,7 +14,7 @@ A command-line tool for IEC 61850 MMS, built in pure Go on [otfabric/go-iec61850
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e exercises the built CLI independently against [libiec61850](https://libiec61850.com) and [IEC61850bean](https://www.beanit.com/iec-61850/) adapter servers from [mms-interop](https://github.com/otfabric/mms-interop), plus reverse controller/reporter/client journeys against `server start`. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e exercises the built CLI against all four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and GOOSE in both directions against their publishers and subscribers. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
@@ -332,9 +332,9 @@ make coverage-gate         # every package >= 90% (COVERAGE_MIN=..), cgo-free
 make fuzz                  # every fuzz target for FUZZTIME (default 10s)
 make vet
 
-make e2e                   # black-box e2e (default: libiec61850, iec61850bean, self)
+make e2e                   # black-box e2e (default: the four client stacks + self)
 make e2e-self              # self-server smoke only
-IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader)
+IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader and GOOSE)
 make e2e-verify-fixtures   # check e2e/testdata hashes vs interop.lock.json
 make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md

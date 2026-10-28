@@ -26,6 +26,7 @@ type mockConnection struct {
 	dataSets       []string
 	reports        []string
 	journals       []string
+	listLDsErr     error
 
 	readFunc            func(ref iec61850.Ref) (*iec61850.Value, error)
 	getVariableTypeFunc func(ref iec61850.Ref) (*mms.TypeSpec, error)
@@ -51,6 +52,9 @@ type mockConnection struct {
 }
 
 func (m *mockConnection) ListLogicalDevices(_ context.Context) ([]iec61850.LogicalDevice, error) {
+	if m.listLDsErr != nil {
+		return nil, m.listLDsErr
+	}
 	if m.logicalDevices == nil {
 		return []iec61850.LogicalDevice{{Name: "LD0"}, {Name: "LD1"}}, nil
 	}

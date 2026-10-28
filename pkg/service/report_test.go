@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/otfabric/iec61850ctl/pkg/errs"
+
 	iec61850 "github.com/otfabric/go-iec61850"
 )
 
@@ -145,6 +147,31 @@ func TestReportService_ResolveReportDetails(t *testing.T) {
 	got2, err := NewReportService(mockRP).ResolveReportDetails("LD0", "LLN0", "rcb1")
 	if err != nil || got2.RptID != "ur" || got2.Buffered {
 		t.Fatalf("fallback RP: %+v err=%v", got2, err)
+	}
+}
+
+func TestReportService_ResolveReportDetails_ErrorPrecedence(t *testing.T) {
+	t.Parallel()
+	unreadable := errors.New("data access error: ObjectAccessUnsupported")
+	missing := errs.Mark(errors.New("ObjectNonExistent"), errs.ErrNotFound)
+
+	// A BRCB the server cannot read is not reported as a missing URCB.
+	m := &mockConnection{getRCBErrByItemID: map[string]error{
+		"LLN0$BR$rcb1": unreadable,
+		"LLN0$RP$rcb1": missing,
+	}}
+	if _, err := NewReportService(m).ResolveReportDetails("LD0", "LLN0", "rcb1"); !errors.Is(err, unreadable) {
+		t.Fatalf("want BR error, got %v", err)
+	}
+
+	// Neither exists: the RP error is returned.
+	missingBR := errs.Mark(errors.New("no BR"), errs.ErrNotFound)
+	m = &mockConnection{getRCBErrByItemID: map[string]error{
+		"LLN0$BR$rcb1": missingBR,
+		"LLN0$RP$rcb1": missing,
+	}}
+	if _, err := NewReportService(m).ResolveReportDetails("LD0", "LLN0", "rcb1"); !errors.Is(err, missing) {
+		t.Fatalf("want RP error, got %v", err)
 	}
 }
 

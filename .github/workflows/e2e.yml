@@ -27,16 +27,34 @@ jobs:
             timeout: 20
           - stack: iec61850bean
             timeout: 30
+          - stack: dscsystems
+            timeout: 20
+          - stack: iec61850-rust
+            timeout: 20
           - stack: self
             timeout: 10
           - stack: server-libiec61850
             timeout: 25
           - stack: server-iec61850bean
             timeout: 35
+          - stack: server-dscsystems
+            timeout: 25
+          - stack: server-iec61850-rust
+            timeout: 25
           - stack: server-reader-libiec61850
             timeout: 25
           - stack: server-reader-iec61850bean
             timeout: 35
+          - stack: server-reader-dscsystems
+            timeout: 25
+          - stack: server-reader-iec61850-rust
+            timeout: 25
+          - stack: goose-libiec61850
+            timeout: 15
+          - stack: goose-dscsystems
+            timeout: 15
+          - stack: goose-iec61850-rust
+            timeout: 15
     timeout-minutes: ${{ matrix.timeout }}
 
     steps:
@@ -58,10 +76,13 @@ jobs:
         if: matrix.stack != 'self'
         id: lock
         run: |
-          LIB=$(python3 -c 'import json; print(json.load(open("e2e/testdata/interop.lock.json"))["images"]["libiec61850"])')
-          BEAN=$(python3 -c 'import json; print(json.load(open("e2e/testdata/interop.lock.json"))["images"]["iec61850bean"])')
-          echo "lib=$LIB" >> "$GITHUB_OUTPUT"
-          echo "bean=$BEAN" >> "$GITHUB_OUTPUT"
+          img() { python3 -c 'import json,sys; print(json.load(open("e2e/testdata/interop.lock.json"))["images"][sys.argv[1]])' "$1"; }
+          {
+            echo "lib=$(img libiec61850)"
+            echo "bean=$(img iec61850bean)"
+            echo "dsc=$(img dscsystems)"
+            echo "rust=$(img iec61850-rust)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Run e2e
         env:
@@ -69,6 +90,8 @@ jobs:
           IEC61850CTL_E2E_STACKS: ${{ matrix.stack }}
           LIBIEC61850_IMAGE: ${{ steps.lock.outputs.lib }}
           IEC61850BEAN_IMAGE: ${{ steps.lock.outputs.bean }}
+          DSCSYSTEMS_IMAGE: ${{ steps.lock.outputs.dsc }}
+          IEC61850RUST_IMAGE: ${{ steps.lock.outputs.rust }}
         run: make e2e
 
       - name: Collect diagnostics

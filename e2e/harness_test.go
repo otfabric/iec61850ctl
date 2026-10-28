@@ -30,17 +30,17 @@ import (
 const (
 	stackLibIEC61850  = "libiec61850"
 	stackIEC61850Bean = "iec61850bean"
+	stackDSCSystems   = "dscsystems"
+	stackRust         = "iec61850-rust"
 	stackSelf         = "self"
-	// Reverse stacks (adapter clients → iec61850ctl server) are opt-in via
-	// IEC61850CTL_E2E_STACKS; they are not part of the default set.
-	stackServerLib  = "server-libiec61850"
-	stackServerBean = "server-iec61850bean"
-	// Reverse general-reader stacks (Phase 3B).
-	stackServerReaderLib  = "server-reader-libiec61850"
-	stackServerReaderBean = "server-reader-iec61850bean"
 
-	defaultLibIECImage    = "mms-interop-libiec61850:local"
-	defaultBeanImage      = "mms-interop-iec61850bean:local"
+	// Reverse stacks (adapter clients → iec61850ctl server) and GOOSE stacks
+	// are named by prefixing an adapter stack. They are opt-in via
+	// IEC61850CTL_E2E_STACKS; they are not part of the default set.
+	prefixServer       = "server-"
+	prefixServerReader = "server-reader-"
+	prefixGoose        = "goose-"
+
 	containerInternalPort = 1102
 
 	commandTimeout      = 20 * time.Second
@@ -49,15 +49,81 @@ const (
 	floatCompareEpsilon = 1e-6
 )
 
+// adapterStack is one mms-interop adapter image.
+type adapterStack struct {
+	name         string
+	imageEnv     string // overrides the image
+	readyTimeout time.Duration
+	goose        bool // ships *-goose-publisher and *-goose-subscriber
+
+	// brcbUnreadable: the server answers a read of BRCB TimeOfEntry, and so
+	// of the whole BRCB, with object-access-unsupported (iec61850-rust).
+	// get report and subscribe report --type BR fail deterministically.
+	brcbUnreadable bool
+}
+
+// adapterStacks lists every mms-interop stack the e2e suite runs against.
+var adapterStacks = []adapterStack{
+	{name: stackLibIEC61850, imageEnv: "LIBIEC61850_IMAGE", readyTimeout: libReadyTimeout, goose: true},
+	{name: stackIEC61850Bean, imageEnv: "IEC61850BEAN_IMAGE", readyTimeout: beanReadyTimeout},
+	{name: stackDSCSystems, imageEnv: "DSCSYSTEMS_IMAGE", readyTimeout: libReadyTimeout, goose: true},
+	{name: stackRust, imageEnv: "IEC61850RUST_IMAGE", readyTimeout: libReadyTimeout, goose: true, brcbUnreadable: true},
+}
+
+func lookupAdapter(name string) (adapterStack, bool) {
+	for _, a := range adapterStacks {
+		if a.name == name {
+			return a, true
+		}
+	}
+	return adapterStack{}, false
+}
+
+// clientStacks returns every forward stack (adapter server → iec61850ctl
+// client); tests skip the ones not selected.
+func clientStacks() []string {
+	out := make([]string, len(adapterStacks))
+	for i, a := range adapterStacks {
+		out[i] = a.name
+	}
+	return out
+}
+
+// brcbUnreadable reports the registered BRCB read limitation of a stack.
+func brcbUnreadable(stack string) bool {
+	a, _ := lookupAdapter(stack)
+	return a.brcbUnreadable
+}
+
+// requireBRCBUnreadable asserts the registered limitation: a deterministic
+// failure naming object-access-unsupported, never a false success.
+func requireBRCBUnreadable(t *testing.T, res commandResult, h *serverHandle) {
+	t.Helper()
+	if res.TimedOut || res.ExitCode == 0 || !bytes.Contains(res.Stderr, []byte("ObjectAccessUnsupported")) {
+		logCommandFailure(t, res, h)
+		t.Fatalf("%s BRCB: want a non-zero exit naming ObjectAccessUnsupported (registered limitation)", h.stack)
+	}
+}
+
+// readyTimeoutFor is the ready-event timeout of a forward stack.
+func readyTimeoutFor(stack string) time.Duration {
+	if a, ok := lookupAdapter(stack); ok {
+		return a.readyTimeout
+	}
+	return libReadyTimeout
+}
+
 // Lock is the checked-in interop.lock.json provenance document.
 type Lock struct {
-	SourceRepository string            `json:"source_repository"`
-	SourceCommit     string            `json:"source_commit"`
-	SourceTag        string            `json:"source_tag"`
-	FixtureRevision  string            `json:"fixture_revision"`
-	Files            map[string]string `json:"files"`
-	Images           map[string]string `json:"images"`
-	RequiredCommands map[string]bool   `json:"required_commands"`
+	SourceRepository string `json:"source_repository"`
+	SourceCommit     string `json:"source_commit"`
+	SourceTag        string `json:"source_tag"`
+	FixtureRevision  string `json:"fixture_revision"`
+	// GooseFixtureRevision is the mms-interop GOOSE fixture (goose.json).
+	GooseFixtureRevision string            `json:"goose_fixture_revision"`
+	Files                map[string]string `json:"files"`
+	Images               map[string]string `json:"images"`
+	RequiredCommands     map[string]bool   `json:"required_commands"`
 }
 
 type readyEvent struct {
@@ -107,8 +173,9 @@ var (
 	selectedStacks map[string]bool
 	ctlBin         string
 
-	sharedLib  *serverHandle
-	sharedBean *serverHandle
+	// sharedServers holds one long-lived adapter server per selected
+	// forward stack, for the read-only tests.
+	sharedServers = map[string]*serverHandle{}
 )
 
 func TestMain(m *testing.M) {
@@ -128,11 +195,8 @@ func TestMain(m *testing.M) {
 	selectedStacks = parseStacks(os.Getenv("IEC61850CTL_E2E_STACKS"))
 	ctlBin = strings.TrimSpace(os.Getenv("IEC61850CTL_BIN"))
 
-	needsBin := selectedStacks[stackLibIEC61850] || selectedStacks[stackIEC61850Bean] ||
-		selectedStacks[stackSelf] || selectedStacks[stackServerLib] || selectedStacks[stackServerBean] ||
-		selectedStacks[stackServerReaderLib] || selectedStacks[stackServerReaderBean]
-	if needsBin && ctlBin == "" {
-		fmt.Fprintf(os.Stderr, "e2e: IEC61850CTL_BIN is required when stacks include libiec61850, iec61850bean, self, or server-*\n")
+	if len(selectedStacks) > 0 && ctlBin == "" {
+		fmt.Fprintf(os.Stderr, "e2e: IEC61850CTL_BIN is required\n")
 		os.Exit(1)
 	}
 	if ctlBin != "" {
@@ -148,35 +212,28 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	if selectedStacks[stackLibIEC61850] {
-		sharedLib, err = startDockerServer(stackLibIEC61850, libReadyTimeout)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "e2e: start libiec61850 server: %v\n", err)
-			os.Exit(1)
+	stopShared := func() {
+		for _, h := range sharedServers {
+			h.stop()
 		}
-		fmt.Fprintf(os.Stderr, "[e2e] shared libiec61850 ready at %s:%d ied=%s\n", sharedLib.host, sharedLib.port, sharedLib.iedName)
 	}
-
-	if selectedStacks[stackIEC61850Bean] {
-		sharedBean, err = startDockerServer(stackIEC61850Bean, beanReadyTimeout)
+	for _, a := range adapterStacks {
+		if !selectedStacks[a.name] {
+			continue
+		}
+		h, err := startDockerServer(a.name, a.readyTimeout)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "e2e: start iec61850bean server: %v\n", err)
-			if sharedLib != nil {
-				sharedLib.stop()
-			}
+			fmt.Fprintf(os.Stderr, "e2e: start %s server: %v\n", a.name, err)
+			stopShared()
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stderr, "[e2e] shared iec61850bean ready at %s:%d ied=%s\n", sharedBean.host, sharedBean.port, sharedBean.iedName)
+		sharedServers[a.name] = h
+		fmt.Fprintf(os.Stderr, "[e2e] shared %s ready at %s:%d ied=%s\n", a.name, h.host, h.port, h.iedName)
 	}
 
 	code := m.Run()
 
-	if sharedBean != nil {
-		sharedBean.stop()
-	}
-	if sharedLib != nil {
-		sharedLib.stop()
-	}
+	stopShared()
 	os.Exit(code)
 }
 
@@ -229,33 +286,42 @@ func loadExpectedValues(path string) (expectedValues, error) {
 	return ev, nil
 }
 
+// knownStacks returns every stack name IEC61850CTL_E2E_STACKS accepts.
+func knownStacks() []string {
+	out := []string{stackSelf}
+	for _, a := range adapterStacks {
+		out = append(out, a.name, prefixServer+a.name, prefixServerReader+a.name)
+		if a.goose {
+			out = append(out, prefixGoose+a.name)
+		}
+	}
+	return out
+}
+
 func parseStacks(raw string) map[string]bool {
 	out := make(map[string]bool)
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		// Default: forward client stacks + self. Reverse server-* stacks are
-		// opt-in (CI matrix sets IEC61850CTL_E2E_STACKS=server-libiec61850, etc.).
-		out[stackLibIEC61850] = true
-		out[stackIEC61850Bean] = true
+		// Default: forward client stacks + self. Reverse server-* and goose-*
+		// stacks are opt-in (the CI matrix selects them one by one).
+		for _, name := range clientStacks() {
+			out[name] = true
+		}
 		out[stackSelf] = true
 		return out
 	}
+	known := knownStacks()
 	for _, part := range strings.Split(raw, ",") {
 		name := strings.TrimSpace(part)
-		switch name {
-		case "all":
-			out[stackLibIEC61850] = true
-			out[stackIEC61850Bean] = true
-			out[stackSelf] = true
-			out[stackServerLib] = true
-			out[stackServerBean] = true
-			out[stackServerReaderLib] = true
-			out[stackServerReaderBean] = true
-		case stackLibIEC61850, stackIEC61850Bean, stackSelf,
-			stackServerLib, stackServerBean, stackServerReaderLib, stackServerReaderBean:
-			out[name] = true
-		case "":
+		switch {
+		case name == "":
 			continue
+		case name == "all":
+			for _, k := range known {
+				out[k] = true
+			}
+		case containsName(known, name):
+			out[name] = true
 		default:
 			fmt.Fprintf(os.Stderr, "e2e: ignoring unknown stack %q in IEC61850CTL_E2E_STACKS\n", name)
 		}
@@ -281,15 +347,10 @@ func sharedServer(t *testing.T, stack string) *serverHandle {
 	t.Helper()
 	requireStack(t, stack)
 	requireCtlBin(t)
-	var h *serverHandle
-	switch stack {
-	case stackLibIEC61850:
-		h = sharedLib
-	case stackIEC61850Bean:
-		h = sharedBean
-	default:
+	if _, ok := lookupAdapter(stack); !ok {
 		t.Fatalf("no shared docker server for stack %q", stack)
 	}
+	h := sharedServers[stack]
 	if h == nil {
 		t.Fatalf("shared server for stack %q was not started", stack)
 	}
@@ -298,51 +359,37 @@ func sharedServer(t *testing.T, stack string) *serverHandle {
 
 func externalStacks() []string {
 	var stacks []string
-	if selectedStacks[stackLibIEC61850] {
-		stacks = append(stacks, stackLibIEC61850)
-	}
-	if selectedStacks[stackIEC61850Bean] {
-		stacks = append(stacks, stackIEC61850Bean)
+	for _, name := range clientStacks() {
+		if selectedStacks[name] {
+			stacks = append(stacks, name)
+		}
 	}
 	return stacks
 }
 
+// resolveImage returns the image of an adapter stack: the stack's image
+// environment variable, the lock digest in CI, else the local build tag.
 func resolveImage(stack string) string {
-	switch stack {
-	case stackLibIEC61850:
-		if v := strings.TrimSpace(os.Getenv("LIBIEC61850_IMAGE")); v != "" {
-			return v
-		}
-		if os.Getenv("CI") != "" {
-			if img := lockFile.Images[stackLibIEC61850]; img != "" {
-				return img
-			}
-		}
-		return defaultLibIECImage
-	case stackIEC61850Bean:
-		if v := strings.TrimSpace(os.Getenv("IEC61850BEAN_IMAGE")); v != "" {
-			return v
-		}
-		if os.Getenv("CI") != "" {
-			if img := lockFile.Images[stackIEC61850Bean]; img != "" {
-				return img
-			}
-		}
-		return defaultBeanImage
-	default:
+	a, ok := lookupAdapter(stack)
+	if !ok {
 		return ""
 	}
+	if v := strings.TrimSpace(os.Getenv(a.imageEnv)); v != "" {
+		return v
+	}
+	if os.Getenv("CI") != "" {
+		if img := lockFile.Images[a.name]; img != "" {
+			return img
+		}
+	}
+	return "mms-interop-" + a.name + ":local"
 }
 
 func entrypointForStack(stack string) string {
-	switch stack {
-	case stackLibIEC61850:
-		return "libiec61850-ied-server"
-	case stackIEC61850Bean:
-		return "iec61850bean-ied-server"
-	default:
+	if _, ok := lookupAdapter(stack); !ok {
 		return ""
 	}
+	return stack + "-ied-server"
 }
 
 func freeHostPort() (int, error) {

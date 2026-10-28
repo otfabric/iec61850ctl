@@ -11,16 +11,13 @@ import (
 // Phase 4 forward write journeys use isolated servers and ING SetInt1.setVal[SP].
 
 func TestWrite_ClientSetInt1(t *testing.T) {
-	for _, stack := range []string{stackLibIEC61850, stackIEC61850Bean} {
+	for _, stack := range clientStacks() {
 		stack := stack
 		t.Run(stack, func(t *testing.T) {
 			requireStack(t, stack)
 			requireCtlBin(t)
 
-			readyTO := libReadyTimeout
-			if stack == stackIEC61850Bean {
-				readyTO = beanReadyTimeout
-			}
+			readyTO := readyTimeoutFor(stack)
 			h, err := startDockerServer(stack, readyTO)
 			if err != nil {
 				t.Fatalf("start isolated %s: %v", stack, err)

@@ -11,13 +11,7 @@ import (
 // Reverse control journeys: mms-interop controller adapters → iec61850ctl server.
 // Operation names match go-iec61850 interop Test*Server_Control_* expectations.
 func TestReverse_ServerControl(t *testing.T) {
-	for _, tc := range []struct {
-		stack      string
-		entrypoint string
-	}{
-		{stackServerLib, "libiec61850-ied-controller"},
-		{stackServerBean, "iec61850bean-ied-controller"},
-	} {
+	for _, tc := range reverseCases(prefixServer, "ied-controller") {
 		tc := tc
 		t.Run(tc.stack, func(t *testing.T) {
 			requireReverseStack(t, tc.stack)

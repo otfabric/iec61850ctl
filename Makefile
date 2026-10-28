@@ -138,7 +138,7 @@ e2e-update-fixtures: ## Copy fixtures from MMS_INTEROP_DIR and refresh interop.l
 	@./scripts/update-e2e-fixtures.sh
 
 e2e: build-nocheck e2e-verify-fixtures ## Black-box CLI e2e against selected stacks
-	@echo "Running e2e (IEC61850CTL_E2E_STACKS=$${IEC61850CTL_E2E_STACKS:-libiec61850,iec61850bean,self})"
+	@echo "Running e2e (IEC61850CTL_E2E_STACKS=$${IEC61850CTL_E2E_STACKS:-libiec61850,iec61850bean,dscsystems,iec61850-rust,self})"
 	@IEC61850CTL_BIN=$(CURDIR)/$(BIN) \
 		go test -count=1 -tags=e2e ./e2e/... -timeout 12m
 

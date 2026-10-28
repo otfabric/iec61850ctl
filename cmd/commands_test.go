@@ -369,7 +369,6 @@ func TestListLDsEmptyAndDetailedErrors(t *testing.T) {
 	withFakeConn(t, &emptyConn{})
 	for _, args := range [][]string{
 		{"list", "lds"}, {"list", "lds", "--format", "json"}, {"list", "lds", "--detailed"},
-		{"list", "lns", "--ld", "X"}, {"list", "lns", "--ld", "X", "--format", "json"},
 		{"list", "dos", "--ld", "X", "--ln", "Y"}, {"list", "dos", "--ld", "X", "--ln", "Y", "--format", "json"},
 		{"list", "dss", "--ld", "X", "--ln", "Y"}, {"list", "dss", "--ld", "X", "--ln", "Y", "--format", "json"},
 		{"list", "reports", "--ld", "X", "--ln", "Y"}, {"list", "reports", "--all"},
@@ -382,6 +381,12 @@ func TestListLDsEmptyAndDetailedErrors(t *testing.T) {
 	// A data object that exists under no FC is "not found".
 	r := runCLI(t, "--host", "fake", "list", "das", "--ld", "X", "--ln", "Y", "--do", "Z")
 	expectCode(t, r, errs.ExitNotFound)
+	// An LD with no logical nodes that the directory does not list is "not
+	// found" (servers that answer GetNameList for unknown domains with []).
+	for _, format := range []string{"text", "json"} {
+		r = runCLI(t, "--host", "fake", "list", "lns", "--ld", "X", "--format", format)
+		expectCode(t, r, errs.ExitNotFound)
+	}
 }
 
 // emptyConn is a device with an empty model.

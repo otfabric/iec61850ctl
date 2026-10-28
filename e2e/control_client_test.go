@@ -11,12 +11,12 @@ import (
 
 // Phase 4 forward control journeys use isolated adapter servers (mutating).
 //
-// | Assertion                                      | libiec61850 | iec61850bean |
-// |------------------------------------------------|-------------|--------------|
-// | SPCSO1 direct operate confirmed                | required    | required     |
-// | SPCSO2 SBO select+operate confirmed            | required    | required     |
-// | SPCSO3 SBOw select-with-value+operate          | required    | known fail   |
-// | Bean SPCSO3: non-zero exit, stVal unchanged    | n/a         | required     |
+// | Assertion                                   | libiec61850 | iec61850bean | dscsystems | iec61850-rust |
+// |---------------------------------------------|-------------|--------------|------------|---------------|
+// | SPCSO1 direct operate confirmed             | required    | required     | required   | required      |
+// | SPCSO2 SBO select+operate confirmed         | required    | required     | required   | required      |
+// | SPCSO3 SBOw select-with-value+operate       | required    | known fail   | required   | required      |
+// | Bean SPCSO3: non-zero exit, stVal unchanged | n/a         | required     | n/a        | n/a           |
 
 func TestControl_ClientOperate(t *testing.T) {
 	type journey struct {
@@ -31,7 +31,7 @@ func TestControl_ClientOperate(t *testing.T) {
 		{name: "SPCSO3_SBOw", object: "InteropLD/GGIO1.SPCSO3", ops: []string{"select-with-value", "operate"}, beanOK: false},
 	}
 
-	for _, stack := range []string{stackLibIEC61850, stackIEC61850Bean} {
+	for _, stack := range clientStacks() {
 		stack := stack
 		for _, j := range journeys {
 			j := j
@@ -41,10 +41,7 @@ func TestControl_ClientOperate(t *testing.T) {
 
 				expectOK := stack != stackIEC61850Bean || j.beanOK
 
-				readyTO := libReadyTimeout
-				if stack == stackIEC61850Bean {
-					readyTO = beanReadyTimeout
-				}
+				readyTO := readyTimeoutFor(stack)
 				h, err := startDockerServer(stack, readyTO)
 				if err != nil {
 					t.Fatalf("start isolated %s: %v", stack, err)

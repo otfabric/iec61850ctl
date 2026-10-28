@@ -13,15 +13,12 @@ import (
 // Status-only ctlModel=0 is covered in unit tests (fixture has no status-only SPC).
 
 func TestControl_NegativeConfirmationMismatch(t *testing.T) {
-	for _, stack := range []string{stackLibIEC61850, stackIEC61850Bean} {
+	for _, stack := range clientStacks() {
 		stack := stack
 		t.Run(stack, func(t *testing.T) {
 			requireStack(t, stack)
 			requireCtlBin(t)
-			readyTO := libReadyTimeout
-			if stack == stackIEC61850Bean {
-				readyTO = beanReadyTimeout
-			}
+			readyTO := readyTimeoutFor(stack)
 			h, err := startDockerServer(stack, readyTO)
 			if err != nil {
 				t.Fatalf("start: %v", err)
@@ -57,15 +54,12 @@ func TestControl_NegativeConfirmationMismatch(t *testing.T) {
 }
 
 func TestControl_NegativeModeMismatch(t *testing.T) {
-	for _, stack := range []string{stackLibIEC61850, stackIEC61850Bean} {
+	for _, stack := range clientStacks() {
 		stack := stack
 		t.Run(stack, func(t *testing.T) {
 			requireStack(t, stack)
 			requireCtlBin(t)
-			readyTO := libReadyTimeout
-			if stack == stackIEC61850Bean {
-				readyTO = beanReadyTimeout
-			}
+			readyTO := readyTimeoutFor(stack)
 			h, err := startDockerServer(stack, readyTO)
 			if err != nil {
 				t.Fatalf("start: %v", err)

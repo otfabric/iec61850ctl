@@ -126,7 +126,7 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 ## Automation & interop docs
 
 - [docs/AUTOMATION.md](../docs/AUTOMATION.md) — stdout/stderr, JSON/JSONL contracts
-- [docs/INTEROP.md](../docs/INTEROP.md) — seven CI e2e stacks (client, self, reverse control/report/reader); Phases 3–6
+- [docs/INTEROP.md](../docs/INTEROP.md) — 20 CI e2e stacks: client, reverse control/report/reader and GOOSE against libiec61850, iec61850bean, dscsystems and iec61850-rust, plus self
 - [docs/SERVER.md](../docs/SERVER.md) — readiness JSON, value seeding
 - [RELEASE.md](../RELEASE.md) — release notes (v0.3.0: GOOSE, exit codes, quality pass)
 
@@ -140,7 +140,7 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 ```bash
 make build-nocheck
 make check
-make e2e                 # default: libiec61850, iec61850bean, self
+make e2e                 # default: the four client stacks + self
 make e2e-self
 IEC61850CTL_E2E_STACKS=all make e2e
 ```

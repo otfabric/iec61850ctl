@@ -155,5 +155,14 @@ These come from go-iec61850 v1.1.0:
 - No fixed-offset encoding.
 - No GSSE or Sampled Values.
 
-Also, `server start` does not publish GOOSE on a network interface. Its GoCB
+## Interoperability
+
+The e2e suite runs `goose subscribe`, `goose sniff` and `goose publish`
+against the GOOSE publishers and subscribers of libiec61850, dscsystems and
+iec61850-rust (mms-interop `goose-v1`) on a Docker bridge network. See
+[INTEROP.md](INTEROP.md#goose-raw-ethernet).
+
+## Server
+
+`server start` does not publish GOOSE on a network interface. Its GoCB
 engine is only used in tests, through the in-memory hub.

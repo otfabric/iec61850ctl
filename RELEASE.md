@@ -61,6 +61,8 @@ GOOSE support on [go-iec61850 v1.1.0](https://github.com/otfabric/go-iec61850/re
   - Control mode and confirmation failures return the right exit codes.
   - A float32 overflow in control values is now an error.
   - GOOSE `--value` rejects text that is not printable ASCII for VisibleString members.
+  - `list lns` exits `5` for an unknown LD even when the server answers with an empty name list (dscsystems).
+  - `get report` reports the BRCB read error when a BRCB exists but cannot be read, instead of the "no URCB" error of the RP fallback.
 - `server start --files-dir` (read-only MMS file service) and `--port 0` (ephemeral port).
 
 #### Testing
@@ -68,6 +70,11 @@ GOOSE support on [go-iec61850 v1.1.0](https://github.com/otfabric/go-iec61850/re
 - `cmd/` is driven in-process against the bundled server, with golden output for every format.
 - A chaos proxy injects stalls, resets and slow peers, with goroutine-leak checks.
 - GOOSE e2e tests run over the go-iec61850 in-memory hub.
+- Interop e2e now covers all four [mms-interop v0.3.0](https://github.com/otfabric/mms-interop/releases/tag/v0.3.0) stacks, with images pinned by digest. 20 CI jobs in total:
+  - **Peers.** libiec61850 and iec61850bean as before, plus [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust).
+  - **Client and reverse journeys.** Run against all four stacks: client, reverse control/report and reverse reader.
+  - **GOOSE.** `goose publish`, `subscribe` and `sniff` against the GOOSE adapters of libiec61850, dscsystems and iec61850-rust, in both directions, on a Docker bridge.
+  - **Known limitation.** iec61850-rust cannot read a BRCB (`TimeOfEntry` is object-access-unsupported). This is asserted as an expected failure.
 - Fuzz targets cover references, SCL, value formatters and parsers, HTTP handlers, and GOOSE APPID/value parsing.
 - New make targets: `make coverage-gate` (every package at 90% or more) and `make fuzz`. A CI `quality` job runs both.
 
