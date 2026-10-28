@@ -21,7 +21,7 @@ For scripting, every command has stable exit codes, and the browse, read, contro
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e runs the built CLI against the four independent stacks of [mms-interop](https://github.com/otfabric/mms-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and — for the three stacks with GOOSE and SV support (all but IEC61850bean) — GOOSE and Sampled Values in both directions. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e runs the built CLI against the four independent stacks of [iec61850-interop](https://github.com/otfabric/iec61850-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and — for the three stacks with GOOSE and SV support (all but IEC61850bean) — GOOSE and Sampled Values in both directions. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 
@@ -427,7 +427,7 @@ make e2e                   # black-box e2e (default: the four client stacks + se
 make e2e-self              # self-server smoke only
 IEC61850CTL_E2E_STACKS=all make e2e   # all CI directions (adds reverse control/report/reader, GOOSE and SV)
 make e2e-verify-fixtures   # check e2e/testdata hashes vs interop.lock.json
-make e2e-update-fixtures   # refresh fixtures from MMS_INTEROP_DIR
+make e2e-update-fixtures   # refresh fixtures from IEC61850_INTEROP_DIR
 make e2e-docs              # regenerate docs/interop-examples.md
 ```
 

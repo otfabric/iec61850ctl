@@ -14,7 +14,7 @@ frame codec, publisher, subscriber and raw transports.
 
 The example sessions on this page are real output. They were captured with
 `TestCaptureDocExamples` (`cmd/docs_capture_test.go`) against an in-process
-`iec61850ctl` server for the mms-interop GOOSE fixture
+`iec61850ctl` server for the iec61850-interop GOOSE fixture
 (`pkg/gooseops/testdata/interop-goose.cid`). That server publishes both GoCBs
 on an in-memory hub that stands in for `eth0`. Its references use the bare LD
 as MMS domain, which is why the subscribe examples pass `--bare-domain`.
@@ -449,7 +449,7 @@ Sampled Values have their own command tree: see [SV.md](SV.md).
 
 The e2e suite runs `goose subscribe`, `goose sniff` and `goose publish`
 against the GOOSE publishers and subscribers of libiec61850, dscsystems and
-iec61850-rust (mms-interop `goose-v1`) on a Docker bridge network. See
+iec61850-rust (iec61850-interop `goose-v1`) on a Docker bridge network. See
 [INTEROP.md](INTEROP.md#goose-raw-ethernet).
 
 ## Server

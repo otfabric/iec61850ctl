@@ -6,7 +6,7 @@ Black-box CLI interoperability for `iec61850ctl`. This complements the protocol-
 
 | Repository | Owns |
 |------------|------|
-| [mms-interop](https://github.com/otfabric/mms-interop) | Adapter containers, fixtures, readiness/capability contracts |
+| [iec61850-interop](https://github.com/otfabric/iec61850-interop) | Adapter containers, fixtures, readiness/capability contracts |
 | [go-iec61850](https://github.com/otfabric/go-iec61850) | Exhaustive Go API interoperability matrix |
 | **iec61850ctl** | Operator journeys through the built CLI binary (`e2e/`) |
 
@@ -18,7 +18,7 @@ The `e2e` package treats `iec61850ctl` as an **external executable**. It does no
 
 ### Client direction (independent interop)
 
-Every mms-interop stack is a peer: [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). The harness keeps them in one registry (`adapterStacks` in `e2e/harness_test.go`), so each journey runs against all four.
+Every iec61850-interop stack is a peer: [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). The harness keeps them in one registry (`adapterStacks` in `e2e/harness_test.go`), so each journey runs against all four.
 
 | Client | Server | CI job |
 |--------|--------|--------|
@@ -50,7 +50,7 @@ Journeys include association/browse, ST/MX reads against `expected-values.json`,
 - ST, MX, CF, DC reads against seeded values;
 - ST write (`Mod.stVal=5`) and dataset read reflecting the write.
 
-Requires mms-interop adapters that declare the `*-ied-client` commands in `fixtures/capabilities.json`. The lock file pins the [mms-interop `v0.4.0`](https://github.com/otfabric/mms-interop/releases/tag/v0.4.0) image digests (IED fixture `iec61850-v3`); local `:local` images are fine for development.
+Requires iec61850-interop adapters that declare the `*-ied-client` commands in `fixtures/capabilities.json`. The lock file pins the [iec61850-interop `v0.4.0`](https://github.com/otfabric/iec61850-interop/releases/tag/v0.4.0) image digests (IED fixture `iec61850-v3`); local `:local` images are fine for development.
 
 ### GOOSE (raw Ethernet)
 
@@ -59,7 +59,7 @@ Requires mms-interop adapters that declare the `*-ied-client` commands in `fixtu
 | `<stack>-goose-publisher` | `iec61850ctl goose subscribe` and `goose sniff` | `e2e / goose-<stack>` |
 | `iec61850ctl goose publish` | `<stack>-goose-subscriber` | `e2e / goose-<stack>` |
 
-`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no GOOSE adapter). The fixture is mms-interop `goose-v1` (`interop-goose.cid` and `goose.json`, control block `gcbAll`: eight members including a float32, bit strings, a UTC time and a nested structure).
+`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no GOOSE adapter). The fixture is iec61850-interop `goose-v1` (`interop-goose.cid` and `goose.json`, control block `gcbAll`: eight members including a float32, bit strings, a UTC time and a nested structure).
 
 GOOSE has no IP, so each journey creates its own Docker bridge network and runs `iec61850ctl` there too: a static Linux build (built by the test for the Docker server's architecture, or `IEC61850CTL_LINUX_BIN`), mounted into a container with `NET_RAW`. This works on Linux CI and on Docker Desktop, where the bridge lives in the VM.
 
@@ -76,7 +76,7 @@ GOOSE has no IP, so each journey creates its own Docker bridge network and runs 
 | `<stack>-sv-publisher` | `iec61850ctl sv subscribe` and `sv sniff` | `e2e / sv-<stack>` |
 | `iec61850ctl sv publish` | `<stack>-sv-subscriber` | `e2e / sv-<stack>` |
 
-`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no SV support). The fixture is mms-interop `sv-v1` (`interop-sv.cid` and `sv.json`). Every journey runs for both streams: `MSVCB01`, the 9-2LE profile (4000 samples/s, one ASDU per frame, no optional fields), and `MSVCB02`, a generic dataset (1000 samples/s, four ASDUs per frame, datSet/refrTm/smpRate/smpMod sent). The network setup is the GOOSE one.
+`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no SV support). The fixture is iec61850-interop `sv-v1` (`interop-sv.cid` and `sv.json`). Every journey runs for both streams: `MSVCB01`, the 9-2LE profile (4000 samples/s, one ASDU per frame, no optional fields), and `MSVCB02`, a generic dataset (1000 samples/s, four ASDUs per frame, datSet/refrTm/smpRate/smpMod sent). The network setup is the GOOSE one.
 
 | Journey | Asserted |
 |---------|----------|
@@ -85,7 +85,7 @@ GOOSE has no IP, so each journey creates its own Docker bridge network and runs 
 | `sv publish` → peer | the header with the simulation bit, the fixture values (qualities as 13-bit strings), the optional fields; at most 1 % lost beyond the samples the publisher reports as `skipped`; at least 90 % of the published samples received |
 | `sv svcb get` (forward stacks) | `MSVCB02` of the IED fixture: MsvID, DatSet, ConfRev, SmpRate, SmpMod, OptFlds, DstAddress, noASDU, for the stacks whose IED server models it (lock `svcb_over_mms`); a failed read for the others |
 
-Registered limitations (mms-interop `capabilities.json`), asserted rather than skipped:
+Registered limitations (iec61850-interop `capabilities.json`), asserted rather than skipped:
 - **libiec61850 subscriber, two-octet smpMod.** libiec61850's SVReceiver accepts smpMod only as one octet. go-iec61850 sends two, as libiec61850's own publisher does, so `sv publish` of `MSVCB02` → `libiec61850-sv-subscriber` must receive nothing.
 - **SVCB over MMS.** iec61850-rust and IEC61850bean IED servers do not expose `LLN0$MS$MSVCB02`; `sv svcb get` against them must fail.
 
@@ -126,7 +126,7 @@ Checked in under `e2e/testdata/`:
 | File | Role |
 |------|------|
 | `interop.icd` | SCL model (self-server + documentation) |
-| `expected-values.json` | Expected values for **external** adapter assertions (copy of mms-interop `values.json`) |
+| `expected-values.json` | Expected values for **external** adapter assertions (copy of iec61850-interop `values.json`) |
 | `self-server-values.json` | Serialized `domain.IED` seed for `server start --values` |
 | `interop-goose.cid`, `goose.json` | GOOSE fixture `goose-v1` (control blocks, members, value sets) |
 | `interop-sv.cid`, `sv.json` | SV fixture `sv-v1` (streams, members, value sets); `interop-sv.cid` is also `pkg/svops/testdata` |
@@ -137,10 +137,10 @@ Never pass `expected-values.json` to `server start --values`.
 
 ```sh
 make e2e-verify-fixtures
-make e2e-update-fixtures MMS_INTEROP_DIR=../mms-interop
+make e2e-update-fixtures IEC61850_INTEROP_DIR=../iec61850-interop
 ```
 
-Local images default to `mms-interop-*:local`. CI uses digest pins from the lock file.
+Local images default to `iec61850-interop-*:local`. CI uses digest pins from the lock file.
 
 ### Client IED name
 
@@ -163,7 +163,7 @@ make e2e                                              # default: the four client
 IEC61850CTL_E2E_STACKS=all make e2e                   # all 19 CI jobs' stacks
 ```
 
-Images come from `<STACK>_IMAGE` (`LIBIEC61850_IMAGE`, `IEC61850BEAN_IMAGE`, `DSCSYSTEMS_IMAGE`, `IEC61850RUST_IMAGE`), else the lock digest when `CI` is set, else `mms-interop-<stack>:local`.
+Images come from `<STACK>_IMAGE` (`LIBIEC61850_IMAGE`, `IEC61850BEAN_IMAGE`, `DSCSYSTEMS_IMAGE`, `IEC61850RUST_IMAGE`), else the lock digest when `CI` is set, else `iec61850-interop-<stack>:local`.
 
 CI runs each stack as a separate matrix job (`fail-fast: false`). Requires Docker for external/reverse stacks. `IEC61850CTL_BIN` is set by the Makefile.
 
@@ -171,7 +171,7 @@ CI runs each stack as a separate matrix job (`fail-fast: false`). Requires Docke
 
 - **iec61850-rust server, BRCB.** A read of BRCB `TimeOfEntry` is answered object-access-unsupported, and so is a read of the whole BRCB. `get report` and `subscribe report --type BR` on a BRCB therefore fail with exit `6`. The e2e asserts that deterministic failure, naming `ObjectAccessUnsupported` (`adapterStack.brcbUnreadable`). Its URCBs work, since the client reserves before enabling.
 - **dscsystems server, unknown LD.** GetNameList for an unknown domain returns an empty list rather than an error. `list lns` detects an empty LD missing from the server directory and exits `5`, the same as against the other stacks.
-- **Peer limitations upstream.** mms-interop `fixtures/capabilities.json` lists the rest, such as ST writes being denied by every adapter server and dscsystems describing Enum as Integer. None of them affects these journeys.
+- **Peer limitations upstream.** iec61850-interop `fixtures/capabilities.json` lists the rest, such as ST writes being denied by every adapter server and dscsystems describing Enum as Integer. None of them affects these journeys.
 - IEC61850bean SBOw as a **server** (forward `control operate` on SPCSO3) is a registered expected failure; when Bean gains support, replace the failure assertion (do not leave a silent skip). Phase 3A still exercises Bean as a **client** against the Go CLI server.
 - Complex JSON encodings (timestamps, bit/octet strings, arrays, structures) are deferred; see [AUTOMATION.md](AUTOMATION.md).
 - Adapter fault-injection modes (e.g. mid-sequence disconnect, `--skip-select`) are not yet exposed; negative coverage today is CLI/unit + mode/confirmation/CO reject e2e.

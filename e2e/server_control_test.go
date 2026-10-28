@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Reverse control journeys: mms-interop controller adapters → iec61850ctl server.
+// Reverse control journeys: iec61850-interop controller adapters → iec61850ctl server.
 // Operation names match go-iec61850 interop Test*Server_Control_* expectations.
 func TestReverse_ServerControl(t *testing.T) {
 	for _, tc := range reverseCases(prefixServer, "ied-controller") {

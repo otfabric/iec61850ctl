@@ -2,7 +2,7 @@
 
 Generated from `e2e/testdata/examples.json`. Do not edit by hand; run `make e2e-docs`.
 
-mms-interop: `v0.4.0` · IED fixture: `iec61850-v3` · IED name: `InteropIED`
+iec61850-interop: `v0.4.0` · IED fixture: `iec61850-v3` · IED name: `InteropIED`
 
 See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).
 
@@ -25,28 +25,28 @@ Against **`iec61850ctl server start` (self-server)**, leave `IEC61850_IED_NAME` 
 ```bash
 # libiec61850
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
-  mms-interop-libiec61850:local --port 1102
+  iec61850-interop-libiec61850:local --port 1102
 
 # iec61850bean
 docker run --rm -p 1102:1102 --entrypoint iec61850bean-ied-server \
-  mms-interop-iec61850bean:local --port 1102
+  iec61850-interop-iec61850bean:local --port 1102
 
 # dscsystems
 docker run --rm -p 1102:1102 --entrypoint dscsystems-ied-server \
-  mms-interop-dscsystems:local --port 1102
+  iec61850-interop-dscsystems:local --port 1102
 
 # iec61850-rust
 docker run --rm -p 1102:1102 --entrypoint iec61850-rust-ied-server \
-  mms-interop-iec61850-rust:local --port 1102
+  iec61850-interop-iec61850-rust:local --port 1102
 ```
 
 ### Digest-pinned images (CI / reproducible)
 
 ```bash
-LIBIEC61850_IMAGE=ghcr.io/otfabric/mms-interop-libiec61850@sha256:966e17e37e7fb5c22b825443ce79565d51067705c8f8485fd63d4001b4bd31ff
-IEC61850BEAN_IMAGE=ghcr.io/otfabric/mms-interop-iec61850bean@sha256:ab2cda6a77ea054a04a736fdf1c36c5c8f50c766aa41cf5818bd11f3fadfac7d
-DSCSYSTEMS_IMAGE=ghcr.io/otfabric/mms-interop-dscsystems@sha256:899e4d96605a921647e7c079db0b0a7f69c05d0582830b81607bc1a152a8d60a
-IEC61850RUST_IMAGE=ghcr.io/otfabric/mms-interop-iec61850-rust@sha256:c46c83c6d7eaa9800bbe48fb6ca9d25a4e9338d0bfc6f31fbba7813d89e4445d
+LIBIEC61850_IMAGE=ghcr.io/otfabric/iec61850-interop-libiec61850@sha256:966e17e37e7fb5c22b825443ce79565d51067705c8f8485fd63d4001b4bd31ff
+IEC61850BEAN_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850bean@sha256:ab2cda6a77ea054a04a736fdf1c36c5c8f50c766aa41cf5818bd11f3fadfac7d
+DSCSYSTEMS_IMAGE=ghcr.io/otfabric/iec61850-interop-dscsystems@sha256:899e4d96605a921647e7c079db0b0a7f69c05d0582830b81607bc1a152a8d60a
+IEC61850RUST_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850-rust@sha256:c46c83c6d7eaa9800bbe48fb6ca9d25a4e9338d0bfc6f31fbba7813d89e4445d
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
   "$LIBIEC61850_IMAGE" --port 1102
 ```
@@ -230,7 +230,7 @@ iec61850ctl list reports --ld InteropLD --ln LLN0 --format json
 
 Stacks: `offline`
 
-Offline: lists the GSEControl blocks of the mms-interop GOOSE fixture (goose-v1).
+Offline: lists the GSEControl blocks of the iec61850-interop GOOSE fixture (goose-v1).
 
 ```bash
 iec61850ctl goose list --scl e2e/testdata/interop-goose.cid

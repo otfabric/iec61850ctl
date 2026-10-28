@@ -85,7 +85,7 @@ iec61850ctl
 
 **Directory discovery**: Uses go-iec61850 client APIs via `pkg/service` explorer.
 
-**IED name**: `--ied-name` / `IEC61850_IED_NAME` for client domain normalisation. Required against external mms-interop servers (`InteropIED`); **must be unset** when speaking to `iec61850ctl server start`.
+**IED name**: `--ied-name` / `IEC61850_IED_NAME` for client domain normalisation. Required against external iec61850-interop servers (`InteropIED`); **must be unset** when speaking to `iec61850ctl server start`.
 
 ## Code Patterns
 

@@ -50,7 +50,7 @@ const (
 	floatCompareEpsilon = 1e-6
 )
 
-// adapterStack is one mms-interop adapter image.
+// adapterStack is one iec61850-interop adapter image.
 type adapterStack struct {
 	name         string
 	imageEnv     string // overrides the image
@@ -64,7 +64,7 @@ type adapterStack struct {
 	brcbUnreadable bool
 }
 
-// adapterStacks lists every mms-interop stack the e2e suite runs against.
+// adapterStacks lists every iec61850-interop stack the e2e suite runs against.
 var adapterStacks = []adapterStack{
 	{name: stackLibIEC61850, imageEnv: "LIBIEC61850_IMAGE", readyTimeout: libReadyTimeout, goose: true, sv: true},
 	{name: stackIEC61850Bean, imageEnv: "IEC61850BEAN_IMAGE", readyTimeout: beanReadyTimeout},
@@ -121,12 +121,12 @@ type Lock struct {
 	SourceCommit     string `json:"source_commit"`
 	SourceTag        string `json:"source_tag"`
 	FixtureRevision  string `json:"fixture_revision"`
-	// GooseFixtureRevision is the mms-interop GOOSE fixture (goose.json).
+	// GooseFixtureRevision is the iec61850-interop GOOSE fixture (goose.json).
 	GooseFixtureRevision string `json:"goose_fixture_revision"`
-	// SVFixtureRevision is the mms-interop SV fixture (sv.json).
+	// SVFixtureRevision is the iec61850-interop SV fixture (sv.json).
 	SVFixtureRevision string `json:"sv_fixture_revision"`
 	// SVCBOverMMS records which IED servers expose LLN0$MS$MSVCB02
-	// (mms-interop capabilities.json svcbOverMms).
+	// (iec61850-interop capabilities.json svcbOverMms).
 	SVCBOverMMS      map[string]bool   `json:"svcb_over_mms"`
 	Files            map[string]string `json:"files"`
 	Images           map[string]string `json:"images"`
@@ -392,7 +392,7 @@ func resolveImage(stack string) string {
 			return img
 		}
 	}
-	return "mms-interop-" + a.name + ":local"
+	return "iec61850-interop-" + a.name + ":local"
 }
 
 func entrypointForStack(stack string) string {

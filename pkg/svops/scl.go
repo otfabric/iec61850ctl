@@ -176,7 +176,7 @@ func ParseOptFlds(s string) (sv.OptFlds, error) {
 }
 
 // ParseSmpMod accepts the SCL names (SmpPerPeriod, SmpPerSec, SecPerSmp),
-// the mms-interop names (samples-per-period, samples-per-second,
+// the iec61850-interop names (samples-per-period, samples-per-second,
 // seconds-per-sample) and 0-2.
 func ParseSmpMod(s string) (sv.SmpMod, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {

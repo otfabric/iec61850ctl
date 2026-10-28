@@ -137,7 +137,7 @@ clean: ## Clean the build artifacts
 e2e-verify-fixtures: ## Verify e2e/testdata hashes against interop.lock.json
 	@./scripts/verify-e2e-fixtures.sh
 
-e2e-update-fixtures: ## Copy fixtures from MMS_INTEROP_DIR and refresh interop.lock.json
+e2e-update-fixtures: ## Copy fixtures from IEC61850_INTEROP_DIR and refresh interop.lock.json
 	@./scripts/update-e2e-fixtures.sh
 
 e2e: build-nocheck e2e-verify-fixtures ## Black-box CLI e2e against selected stacks

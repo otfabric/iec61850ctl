@@ -11,7 +11,7 @@ import (
 )
 
 // registerInteropControls registers the fixture controllable objects used by
-// reverse e2e / mms-interop controller adapters:
+// reverse e2e / iec61850-interop controller adapters:
 //
 //	GGIO1.SPCSO1 — direct-with-normal-security
 //	GGIO1.SPCSO2 — sbo-with-normal-security

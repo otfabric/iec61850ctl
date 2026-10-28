@@ -187,7 +187,7 @@ func (h *ctlServerHandle) stop() {
 	}
 }
 
-// adapterOpResult is one JSONL operation result from an mms-interop adapter.
+// adapterOpResult is one JSONL operation result from an iec61850-interop adapter.
 type adapterOpResult struct {
 	Operation string `json:"operation"`
 	OK        bool   `json:"ok"`

@@ -18,7 +18,7 @@
 
 ### Summary
 
-Sampled Values support on [go-iec61850 v1.2.1](https://github.com/otfabric/go-iec61850/releases/tag/v1.2.1), interop e2e against the SV adapters of [mms-interop v0.4.0](https://github.com/otfabric/mms-interop/releases/tag/v0.4.0), and GOOSE/SV reference pages with real example sessions.
+Sampled Values support on [go-iec61850 v1.2.1](https://github.com/otfabric/go-iec61850/releases/tag/v1.2.1), interop e2e against the SV adapters of [mms-interop v0.4.0](https://github.com/otfabric/iec61850-interop/releases/tag/v0.4.0), and GOOSE/SV reference pages with real example sessions.
 
 ### Highlights
 
@@ -125,7 +125,7 @@ GOOSE support on [go-iec61850 v1.1.0](https://github.com/otfabric/go-iec61850/re
 - `cmd/` is driven in-process against the bundled server, with golden output for every format.
 - A chaos proxy injects stalls, resets and slow peers, with goroutine-leak checks.
 - GOOSE e2e tests run over the go-iec61850 in-memory hub.
-- Interop e2e now covers all four [mms-interop v0.3.0](https://github.com/otfabric/mms-interop/releases/tag/v0.3.0) stacks, with images pinned by digest. 20 CI jobs in total:
+- Interop e2e now covers all four [mms-interop v0.3.0](https://github.com/otfabric/iec61850-interop/releases/tag/v0.3.0) stacks, with images pinned by digest. 20 CI jobs in total:
   - **Peers.** libiec61850 and iec61850bean as before, plus [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust).
   - **Client and reverse journeys.** Run against all four stacks: client, reverse control/report and reverse reader.
   - **GOOSE.** `goose publish`, `subscribe` and `sniff` against the GOOSE adapters of libiec61850, dscsystems and iec61850-rust, in both directions, on a Docker bridge.
@@ -179,7 +179,7 @@ No CLI flags or output schema change.
 
 ### Summary
 
-Control and scalar write CLI, buffered-report purge/resume, reverse reader interoperability, and stronger failure/automation contracts. Requires [mms-interop v0.1.4](https://github.com/otfabric/mms-interop/releases/tag/v0.1.4) for the ING `SetInt1` write fixture and digest-pinned CI images.
+Control and scalar write CLI, buffered-report purge/resume, reverse reader interoperability, and stronger failure/automation contracts. Requires [mms-interop v0.1.4](https://github.com/otfabric/iec61850-interop/releases/tag/v0.1.4) for the ING `SetInt1` write fixture and digest-pinned CI images.
 
 ### Highlights
 
@@ -226,7 +226,7 @@ Lock file `e2e/testdata/interop.lock.json`:
 | libiec61850 image | `ghcr.io/otfabric/mms-interop-libiec61850@sha256:9c29847dbd0523002b113a2fd1806cfb523bdd1610ae2e47f53b6156ec15fde7` |
 | iec61850bean image | `ghcr.io/otfabric/mms-interop-iec61850bean@sha256:d95a64e2cb801db24ce9836e9dacc1035bf5131056802e241e9de6546861c611` |
 
-Release provenance: [mms-interop v0.1.4](https://github.com/otfabric/mms-interop/releases/tag/v0.1.4) / [actions run](https://github.com/otfabric/mms-interop/actions/runs/30224434315).
+Release provenance: [mms-interop v0.1.4](https://github.com/otfabric/iec61850-interop/releases/tag/v0.1.4) / [actions run](https://github.com/otfabric/iec61850-interop/actions/runs/30224434315).
 
 ### Scope notes
 
@@ -239,7 +239,7 @@ Release provenance: [mms-interop v0.1.4](https://github.com/otfabric/mms-interop
 - `github.com/otfabric/go-iec61850` **v1.0.6**
 - `github.com/otfabric/go-mms` **v1.0.5**
 - Go **1.24+**
-- mms-interop adapters **[v0.1.4](https://github.com/otfabric/mms-interop/releases/tag/v0.1.4)**
+- mms-interop adapters **[v0.1.4](https://github.com/otfabric/iec61850-interop/releases/tag/v0.1.4)**
 
 ---
 

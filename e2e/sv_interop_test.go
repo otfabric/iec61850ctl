@@ -21,8 +21,8 @@ import (
 )
 
 // SV interop journeys (sv-<stack>): raw Ethernet between iec61850ctl and the
-// mms-interop Sampled Values adapters on a Docker bridge network
-// (mms-interop docs/sv.md), with the same container setup as the GOOSE
+// iec61850-interop Sampled Values adapters on a Docker bridge network
+// (iec61850-interop docs/sv.md), with the same container setup as the GOOSE
 // journeys. Each journey runs for both fixture streams: MSVCB01 (9-2LE,
 // 4000 samples/s, one ASDU per frame) and MSVCB02 (generic dataset, 1000
 // samples/s, four ASDUs per frame, every optional field).
@@ -36,7 +36,7 @@ import (
 // | sv publish → peer subscriber: loss < 1 %                 | required    | required   | required      |
 // | sv svcb get MSVCB02 over MMS (forward IED server)        | required    | required   | n/a           |
 //
-// Registered limitation (mms-interop capabilities.json): libiec61850's
+// Registered limitation (iec61850-interop capabilities.json): libiec61850's
 // SVReceiver drops ASDUs whose smpMod is two octets, which go-iec61850
 // sends, so sv publish of MSVCB02 → libiec61850-sv-subscriber must receive
 // nothing. iec61850bean has no SV support and no MSVCB02 over MMS;
