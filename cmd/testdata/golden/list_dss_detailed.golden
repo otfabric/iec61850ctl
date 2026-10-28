@@ -1,7 +1,16 @@
-Found 1 data set(s) in 'InteropLD/LLN0':
+Found 2 data set(s) in 'InteropLD/LLN0':
 
   1. dsInterop
      Deletable: false
      Members (2):
        1. InteropLD/GGIO1.SPS1.stVal[ST]
        2. InteropLD/LLN0.Mod.stVal[ST]
+
+  2. dsSvGeneric
+     Deletable: false
+     Members (5):
+       1. InteropLD/MMXU1.TotW.mag.f[MX]
+       2. InteropLD/MMXU1.TotW.q[MX]
+       3. InteropLD/MMTR1.TotVAh.actVal[ST]
+       4. InteropLD/MMTR1.TotVAh.q[ST]
+       5. InteropLD/LLN0.Mod.stVal[ST]

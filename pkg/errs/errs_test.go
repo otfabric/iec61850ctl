@@ -13,6 +13,7 @@ import (
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-iec61850/goose"
+	"github.com/otfabric/go-iec61850/sv"
 	"github.com/otfabric/go-mms"
 )
 
@@ -82,6 +83,11 @@ func TestExitCode(t *testing.T) {
 		{wrap(goose.ErrInterfaceNotFound), ExitNotFound},
 		{wrap(goose.ErrUnsupportedPlatform), ExitUnsupported},
 		{wrap(goose.ErrPermission), ExitRejected},
+		{wrap(sv.ErrInvalidConfig), ExitUsage},
+		{wrap(sv.ErrInvalidValue), ExitUsage},
+		{wrap(sv.ErrSCL), ExitUsage},
+		{wrap(sv.ErrValidation), ExitUsage},
+		{wrap(sv.ErrNotFound), ExitNotFound},
 		{wrap(ErrNotFound), ExitNotFound},
 		{wrap(iec61850.ErrNotFound), ExitNotFound},
 		{&fs.PathError{Op: "open", Path: "x", Err: os.ErrNotExist}, ExitNotFound},

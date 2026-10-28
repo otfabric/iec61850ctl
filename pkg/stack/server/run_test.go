@@ -17,6 +17,7 @@ import (
 	"time"
 
 	iec61850 "github.com/otfabric/go-iec61850"
+	"github.com/otfabric/go-iec61850/sv"
 
 	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
@@ -221,5 +222,34 @@ func TestResolveIEDNamePrefersServerIED(t *testing.T) {
 	defer func() { _ = r.Close() }()
 	if r.IEDName() != "OtherIED" {
 		t.Fatalf("picked %q", r.IEDName())
+	}
+}
+
+func TestStartWithSV(t *testing.T) {
+	t.Parallel()
+	hub := sv.NewHub()
+	port := hub.NewPort(sv.MAC{0x02, 0, 0, 0, 0, 1})
+	t.Cleanup(func() { _ = port.Close() })
+	r, err := Start(context.Background(), RunConfig{
+		SclPath: repoPath(t, "e2e", "testdata", "interop-sv.cid"), Host: "127.0.0.1",
+		SV: port, SVStartDisabled: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = r.Close() }()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	c, err := iec61850.Dial(ctx, r.Addr(), iec61850.DialOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	cb, err := c.GetMSVCB(ctx, "InteropLD", "LLN0$MS$MSVCB01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cb.SvEna || cb.MsvID != "InteropSv92LE" {
+		t.Fatalf("MSVCB01 %+v, want disabled InteropSv92LE", cb)
 	}
 }

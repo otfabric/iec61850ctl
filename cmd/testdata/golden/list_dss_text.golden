@@ -1,4 +1,5 @@
-Found 1 data set(s) in 'InteropLD/LLN0':
+Found 2 data set(s) in 'InteropLD/LLN0':
   1. dsInterop
+  2. dsSvGeneric
 
 Use --detailed flag to see DataSet members

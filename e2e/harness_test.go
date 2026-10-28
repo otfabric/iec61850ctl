@@ -34,12 +34,13 @@ const (
 	stackRust         = "iec61850-rust"
 	stackSelf         = "self"
 
-	// Reverse stacks (adapter clients → iec61850ctl server) and GOOSE stacks
+	// Reverse stacks (adapter clients → iec61850ctl server), GOOSE and SV stacks
 	// are named by prefixing an adapter stack. They are opt-in via
 	// IEC61850CTL_E2E_STACKS; they are not part of the default set.
 	prefixServer       = "server-"
 	prefixServerReader = "server-reader-"
 	prefixGoose        = "goose-"
+	prefixSV           = "sv-"
 
 	containerInternalPort = 1102
 
@@ -55,6 +56,7 @@ type adapterStack struct {
 	imageEnv     string // overrides the image
 	readyTimeout time.Duration
 	goose        bool // ships *-goose-publisher and *-goose-subscriber
+	sv           bool // ships *-sv-publisher and *-sv-subscriber
 
 	// brcbUnreadable: the server answers a read of BRCB TimeOfEntry, and so
 	// of the whole BRCB, with object-access-unsupported (iec61850-rust).
@@ -64,10 +66,10 @@ type adapterStack struct {
 
 // adapterStacks lists every mms-interop stack the e2e suite runs against.
 var adapterStacks = []adapterStack{
-	{name: stackLibIEC61850, imageEnv: "LIBIEC61850_IMAGE", readyTimeout: libReadyTimeout, goose: true},
+	{name: stackLibIEC61850, imageEnv: "LIBIEC61850_IMAGE", readyTimeout: libReadyTimeout, goose: true, sv: true},
 	{name: stackIEC61850Bean, imageEnv: "IEC61850BEAN_IMAGE", readyTimeout: beanReadyTimeout},
-	{name: stackDSCSystems, imageEnv: "DSCSYSTEMS_IMAGE", readyTimeout: libReadyTimeout, goose: true},
-	{name: stackRust, imageEnv: "IEC61850RUST_IMAGE", readyTimeout: libReadyTimeout, goose: true, brcbUnreadable: true},
+	{name: stackDSCSystems, imageEnv: "DSCSYSTEMS_IMAGE", readyTimeout: libReadyTimeout, goose: true, sv: true},
+	{name: stackRust, imageEnv: "IEC61850RUST_IMAGE", readyTimeout: libReadyTimeout, goose: true, sv: true, brcbUnreadable: true},
 }
 
 func lookupAdapter(name string) (adapterStack, bool) {
@@ -120,10 +122,15 @@ type Lock struct {
 	SourceTag        string `json:"source_tag"`
 	FixtureRevision  string `json:"fixture_revision"`
 	// GooseFixtureRevision is the mms-interop GOOSE fixture (goose.json).
-	GooseFixtureRevision string            `json:"goose_fixture_revision"`
-	Files                map[string]string `json:"files"`
-	Images               map[string]string `json:"images"`
-	RequiredCommands     map[string]bool   `json:"required_commands"`
+	GooseFixtureRevision string `json:"goose_fixture_revision"`
+	// SVFixtureRevision is the mms-interop SV fixture (sv.json).
+	SVFixtureRevision string `json:"sv_fixture_revision"`
+	// SVCBOverMMS records which IED servers expose LLN0$MS$MSVCB02
+	// (mms-interop capabilities.json svcbOverMms).
+	SVCBOverMMS      map[string]bool   `json:"svcb_over_mms"`
+	Files            map[string]string `json:"files"`
+	Images           map[string]string `json:"images"`
+	RequiredCommands map[string]bool   `json:"required_commands"`
 }
 
 type readyEvent struct {
@@ -294,6 +301,9 @@ func knownStacks() []string {
 		if a.goose {
 			out = append(out, prefixGoose+a.name)
 		}
+		if a.sv {
+			out = append(out, prefixSV+a.name)
+		}
 	}
 	return out
 }
@@ -302,7 +312,7 @@ func parseStacks(raw string) map[string]bool {
 	out := make(map[string]bool)
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		// Default: forward client stacks + self. Reverse server-* and goose-*
+		// Default: forward client stacks + self. Reverse server-*, goose-* and sv-*
 		// stacks are opt-in (the CI matrix selects them one by one).
 		for _, name := range clientStacks() {
 			out[name] = true

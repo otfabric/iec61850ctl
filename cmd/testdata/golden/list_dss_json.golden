@@ -1,5 +1,8 @@
 [
   {
     "name": "dsInterop"
+  },
+  {
+    "name": "dsSvGeneric"
   }
 ]

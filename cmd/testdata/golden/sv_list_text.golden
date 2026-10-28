@@ -1,0 +1,3 @@
+SVCBREF                              APPID   DST                VLAN  SVID              SMPRATE          NOASDU  CONFREV  PROFILE  DATSET                                OCTETS
+InteropIEDInteropLD/LLN0$MS$MSVCB01  0x4000  01:0c:cd:04:00:00  0/4   InteropSv92LE     80 SmpPerPeriod  1       1        9-2LE    InteropIEDInteropLD/LLN0$PhsMeas1     64
+InteropIEDInteropLD/LLN0$MS$MSVCB02  0x4001  01:0c:cd:04:00:01  0/4   InteropSvGeneric  1000 SmpPerSec   4       1        generic  InteropIEDInteropLD/LLN0$dsSvGeneric  20

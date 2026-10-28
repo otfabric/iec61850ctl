@@ -1,0 +1,9 @@
+MSVCB InteropLD/LLN0$MS$MSVCB01
+  SvEna:      true
+  MsvID:      InteropSv92LE
+  DatSet:     InteropLD/LLN0$PhsMeas1
+  ConfRev:    1
+  SmpRate:    80 SmpPerPeriod
+  OptFlds:    sample-synchronized
+  DstAddress: 01:0c:cd:04:00:00 appid 0x4000 vlan 0 prio 4
+  noASDU:     1

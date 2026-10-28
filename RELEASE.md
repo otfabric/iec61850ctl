@@ -1,5 +1,46 @@
 # iec61850ctl Releases
 
+## v0.4.0
+
+**Date:** 2026-10-28
+
+### Summary
+
+Sampled Values support on [go-iec61850 v1.2.1](https://github.com/otfabric/go-iec61850/releases/tag/v1.2.1), interop e2e against the SV adapters of [mms-interop v0.4.0](https://github.com/otfabric/mms-interop/releases/tag/v0.4.0), and GOOSE/SV reference pages with real example sessions.
+
+### Highlights
+
+#### Sampled Values (`sv` subtree)
+
+- **`sv list --scl`**: the SampledValueControl blocks of an SCL file with their SMV address, svID, rate, noASDU, OptFlds, profile (`9-2LE` or `generic`) and the sample layout of the dataset. Output as text or JSON.
+- **`sv sniff --iface`**: decodes SV ASDUs on an interface without supervision. Filters: `--appid`, `--dst`, `--sv-id`. Samples are decoded with `--layout` (`9-2LE` or a list of leaf encodings) or the layout of `--scl`/`--svcb`, else shown as hex. `--sample-every` thins the output.
+- **`sv subscribe --iface --scl --svcb`**: a subscription built from SCL that validates confRev, datSet, smpRate/smpMod and the sample size, and supervises smpCnt per stream (start, gap, duplicate, out-of-order, timeout, restored, synch, confrev, invalid). A statistics table (rate, ASDUs, lost, duplicates, out-of-order, invalid, timeouts, smpCnt/wrap, smpSynch, confRev) prints every `--stats-interval` and at the end; `--sample-every` prints every Nth sample, with 9-2LE channels in amperes and volts. JSON Lines with `--format jsonl`.
+- **`sv publish`**: publishes an SVCB from SCL at its configured rate.
+  - The guard rails are those of `goose publish`: an explicit `--iface`, `--yes`, and frames with the simulation bit set unless `--simulation=false` is combined with `--live`.
+  - `--value` sets sample leaves by index, member reference, `REF#N`, or 9-2LE channel (`IA`…`VN`, `qIA`…`qVN`). Qualities accept names (`invalid+test`), a 32-bit word or 13 binary digits.
+  - `--waveform CHANNEL=PEAK[,HZ[,PHASE]]` injects a sine on a 9-2LE channel (peak A or V), computed from the sample index so it is exact under scheduling jitter.
+  - `--smp-synch`, `--frequency`, `--src`, `--bare-domain`. The summary reports samples, frames, skipped and late samples, and send errors.
+- **`sv svcb get|set`**: reads and writes a multicast SV control block over MMS: SvEna, MsvID, DatSet, SmpRate, OptFlds, SmpMod. SvEna is written last.
+- SV transport and validation errors map onto the usual exit codes (`2`, `5`, `6`, `8`).
+
+#### Documentation
+
+- [docs/SV.md](docs/SV.md) (new) and [docs/GOOSE.md](docs/GOOSE.md) (rewritten) document every subcommand and flag with example sessions captured from real runs (`TestCaptureDocExamples`). The README command overview covers `sv`.
+- `TestDocsCoverCommands` fails when a goose/sv subcommand or flag is missing from its page or the README. `TestDocExamplesParse` parses every documented command line and every cobra `Example`.
+
+#### Interop
+
+- e2e now pins mms-interop v0.4.0: IED fixture `iec61850-v3` (adds `MSVCB02`), GOOSE fixture `goose-v1`, SV fixture `sv-v1`.
+- New CI jobs `e2e / sv-libiec61850`, `sv-dscsystems` and `sv-iec61850-rust`. They cover `sv subscribe`/`sv sniff` against each stack's SV publisher and `sv publish` against each stack's SV subscriber, for both the 9-2LE and the generic stream, with value, header and loss assertions.
+- The forward jobs read `MSVCB02` with `sv svcb get` from the libiec61850 and dscsystems IED servers, and assert the failure on the stacks that do not model it.
+- Registered limitation: libiec61850's SV subscriber drops ASDUs with a two-octet smpMod, which go-iec61850 sends.
+
+#### Fixed
+
+- go-iec61850 v1.2.1: `get ds` of a dataset that does not exist exits `5` on every stack; the first report of a member without a previous value no longer carries a spurious `quality-change` reason.
+- `goose publish` and `sv publish` share one implementation of the publish guard rails.
+- Three test flakes (GOOSE initial state, report keep-alive cancellation, parallel golangci-lint runs).
+
 ## v0.3.0
 
 **Date:** 2026-10-28

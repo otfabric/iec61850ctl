@@ -18,6 +18,7 @@ import (
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-iec61850/goose"
 	"github.com/otfabric/go-iec61850/scl"
+	"github.com/otfabric/go-iec61850/sv"
 	"github.com/otfabric/go-mms/transport/iso"
 
 	"github.com/otfabric/iec61850ctl/pkg/errs"
@@ -44,6 +45,11 @@ type RunConfig struct {
 	// leaves GoEna false until a client enables publishing.
 	GOOSE              goose.Transport
 	GOOSEStartDisabled bool
+	// SV, when non-nil, publishes the model's MSVCBs on this transport and
+	// exposes them over MMS (LLN0$MS$<name>). SVStartDisabled leaves SvEna
+	// false until a client enables a block.
+	SV              sv.Transport
+	SVStartDisabled bool
 }
 
 // Running is a started server. Close it to stop serving.
@@ -152,6 +158,11 @@ func Start(ctx context.Context, cfg RunConfig) (*Running, error) {
 	if cfg.GOOSE != nil {
 		if _, err := srv.EnableGOOSE(iec61850.GOOSEOptions{Transport: cfg.GOOSE, StartDisabled: cfg.GOOSEStartDisabled, Logger: cfg.Logger}); err != nil {
 			return fail(fmt.Errorf("enable GOOSE: %w", err))
+		}
+	}
+	if cfg.SV != nil {
+		if _, err := srv.EnableSV(iec61850.SVOptions{Transport: cfg.SV, StartDisabled: cfg.SVStartDisabled, Logger: cfg.Logger}); err != nil {
+			return fail(fmt.Errorf("enable SV: %w", err))
 		}
 	}
 	if srv.JournalEngine() == nil {
