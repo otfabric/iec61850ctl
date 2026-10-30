@@ -1,5 +1,16 @@
 # iec61850ctl Releases
 
+## v0.6.0
+
+**Date:** 2026-10-30
+**Previous release:** v0.5.0
+
+### Dependencies
+
+- `go-iec61850` v1.2.2 → v1.3.0, `golang.org/x/sys` → v0.44.0 (govulncheck). Requires Go 1.25.
+
+---
+
 ## v0.5.0
 
 **Date:** 2026-10-30
