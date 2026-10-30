@@ -1,6 +1,6 @@
 # iec61850ctl
 
-[![Go](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.25%2B-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/otfabric/iec61850ctl.svg)](https://pkg.go.dev/github.com/otfabric/iec61850ctl)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/otfabric/iec61850ctl/actions/workflows/ci.yml/badge.svg)](https://github.com/otfabric/iec61850ctl/actions/workflows/ci.yml)
@@ -83,7 +83,7 @@ tar xzf iec61850ctl-$VERSION-linux-amd64.tar.gz
 
 ### From source
 
-Requires Go 1.24+.
+Requires Go 1.25+.
 
 ```sh
 git clone https://github.com/otfabric/iec61850ctl.git
