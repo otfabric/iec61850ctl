@@ -3,8 +3,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/otfabric/go-cotp v1.1.0 h1:wMBwur0LnhMMstZYpw/r4iZfalEKcKJSA+XqfUjCGfQ=
 github.com/otfabric/go-cotp v1.1.0/go.mod h1:PAwJZD+yhoo4jbd9Iy6ZdAOeDBW0UxHNpr8VsysBSDg=
-github.com/otfabric/go-iec61850 v1.3.0 h1:RVW/OcTDU9p2YQ8cfYi+6La7fRVBZLQTurhw3q1rU+w=
-github.com/otfabric/go-iec61850 v1.3.0/go.mod h1:2EqrxRDaoomz6fNRcB4TElVAs0qgLVSgoIIipSedppU=
+github.com/otfabric/go-iec61850 v1.4.0 h1:qa6mzhZuA8+tO3aCsdzQyd58Y2Mw/ZdLF952KnbYIsc=
+github.com/otfabric/go-iec61850 v1.4.0/go.mod h1:Qzz1EovCrMXRjs4s7lGugReM6GUdVY8geBM/InLYn+Q=
 github.com/otfabric/go-mms v1.2.2 h1:LYs8xoClZ0XrM6n7E9boot/fMoKJDLL9HAnDTBa9JDs=
 github.com/otfabric/go-mms v1.2.2/go.mod h1:fkT3WO5SVRTfN0+U5pnv3UyykW91FBaSFhA4O04BguY=
 github.com/otfabric/go-tpkt v1.0.1 h1:utCnT14ndultnxPrrHf5txkT9U/EMzYBCoSjSeiAJRk=
