@@ -256,7 +256,7 @@ func TestGooseTransportErrors(t *testing.T) {
 		err  error
 		code int
 	}{
-		{goose.ErrPermission, errs.ExitRejected},
+		{goose.ErrPermission, errs.ExitPermission},
 		{goose.ErrInterfaceNotFound, errs.ExitNotFound},
 		{goose.ErrUnsupportedPlatform, errs.ExitUnsupported},
 	}

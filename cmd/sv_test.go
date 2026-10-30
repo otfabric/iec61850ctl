@@ -335,7 +335,7 @@ func TestSVTransportErrors(t *testing.T) {
 		err  error
 		code int
 	}{
-		{sv.ErrPermission, errs.ExitRejected},
+		{sv.ErrPermission, errs.ExitPermission},
 		{sv.ErrInterfaceNotFound, errs.ExitNotFound},
 		{sv.ErrUnsupportedPlatform, errs.ExitUnsupported},
 	}

@@ -170,7 +170,7 @@ CI runs each stack as a separate matrix job (`fail-fast: false`). Requires Docke
 ## Known limitations / deferred
 
 - **iec61850-rust server, BRCB.** A read of BRCB `TimeOfEntry` is answered object-access-unsupported, and so is a read of the whole BRCB. `get report` and `subscribe report --type BR` on a BRCB therefore fail with exit `6`. The e2e asserts that deterministic failure, naming `ObjectAccessUnsupported` (`adapterStack.brcbUnreadable`). Its URCBs work, since the client reserves before enabling.
-- **dscsystems server, unknown LD.** GetNameList for an unknown domain returns an empty list rather than an error. `list lns` detects an empty LD missing from the server directory and exits `5`, the same as against the other stacks.
+- **dscsystems server, unknown LD.** GetNameList for an unknown domain returns an empty list rather than an error. `list lns` detects an empty LD missing from the server directory and exits `11`, the same as against the other stacks.
 - **Peer limitations upstream.** iec61850-interop `fixtures/capabilities.json` lists the rest, such as ST writes being denied by every adapter server and dscsystems describing Enum as Integer. None of them affects these journeys.
 - IEC61850bean SBOw as a **server** (forward `control operate` on SPCSO3) is a registered expected failure; when Bean gains support, replace the failure assertion (do not leave a silent skip). Phase 3A still exercises Bean as a **client** against the Go CLI server.
 - Complex JSON encodings (timestamps, bit/octet strings, arrays, structures) are deferred; see [AUTOMATION.md](AUTOMATION.md).

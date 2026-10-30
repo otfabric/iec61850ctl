@@ -173,7 +173,7 @@ MMS (`LLN0$GO$<name>`, `LLN0$MS$<name>`), so `goose gocb get` and `sv svcb
 get` work against it. It does **not** publish GOOSE or SV on a network
 interface: writing GoEna or SvEna is accepted, but the block reads back
 disabled and no frames are sent, so `gocb set --enable` / `svcb set --enable`
-exit `7`. To put frames on the wire, use `goose
+exit `12`. To put frames on the wire, use `goose
 publish` or `sv publish` (see [GOOSE.md](GOOSE.md) and [SV.md](SV.md)).
 
 ## Requirements

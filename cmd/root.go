@@ -74,6 +74,23 @@ Exit codes:
 	PersistentPreRunE: persistentPreRun,
 }
 
+// applyFormatEnv fills a command's --format, when it has one and it was not
+// given, from IEC61850CTL_FORMAT (canonical) or IEC61850CTL_OUTPUT_FORMAT.
+func applyFormatEnv(cmd *cobra.Command) error {
+	f := cmd.Flags().Lookup("format")
+	if f == nil || f.Changed {
+		return nil
+	}
+	v := os.Getenv("IEC61850CTL_FORMAT")
+	if v == "" {
+		v = os.Getenv("IEC61850CTL_OUTPUT_FORMAT")
+	}
+	if v == "" {
+		return nil
+	}
+	return f.Value.Set(v)
+}
+
 func persistentPreRun(cmd *cobra.Command, _ []string) error {
 	// Cobra validates required flags and flag groups only after this hook;
 	// do it here so those failures classify as usage errors (exit 2).
@@ -84,6 +101,9 @@ func persistentPreRun(cmd *cobra.Command, _ []string) error {
 		return errs.Mark(err, errs.ErrInvalidInput)
 	}
 	runState.entered = true
+	if err := applyFormatEnv(cmd); err != nil {
+		return err
+	}
 	level := logLevelFlag
 	if debug && !cmd.Flags().Changed("log-level") {
 		level = "debug"

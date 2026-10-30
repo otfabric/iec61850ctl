@@ -32,11 +32,11 @@ type errorBody struct {
 // code using errs.ExitCode (errors.Is/As classification, never strings).
 func statusForError(err error) (int, string) {
 	switch errs.ExitCode(err) {
-	case errs.ExitUsage:
+	case errs.ExitUsage, errs.ExitInvalidInput:
 		return http.StatusBadRequest, codeInvalidInput
 	case errs.ExitNotFound:
 		return http.StatusNotFound, codeNotFound
-	case errs.ExitRejected:
+	case errs.ExitRejected, errs.ExitPermission:
 		return http.StatusForbidden, codeRejected
 	case errs.ExitUnsupported:
 		return http.StatusNotImplemented, codeUnsupported

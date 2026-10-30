@@ -27,7 +27,7 @@ as MMS domain, which is why the subscribe examples pass `--bare-domain`.
 | macOS, *BSD | `/dev/bpf*` | read/write access to `/dev/bpf*` (on macOS, the `access_bpf` group) |
 | Windows | unsupported | exit code `8` |
 
-A missing interface exits with code `5`, and a permission error with `6`.
+A missing interface exits with code `11`, and a permission error with `9`.
 
 ## Control block selection
 
@@ -128,7 +128,7 @@ Decodes every GOOSE frame on an interface, without validation or supervision.
 | `--dst` | all | only frames to this destination MAC; joins that multicast group instead of going promiscuous |
 | `--gocb-ref` | all | only frames with this gocbRef |
 | `--count` | `0` (unlimited) | stop after this many matching frames |
-| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `4` if the count was not reached |
+| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `5` if the count was not reached |
 | `--format` | `text` | `text` or `jsonl` |
 
 Frames that cannot be decoded are reported on stderr and counted in the
@@ -171,7 +171,7 @@ Subscribes to one GoCB from SCL, with validation and supervision.
 | `--only-changes` | `false` | print state changes only, not retransmissions |
 | `--accept-simulation` | `false` | accept frames with the Edition 2 simulation bit set |
 | `--count` | `0` (unlimited) | stop after this many valid messages |
-| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `4` if the count was not reached |
+| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `5` if the count was not reached |
 | `--format` | `text` | `text` or `jsonl` |
 
 The subscription filters on the GoCB's destination MAC, APPID and gocbRef.
@@ -223,7 +223,7 @@ Subscribing to InteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
 
 Without `--bare-domain`, the subscription expects the SCL's on-wire gocbRef
 (`InteropIEDInteropLD/...`). That filter matches none of this publisher's
-frames, so `--count` is not reached and the command exits `4`:
+frames, so `--count` is not reached and the command exits `5`:
 
 ```console
 $ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --count 1 --duration 2s
@@ -380,7 +380,7 @@ Connecting to 127.0.0.1:10102
 - **Writable attributes.** Only GoEna, GoID and DatSet can be written.
 - **Order.** GoEna is written last. That lets you change GoID or DatSet and enable in one call, but only if the block is already disabled.
 - **Disabled-only changes.** Servers accept GoID and DatSet changes only while GoEna is false. A write the server refuses exits with code `6`.
-- **After a write.** `set` prints the GoCB as read back from the server. If `--enable` or `--disable` was given and GoEna reads back the other value (the server accepted the write but does not publish), `set` exits with code `7`.
+- **After a write.** `set` prints the GoCB as read back from the server. If `--enable` or `--disable` was given and GoEna reads back the other value (the server accepted the write but does not publish), `set` exits with code `12`.
 
 A GoID change on an enabled block is refused:
 
@@ -430,11 +430,13 @@ The codes are the same as for the rest of the CLI ([AUTOMATION.md](AUTOMATION.md
 
 | Code | GOOSE cases |
 |------|-------------|
-| `2` | missing `--yes`, `--iface` or `--live`; bad `--value`, APPID or MAC; an SCL that cannot be parsed |
-| `4` | `--count` not reached before `--duration` (sniff and subscribe) |
-| `5` | interface or control block not found |
-| `6` | raw socket permission denied; GoCB write rejected |
+| `2` | missing `--yes`, `--iface` or `--live`; bad APPID or MAC |
+| `3` | bad `--value`; an SCL that cannot be parsed |
+| `5` | `--count` not reached before `--duration` (sniff and subscribe) |
+| `6` | GoCB write rejected |
+| `9` | raw socket permission denied |
 | `8` | platform without a raw transport; a connection without GoCB access |
+| `11` | interface or control block not found |
 
 ## Limitations
 

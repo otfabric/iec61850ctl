@@ -13,7 +13,7 @@ import (
 	"github.com/otfabric/iec61850ctl/pkg/errs"
 )
 
-// TestExitCodes pins the documented exit-code contract (README "Exit codes").
+// TestExitCodes pins the documented exit-code contract (docs/exitcodes.md).
 func TestExitCodes(t *testing.T) {
 	tmp := t.TempDir()
 	badJSON := filepath.Join(tmp, "bad.json")
@@ -134,4 +134,18 @@ func TestEnvHostPort(t *testing.T) {
 	// --port wins over the environment.
 	r = runCLI(t, "--port", strconvItoa(testServer.port), "list", "lds")
 	expectCode(t, r, errs.ExitOK)
+}
+
+// IEC61850CTL_OUTPUT_FORMAT is accepted; IEC61850CTL_FORMAT is canonical and
+// wins. An invalid value proves that the variable reached --format.
+func TestFormatEnv(t *testing.T) {
+	args := []string{"goose", "list", "--scl", gooseFixture()}
+	t.Setenv("IEC61850CTL_OUTPUT_FORMAT", "xml")
+	if r := runCLI(t, args...); r.code != errs.ExitUsage || !strings.Contains(r.stderr, "invalid --format") {
+		t.Fatalf("OUTPUT_FORMAT ignored: exit %d (%s)", r.code, r.stderr)
+	}
+	t.Setenv("IEC61850CTL_FORMAT", "text")
+	if r := runCLI(t, args...); r.code != errs.ExitOK {
+		t.Fatalf("FORMAT does not win: exit %d (%s)", r.code, r.stderr)
+	}
 }

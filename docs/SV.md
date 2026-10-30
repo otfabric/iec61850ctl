@@ -34,7 +34,7 @@ zero, and its datSet uses the bare LD as MMS domain (see `--bare-domain`).
 | macOS, *BSD | `/dev/bpf*` | read/write access to `/dev/bpf*` (on macOS, the `access_bpf` group) |
 | Windows | unsupported | exit code `8` |
 
-A missing interface exits with code `5`, and a permission error with `6`.
+A missing interface exits with code `11`, and a permission error with `9`.
 
 A 9-2LE stream is 4000 frames per second per merging unit. On a busy capture
 host, prefer `subscribe`, which prints statistics and every Nth sample, over
@@ -179,7 +179,7 @@ or supervision.
 | `--layout` | none (hex) | decode samples with this layout: `9-2LE`, or leaf encodings such as `FLOAT32,Quality,INT32U` |
 | `--sample-every` | `1` | print every Nth matching ASDU |
 | `--count` | `0` (unlimited) | stop after this many matching ASDUs |
-| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `4` if the count was not reached |
+| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `5` if the count was not reached |
 | `--format` | `text` | `text` or `jsonl` |
 
 `--appid`, `--dst` and `--sv-id` override the filter that `--svcb` sets, and
@@ -242,7 +242,7 @@ statistics.
 | `--stats-interval` | `1s` | print the statistics table this often (`0` = only the final summary) |
 | `--timeout` | `100ms` | supervision timeout: a silent stream reports `timeout` after this long |
 | `--count` | `0` (unlimited) | stop after this many accepted ASDUs |
-| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `4` if the count was not reached |
+| `--duration` | `0` (until Ctrl+C) | stop after this long; with `--count`, exit `5` if the count was not reached |
 | `--format` | `text` | `text` or `jsonl` |
 
 The subscription filters on the SVCB's destination MAC, APPID and svID. It
@@ -318,7 +318,7 @@ Subscribing to InteropIEDInteropLD/LLN0$MS$MSVCB02 (svID InteropSvGeneric) on et
 
 Without `--bare-domain` every ASDU of that stream fails the datSet check. The
 error is printed once, the table counts them all, and `--count` is not
-reached (exit `4`):
+reached (exit `5`):
 
 ```console
 $ iec61850ctl sv subscribe --iface eth0 --scl pkg/svops/testdata/interop-sv.cid --svcb MSVCB02 --count 1 --duration 1s
@@ -526,7 +526,7 @@ Connecting to 127.0.0.1:10103
 
 - **Order.** SvEna is written last. That lets you change attributes and enable in one call, but only if the block is already disabled.
 - **Disabled-only changes.** Servers accept the other attributes only while SvEna is false. A write the server refuses exits with code `6`.
-- **After a write.** `set` prints the MSVCB as read back from the server. If `--enable` or `--disable` was given and SvEna reads back the other value (the server accepted the write but does not publish), `set` exits with code `7`.
+- **After a write.** `set` prints the MSVCB as read back from the server. If `--enable` or `--disable` was given and SvEna reads back the other value (the server accepted the write but does not publish), `set` exits with code `12`.
 
 An OptFlds change on an enabled block is refused:
 
@@ -574,11 +574,13 @@ The codes are the same as for the rest of the CLI ([AUTOMATION.md](AUTOMATION.md
 
 | Code | SV cases |
 |------|----------|
-| `2` | missing `--yes`, `--iface` or `--live`; bad `--value`, `--waveform`, `--layout`, APPID or MAC; `--waveform` on a non-9-2LE block; an SCL that cannot be parsed |
-| `4` | `--count` not reached before `--duration` (sniff and subscribe) |
-| `5` | interface or control block not found |
-| `6` | raw socket permission denied; MSVCB write rejected |
+| `2` | missing `--yes`, `--iface` or `--live`; bad `--waveform`, `--layout`, APPID or MAC; `--waveform` on a non-9-2LE block |
+| `3` | bad `--value`; an SCL that cannot be parsed |
+| `5` | `--count` not reached before `--duration` (sniff and subscribe) |
+| `6` | MSVCB write rejected |
+| `9` | raw socket permission denied |
 | `8` | platform without a raw transport; a connection without MSVCB access |
+| `11` | interface or control block not found |
 
 ## Limitations
 

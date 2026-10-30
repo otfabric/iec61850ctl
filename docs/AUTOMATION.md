@@ -14,14 +14,17 @@ Authoritative machine-facing contract for scripting `iec61850ctl`: the MMS clien
 
 | Code | Meaning |
 |------|---------|
-| `1` | Failure (unclassified) |
-| `2` | Usage error, invalid flag value, malformed reference/input/config |
-| `3` | Connection failed or lost (including a dropped report subscription) |
-| `4` | Timeout (`--connect-timeout` / `--timeout`); for `goose`/`sv` `sniff` and `subscribe`, `--count` not reached before `--duration` |
-| `5` | Not found (object, file, dataset, IED, RCB, journal, GoCB/SVCB, network interface), including a server answer of MMS *object-non-existent* |
-| `6` | Rejected or access denied (including failed select/operate, a refused GoCB/MSVCB write, and raw-socket permission errors) |
-| `7` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or `goose gocb set` / `sv svcb set` GoEna/SvEna read-back mismatch |
-| `8` | Service not supported by the server, or by the platform (raw Ethernet on Windows) |
+| `0` | Success |
+| `2` | Usage error: invalid flag, argument or value, including a refused `goose`/`sv publish` without `--yes`, `--iface` or `--live` |
+| `3` | Invalid reference, configuration or SCL |
+| `4` | Connection failed or lost (including a dropped report subscription) |
+| `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
+| `6` | Rejected by the server (including failed select/operate, an MMS access-denied result and a refused GoCB/MSVCB write) |
+| `8` | Service not supported by the server or platform (e.g. raw Ethernet on Windows) |
+| `9` | Permission: authentication failed, a service the server refuses as not permitted, or a raw-socket permission error |
+| `10` | Failure (unclassified) |
+| `11` | Not found (object, file, dataset, IED, RCB, journal, control block, network interface), including a server answer of MMS *object-non-existent* |
+| `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or GoCB/MSVCB enable read-back mismatch |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
 - `goose publish` and `sv publish` refused by their guard rails (no `--iface`, no `--yes`, or operational frames without `--live`) exit `2` before anything is sent.
