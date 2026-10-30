@@ -14,18 +14,20 @@ import (
 	"github.com/otfabric/go-mms"
 )
 
-// Process exit codes. They are part of the CLI contract (see README "Exit codes").
+// Process exit codes. They are part of the CLI contract (see docs/exitcodes.md).
 const (
-	ExitOK          = 0   // success
-	ExitFailure     = 1   // unclassified failure
-	ExitUsage       = 2   // invalid flags, arguments or input values
-	ExitConnection  = 3   // dial, association or connection loss
-	ExitTimeout     = 4   // connect or request deadline exceeded
-	ExitNotFound    = 5   // object, file, dataset, report or IED does not exist
-	ExitRejected    = 6   // server rejected or denied the operation
-	ExitMismatch    = 7   // write verification read-back mismatch
-	ExitUnsupported = 8   // service not supported by the peer or platform
-	ExitInterrupted = 130 // cancelled by SIGINT/SIGTERM (128 + SIGINT)
+	ExitOK           = 0   // success
+	ExitUsage        = 2   // invalid flags, arguments or input values, missing confirmation
+	ExitInvalidInput = 3   // invalid reference, configuration or SCL
+	ExitConnection   = 4   // dial, association or connection loss
+	ExitTimeout      = 5   // connect or request deadline exceeded
+	ExitRejected     = 6   // server rejected the operation
+	ExitUnsupported  = 8   // service not supported by the peer or platform
+	ExitPermission   = 9   // access denied, authentication failed, no raw-socket permission
+	ExitFailure      = 10  // unclassified failure
+	ExitNotFound     = 11  // object, file, dataset, report or IED does not exist
+	ExitMismatch     = 12  // write verification read-back mismatch
+	ExitInterrupted  = 130 // cancelled by SIGINT/SIGTERM (128 + SIGINT)
 )
 
 // ExitError forces a specific exit code for an error chain.
@@ -70,8 +72,9 @@ func ExitCode(err error) int {
 		return ExitTimeout
 	case errors.Is(err, ErrVerifyMismatch):
 		return ExitMismatch
-	case errors.Is(err, ErrInvalidInput),
-		errors.Is(err, ErrInvalidReference),
+	case errors.Is(err, ErrInvalidInput):
+		return ExitUsage
+	case errors.Is(err, ErrInvalidReference),
 		errors.Is(err, ErrInvalidConfig),
 		errors.Is(err, iec61850.ErrInvalidReference),
 		errors.Is(err, iec61850.ErrInvalidFunctionalConstraint),
@@ -84,7 +87,7 @@ func ExitCode(err error) int {
 		errors.Is(err, sv.ErrInvalidValue),
 		errors.Is(err, sv.ErrSCL),
 		errors.Is(err, sv.ErrValidation):
-		return ExitUsage
+		return ExitInvalidInput
 	case errors.Is(err, ErrNotFound),
 		IsObjectNonExistent(err),
 		errors.Is(err, iec61850.ErrNotFound),
@@ -99,7 +102,10 @@ func ExitCode(err error) int {
 		errors.Is(err, goose.ErrUnsupportedPlatform):
 		return ExitUnsupported
 	case errors.Is(err, ErrPermissionDenied),
-		errors.Is(err, ErrRejected),
+		errors.Is(err, mms.ErrAuthenticationFailed),
+		errors.Is(err, goose.ErrPermission):
+		return ExitPermission
+	case errors.Is(err, ErrRejected),
 		errors.Is(err, iec61850.ErrDataAccess),
 		errors.Is(err, iec61850.ErrControlFailed),
 		errors.Is(err, iec61850.ErrSelectFailed),
@@ -107,9 +113,7 @@ func ExitCode(err error) int {
 		errors.Is(err, iec61850.ErrCancelFailed),
 		errors.Is(err, iec61850.ErrNotControllable),
 		errors.Is(err, mms.ErrDataAccess),
-		errors.Is(err, mms.ErrServiceRejected),
-		errors.Is(err, mms.ErrAuthenticationFailed),
-		errors.Is(err, goose.ErrPermission):
+		errors.Is(err, mms.ErrServiceRejected):
 		return ExitRejected
 	case errors.Is(err, ErrConnectionFailed),
 		errors.Is(err, iec61850.ErrClosed),

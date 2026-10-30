@@ -19,7 +19,7 @@ iec61850ctl http --iec-host 192.0.2.10 --listen 127.0.0.1:8080
 
 The global `--ied-name`, `--connect-timeout`, `--timeout`, `--retry` and
 logging flags apply to the device connection. A device that cannot be
-reached at startup exits `3`. Ctrl+C drains open requests for up to 5 s,
+reached at startup exits `4`. Ctrl+C drains open requests for up to 5 s,
 then closes the association.
 
 ## Deployment
@@ -108,15 +108,15 @@ come from the same error classes as the CLI exit codes:
 
 | Status | `code` | Cause | CLI exit code |
 |--------|--------|-------|---------------|
-| `400` | `invalid_input` | missing or malformed parameter or body | `2` |
-| `403` | `rejected` | the device refused the request or denied access | `6` |
-| `404` | `not_found` | object, dataset, LD or RCB not found (including MMS *object-non-existent*) | `5` |
+| `400` | `invalid_input` | missing or malformed parameter or body | `2`, `3` |
+| `403` | `rejected` | the device refused the request or denied access | `6`, `9` |
+| `404` | `not_found` | object, dataset, LD or RCB not found (including MMS *object-non-existent*) | `11` |
 | `405` | `method_not_allowed` | wrong HTTP method | |
 | `501` | `unsupported` | service not supported by the device | `8` |
-| `502` | `connection_failed` | association lost or device unreachable | `3` |
+| `502` | `connection_failed` | association lost or device unreachable | `4` |
 | `503` | `interrupted` | the server is shutting down | `130` |
-| `504` | `timeout` | device request timed out | `4` |
-| `500` | `internal` | anything else | `1` |
+| `504` | `timeout` | device request timed out | `5` |
+| `500` | `internal` | anything else | `10` |
 
 ```console
 $ curl -s 'http://127.0.0.1:8080/api/journals/entries?domain=InteropLD'

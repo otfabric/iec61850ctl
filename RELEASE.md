@@ -1,5 +1,32 @@
 # iec61850ctl Releases
 
+## v0.5.0
+
+**Date:** 2026-10-30
+**Previous release:** v0.4.1
+
+### Summary
+
+Exit codes converge on the organisation table (ADR-0006). **Scripts that test for these codes must change.**
+
+| Case | Old | New |
+|---|---|---|
+| Unclassified failure | 1 | 10 |
+| Invalid reference, configuration or SCL | 2 | 3 |
+| Connection failed or lost | 3 | 4 |
+| Timeout, `--count` not reached | 4 | 5 |
+| Not found | 5 | 11 |
+| Authentication failed, service not permitted, raw-socket permission | 6 | 9 |
+| Write or enable verification mismatch | 7 | 12 |
+
+Unchanged: 0, 2 for invalid flags and values and refused publishes, 6 for a server's rejection, 8, 130. The HTTP API's statuses and `code` values do not change.
+
+### Added
+
+- `IEC61850CTL_FORMAT` (canonical) and `IEC61850CTL_OUTPUT_FORMAT` set the default of `--format` on commands that have it.
+
+---
+
 ## v0.4.1
 
 **Date:** 2026-10-28

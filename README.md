@@ -243,7 +243,7 @@ iec61850ctl subscribe report \
   --purge-buf --interrogation --max-reports 1 --format jsonl
 ```
 
-`--interrogation` triggers GI after enable. `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically so a dropped association ends the subscription with exit code `3` instead of waiting silently for reports. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
+`--interrogation` triggers GI after enable. `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically so a dropped association ends the subscription with exit code `4` instead of waiting silently for reports. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
 
 ### Control and scalar write
 
@@ -372,14 +372,16 @@ Retries apply only to establishing the connection; invalid input, authentication
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `1` | Failure (unclassified) |
-| `2` | Usage error or invalid input / reference / configuration (including a refused `goose`/`sv publish` without `--yes`, `--iface` or `--live`) |
-| `3` | Connection failed or lost |
-| `4` | Timeout (connect or request), or `--count` not reached before `--duration` |
-| `5` | Not found (object, file, IED, RCB, control block, network interface) |
-| `6` | Rejected or access denied (including failed controls and raw-socket permission errors) |
-| `7` | Write verification, control confirmation, or GoCB/MSVCB enable read-back mismatch |
+| `2` | Usage error: invalid flag, argument or value, including a refused `goose`/`sv publish` without `--yes`, `--iface` or `--live` |
+| `3` | Invalid reference, configuration or SCL |
+| `4` | Connection failed or lost (including a dropped report subscription) |
+| `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
+| `6` | Rejected by the server (including failed select/operate, an MMS access-denied result and a refused GoCB/MSVCB write) |
 | `8` | Service not supported by the server or platform (e.g. raw Ethernet on Windows) |
+| `9` | Permission: authentication failed, a service the server refuses as not permitted, or a raw-socket permission error |
+| `10` | Failure (unclassified) |
+| `11` | Not found (object, file, dataset, IED, RCB, journal, control block, network interface), including a server answer of MMS *object-non-existent* |
+| `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or GoCB/MSVCB enable read-back mismatch |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
 The full contract per command is in [docs/AUTOMATION.md](docs/AUTOMATION.md).
