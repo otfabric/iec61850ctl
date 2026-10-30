@@ -1,4 +1,4 @@
-.PHONY: help all run fmt lint lint-ci vet test coverage coverage-gate fuzz cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs
+.PHONY: help all run fmt lint lint-ci vet test coverage coverage-gate fuzz cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs vuln
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -76,7 +76,7 @@ cover: coverage ## Open coverage report in browser
 	@echo "Opening coverage report"
 	@go tool cover -html=coverage.out
 
-check: fmt lint lint-ci vet test coverage-gate ## Run all checks (format, lint, vet, race tests, coverage gate)
+check: fmt lint lint-ci vet vuln test coverage-gate ## Run all checks (format, lint, vet, race tests, coverage gate)
 
 build: check ## Build the application (runs full check first)
 	@$(MAKE) build-nocheck
@@ -123,6 +123,9 @@ release-all: build-all ## Package the build binaries into tar.gz archives for al
 		echo "Packaging $$bin.tar.gz..."; \
 		tar czf $(RELEASE_DIR)/$$bin.tar.gz -C $(RELEASE_DIR) $$bin; \
 	done
+
+vuln: ## Scan the module and its dependencies for known vulnerabilities (govulncheck)
+	@govulncheck ./...
 
 install: build ## Install the built binary to /usr/local/bin
 	@echo "Installing $(APP_NAME) to /usr/local/bin"
