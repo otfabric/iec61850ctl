@@ -398,7 +398,7 @@ The full contract per command is in [docs/AUTOMATION.md](docs/AUTOMATION.md).
 | `goose list`, `goose gocb get`, `goose gocb set` | `text`, `json` |
 | `sv list`, `sv svcb get`, `sv svcb set` | `text`, `json` |
 
-Default is `text`. Automation contracts (stdout/stderr, JSON shapes, JSON-on-failure, JSONL events): [docs/AUTOMATION.md](docs/AUTOMATION.md).
+Default is `text`. Automation contracts: [docs/AUTOMATION.md](docs/AUTOMATION.md). JSON shapes and JSONL events: [docs/json-output.md](docs/json-output.md).
 
 ## Safety
 
@@ -421,7 +421,7 @@ Run these against test equipment first, and only on networks you are authorised 
 make check                 # fmt, staticcheck, golangci-lint, vet, race tests, coverage gate
 make build-nocheck         # fast binary → bin/iec61850ctl
 make test                  # unit tests with -race
-make coverage-gate         # every package >= 90% (COVERAGE_MIN=..), cgo-free
+make coverage-pkg-check    # every package >= COVER_PKG_MIN (90%), cgo-free
 make fuzz                  # every fuzz target for FUZZTIME (default 10s)
 make vet
 
@@ -452,7 +452,8 @@ make e2e-docs              # regenerate docs/interop-examples.md
 | [docs/HTTP.md](docs/HTTP.md) | HTTP API endpoints, errors, deployment |
 | [docs/GOOSE.md](docs/GOOSE.md) | GOOSE list/sniff/subscribe/publish, GoCB access, safety rules, example sessions |
 | [docs/SV.md](docs/SV.md) | Sampled Values list/sniff/subscribe/publish, 9-2LE waveforms, MSVCB access, safety rules, example sessions |
-| [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr and JSON/JSONL contract |
+| [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr, exit code and flag contract |
+| [docs/json-output.md](docs/json-output.md) | JSON and JSONL output shapes |
 | [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
 | [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |
 | [RELEASE.md](RELEASE.md) | Release notes |

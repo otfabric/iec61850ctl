@@ -36,4 +36,4 @@ jobs:
           go-version-file: go.mod
 
       - name: Per-package coverage gate (>= 90%, no cgo)
-        run: make coverage-gate
+        run: make coverage-pkg-check

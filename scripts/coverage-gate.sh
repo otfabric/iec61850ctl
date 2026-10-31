@@ -6,10 +6,10 @@
 # Runs without -race so it needs no cgo; races are checked by `make test`
 # and the CI Race jobs.
 #
-#   COVERAGE_MIN=90 scripts/coverage-gate.sh
+#   COVER_PKG_MIN=90 scripts/coverage-gate.sh
 set -euo pipefail
 
-min="${COVERAGE_MIN:-90}"
+min="${COVER_PKG_MIN:-90}"
 export GOWORK=off
 
 out="$(CGO_ENABLED=0 go test -count=1 -covermode=atomic \
