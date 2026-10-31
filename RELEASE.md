@@ -1,5 +1,17 @@
 # iec61850ctl Releases
 
+## v0.6.1
+
+**Date:** 2026-10-31
+**Previous release:** v0.6.0
+
+### Changed
+
+- Tests, CI and documents only; `docs/json-output.md` added. `make coverage-gate` is now `make coverage-pkg-check`, and `COVERAGE_MIN` is now `COVER_PKG_MIN`.
+- Built on go-iec61850 v1.4.3, go-mms v1.2.3, go-cotp v1.1.1, go-tpkt v1.0.2.
+
+---
+
 ## v0.6.0
 
 **Date:** 2026-10-30
