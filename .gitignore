@@ -34,8 +34,14 @@ go.work.sum
 
 # Binary
 iec61850ctl
-bin/
-release/
+/bin/
+/release/
 
 # Temporary log files
 *.log
+
+# Build artefacts live in /bin/ and /release/ (otfabric/engineering REPO-005)
+coverage.out
+
+# Output of a bare `go build`, anchored so it can never hide a source folder
+/iec61850ctl
