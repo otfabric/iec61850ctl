@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	iec61850 "github.com/otfabric/go-iec61850"
+	"github.com/otfabric/go-mms/transport/iso"
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/pkg/errs"
@@ -37,6 +39,14 @@ var (
 	requestTimeoutFlag time.Duration
 	retryFlag          int
 	retryMaxDelayFlag  time.Duration
+
+	localTselFlag   string
+	remoteTselFlag  string
+	sselFlag        string
+	pselFlag        string
+	apTitleFlag     string
+	aeQualifierFlag int
+	tpduSizeFlag    int
 )
 
 // runState is the per-invocation state built in PersistentPreRunE.
@@ -237,4 +247,71 @@ func init() {
 	pf.DurationVar(&requestTimeoutFlag, "timeout", client.DefaultRequestTimeout, "timeout for each MMS request")
 	pf.IntVar(&retryFlag, "retry", 0, "number of connect retries with exponential backoff and jitter")
 	pf.DurationVar(&retryMaxDelayFlag, "retry-max-delay", client.DefaultRetryMaxDelay, "maximum delay between connect retries")
+
+	// ISO addressing of the IED (the OSI-* values of its SCL ConnectedAP).
+	pf.StringVar(&localTselFlag, "local-tsel", "0001", "calling COTP transport selector in hex ('' omits it)")
+	pf.StringVar(&remoteTselFlag, "remote-tsel", "0001", "called COTP transport selector in hex, the IED's OSI-TSEL ('' omits it)")
+	pf.StringVar(&sselFlag, "ssel", "0001", "called session selector in hex, the IED's OSI-SSEL ('' omits it)")
+	pf.StringVar(&pselFlag, "psel", "00000001", "called presentation selector in hex, the IED's OSI-PSEL ('' omits it)")
+	pf.StringVar(&apTitleFlag, "ap-title", "1.1.1.999.1", "called ACSE AP-title, the IED's OSI-AP-Title ('1,3,9999,23' or dotted; '' omits it)")
+	pf.IntVar(&aeQualifierFlag, "ae-qualifier", 12, "called ACSE AE-qualifier, the IED's OSI-AE-Qualifier")
+	pf.IntVar(&tpduSizeFlag, "tpdu-size", 1024, "COTP TPDU size proposed in the connection request, 128..65531 (65531 omits it)")
+}
+
+// addressing returns the ISO addressing from the addressing flags. Flags
+// left at their defaults keep the go-mms defaults, which are the same
+// values.
+func addressing() (client.Addressing, error) {
+	pf := rootCmd.PersistentFlags()
+	var a client.Addressing
+	sel := func(name, val string, dst *[]byte) error {
+		if !pf.Changed(name) {
+			return nil
+		}
+		b, err := iec61850.ParseSelector(val)
+		if err != nil {
+			return errs.Invalidf("--%s: %v", name, err)
+		}
+		*dst = b
+		return nil
+	}
+	for _, f := range []struct {
+		name, val string
+		dst       *[]byte
+	}{
+		{"local-tsel", localTselFlag, &a.LocalTSelector},
+		{"remote-tsel", remoteTselFlag, &a.RemoteTSelector},
+		{"ssel", sselFlag, &a.RemoteSSelector},
+		{"psel", pselFlag, &a.RemotePSelector},
+	} {
+		if err := sel(f.name, f.val, f.dst); err != nil {
+			return client.Addressing{}, err
+		}
+	}
+	for _, f := range []struct {
+		name string
+		val  []byte
+	}{{"local-tsel", a.LocalTSelector}, {"remote-tsel", a.RemoteTSelector}} {
+		if len(f.val) > iso.MaxTSelectorLength {
+			return client.Addressing{}, errs.Invalidf("--%s: %d octets, IEC 61850-8-1 allows at most %d", f.name, len(f.val), iso.MaxTSelectorLength)
+		}
+	}
+	if pf.Changed("ap-title") {
+		t, err := iec61850.ParseAPTitle(apTitleFlag)
+		if err != nil {
+			return client.Addressing{}, errs.Invalidf("--ap-title: %v", err)
+		}
+		a.RemoteAPTitle = t
+	}
+	if pf.Changed("ap-title") || pf.Changed("ae-qualifier") {
+		q := aeQualifierFlag
+		a.RemoteAEQualifier = &q
+	}
+	if pf.Changed("tpdu-size") {
+		if tpduSizeFlag < 128 || tpduSizeFlag > 65531 {
+			return client.Addressing{}, errs.Invalidf("--tpdu-size %d out of range 128..65531", tpduSizeFlag)
+		}
+		a.MaxTPDULength = tpduSizeFlag
+	}
+	return a, nil
 }

@@ -17,7 +17,7 @@ iec61850ctl http --iec-host 192.0.2.10 --listen 127.0.0.1:8080
 | `--iec-port` | `102` | device MMS port |
 | `--listen` | `:8080` | HTTP listen address |
 
-The global `--ied-name`, `--connect-timeout`, `--timeout`, `--retry` and
+The global `--ied-name`, `--connect-timeout`, `--timeout`, `--retry`, ISO addressing (`--remote-tsel` etc.) and
 logging flags apply to the device connection. A device that cannot be
 reached at startup exits `4`. Ctrl+C drains open requests for up to 5 s,
 then closes the association.

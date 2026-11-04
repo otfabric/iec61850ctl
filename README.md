@@ -362,8 +362,17 @@ The API has no authentication or TLS and `--listen` defaults to `:8080` (all int
 | `--log-level` | — | Structured logs on stderr: `debug`, `info`, `warn` (default), `error`, `off` |
 | `--log-format` | — | `text` (default) or `json` |
 | `--debug` | — | Shorthand for `--log-level debug` (ignored when `--log-level` is set) |
+| `--local-tsel` | — | Calling COTP T-selector, hex (default `0001`) |
+| `--remote-tsel` | — | Called COTP T-selector, hex, at most 4 octets (default `0001`) |
+| `--ssel` | — | Called session selector, hex (default `0001`) |
+| `--psel` | — | Called presentation selector, hex (default `00000001`) |
+| `--ap-title` | — | Called ACSE AP-title, arcs separated by `,` or `.` (default `1.1.1.999.1`) |
+| `--ae-qualifier` | — | Called ACSE AE-qualifier (default `12`) |
+| `--tpdu-size` | — | Proposed COTP TPDU size in octets, 128..65531 (default `1024`) |
 
 Flag values override environment variables. `discover` / `scan` uses `--host` as a CIDR (at most `/16`) or IP range (e.g. `192.0.2.0/24` or `192.0.2.10-20`), not a single client target. Optional `--resolve-mac` needs root to read the ARP cache.
+
+The ISO addressing defaults match libiec61850 and suit most IEDs without any flag. An IED that refuses the connection (for example COTP *address unknown*) needs the values from its configuration or SCL `ConnectedAP` (`OSI-TSEL`, `OSI-SSEL`, `OSI-PSEL`, `OSI-AP-Title`, `OSI-AE-Qualifier`): for example `--remote-tsel 00000001 --ap-title 1,3,9999,23 --ae-qualifier 23`. Selectors are hex with an even number of digits (`0001`, not `1`); an empty value (`--remote-tsel=`) omits the parameter.
 
 Retries apply only to establishing the connection; invalid input, authentication failures and interrupts are never retried. Logs never go to stdout.
 

@@ -1,5 +1,24 @@
 # iec61850ctl Releases
 
+## v0.8.0
+
+**Date:** 2026-11-04
+**Previous release:** v0.7.0
+
+### Fixed
+
+- Client commands could not connect to IEDs that check the COTP transport selectors, such as the ABB REB500 ([go-iec61850#28](https://github.com/otfabric/go-iec61850/issues/28)): the connection request carried no T-selectors and no TPDU size, and the IED refused it with *address unknown*. The client now sends the libiec61850 defaults (T-selector `0001`/`0001`, TPDU size 1024, session selector `0001`, presentation selector `00000001`, AP-title `1.1.1.999.1`, AE-qualifier `12`) without any flag.
+
+### Added
+
+- Global flags `--local-tsel`, `--remote-tsel`, `--ssel`, `--psel`, `--ap-title`, `--ae-qualifier` and `--tpdu-size` set the ISO addressing for IEDs configured with other values (the SCL `ConnectedAP` `OSI-*` P-types). Selectors are hex (`0001`, `00000001`); an empty value omits the parameter. An invalid value exits `2`.
+
+### Changed
+
+- Built on go-iec61850 v1.6.0, go-mms v1.4.0, go-cotp v1.3.0.
+
+---
+
 ## v0.7.0
 
 **Date:** 2026-11-04

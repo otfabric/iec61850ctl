@@ -105,7 +105,7 @@ APPIDs are hex strings (`"0x4000"`), MACs are `aa:bb:cc:dd:ee:ff`. The full reco
 
 Client commands open a session through a shared helper that:
 
-1. Resolves host/port/IED name.
+1. Resolves host/port/IED name and the ISO addressing flags (`--local-tsel`, `--remote-tsel`, `--ssel`, `--psel`, `--ap-title`, `--ae-qualifier`, `--tpdu-size`); an invalid value exits `2` before anything is dialled.
 2. Writes the connection target to stderr.
 3. Dials with `DialOptions.IEDName`, bounding each attempt by `--connect-timeout` and retrying `--retry` times with exponential backoff and jitter (capped by `--retry-max-delay`). Every request is bounded by `--timeout`.
 4. Defers bounded teardown: `Close` (≈2s) then `Abort` (≈2s) on failure/timeout.

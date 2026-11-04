@@ -90,6 +90,27 @@ jobs:
             echo "rust=$(img iec61850-rust)"
           } >> "$GITHUB_OUTPUT"
 
+      # Pull before the suite: the harness's 30 s timers (adapter
+      # capabilities, readiness) cover container start, not a slow registry
+      # download.
+      - name: Pull the peer image
+        if: matrix.stack != 'self'
+        env:
+          STACK: ${{ matrix.stack }}
+          LIB: ${{ steps.lock.outputs.lib }}
+          BEAN: ${{ steps.lock.outputs.bean }}
+          DSC: ${{ steps.lock.outputs.dsc }}
+          RUST: ${{ steps.lock.outputs.rust }}
+        run: |
+          case "$STACK" in
+            *libiec61850)   img="$LIB" ;;
+            *iec61850bean)  img="$BEAN" ;;
+            *dscsystems)    img="$DSC" ;;
+            *iec61850-rust) img="$RUST" ;;
+            *) echo "no peer image for $STACK"; exit 0 ;;
+          esac
+          docker pull -q "$img"
+
       - name: Run e2e
         env:
           CI: "true"
