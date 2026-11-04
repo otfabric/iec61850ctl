@@ -568,7 +568,7 @@ func TestStructuredLogging(t *testing.T) {
 		t.Fatalf("logs leaked into stdout: %v\n%s", err, r.stdout)
 	}
 	sawLog := false
-	for _, line := range strings.Split(r.stderr, "\n") {
+	for line := range strings.SplitSeq(r.stderr, "\n") {
 		if !strings.HasPrefix(line, "{") {
 			continue
 		}

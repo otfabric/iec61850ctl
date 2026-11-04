@@ -146,8 +146,8 @@ func joinContinuations(lines []string) []string {
 	cur := ""
 	for _, l := range lines {
 		trimmed := strings.TrimRight(l, " ")
-		if strings.HasSuffix(trimmed, "\\") {
-			cur += strings.TrimSuffix(trimmed, "\\") + " "
+		if before, ok := strings.CutSuffix(trimmed, "\\"); ok {
+			cur += before + " "
 			continue
 		}
 		out = append(out, cur+l)

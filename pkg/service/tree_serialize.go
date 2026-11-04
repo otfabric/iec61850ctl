@@ -12,13 +12,13 @@ import (
 
 // ValueToModel converts a leaf value and MMS type into a domain.Value.
 // Returns the typed value container and an error string (empty if successful).
-func ValueToModel(value interface{}, mmsType mms.ValueType) (*domain.Value, string) {
+func ValueToModel(value any, mmsType mms.ValueType) (*domain.Value, string) {
 	if value == nil {
 		return nil, ""
 	}
 
 	modelType := domain.FromMMSValueType(mmsType)
-	var raw interface{}
+	var raw any
 
 	switch mmsType {
 	case mms.ValueTypeBoolean:
@@ -76,7 +76,7 @@ func ValueToModel(value interface{}, mmsType mms.ValueType) (*domain.Value, stri
 	return domain.NewValue(raw, modelType), ""
 }
 
-func formatBitStringForJSON(value interface{}) string {
+func formatBitStringForJSON(value any) string {
 	var q uint16
 	switch v := value.(type) {
 	case uint16:
@@ -97,7 +97,7 @@ func formatBitStringForJSON(value interface{}) string {
 	return fmt.Sprintf("0x%04x", q)
 }
 
-func formatOctetStringForJSON(value interface{}) string {
+func formatOctetStringForJSON(value any) string {
 	if b, ok := value.([]byte); ok {
 		return fmt.Sprintf("%x", b)
 	}
@@ -110,7 +110,7 @@ type utcTimeSerialized struct {
 	TimeQuality  uint8  `json:"time_quality"`
 }
 
-func formatUtcTimeForJSON(value interface{}) interface{} {
+func formatUtcTimeForJSON(value any) any {
 	switch v := value.(type) {
 	case time.Time:
 		ms := v.UTC().UnixMilli()
@@ -126,7 +126,7 @@ func formatUtcTimeForJSON(value interface{}) interface{} {
 	return nil
 }
 
-func formatBinaryTimeForJSON(value interface{}) interface{} {
+func formatBinaryTimeForJSON(value any) any {
 	switch v := value.(type) {
 	case int64:
 		return v

@@ -21,7 +21,7 @@ func (s *Server) handleListLogicalDevices(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"logical_devices": devices,
 	})
 }
@@ -39,7 +39,7 @@ func (s *Server) handleListLogicalDeviceNames(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"names": names,
 	})
 }
@@ -63,7 +63,7 @@ func (s *Server) handleListLogicalNodes(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"logical_nodes": nodes,
 	})
 }
@@ -87,7 +87,7 @@ func (s *Server) handleListLogicalNodeNames(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"names": names,
 	})
 }
@@ -112,7 +112,7 @@ func (s *Server) handleListDataObjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"data_objects": objects,
 	})
 }
@@ -137,7 +137,7 @@ func (s *Server) handleListDataObjectNames(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"names": names,
 	})
 }
@@ -170,7 +170,7 @@ func (s *Server) handleListDataAttributes(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"data_attributes": attrs,
 	})
 }

@@ -25,12 +25,12 @@ func NewController(conn ControlConnection) *Controller {
 	return &Controller{conn: conn}
 }
 
-var ctlNumCounter uint32
+var ctlNumCounter atomic.Uint32
 
 func nextCtlNum() uint8 {
-	n := atomic.AddUint32(&ctlNumCounter, 1)
+	n := ctlNumCounter.Add(1)
 	if uint8(n) == 0 {
-		n = atomic.AddUint32(&ctlNumCounter, 1)
+		n = ctlNumCounter.Add(1)
 	}
 	return uint8(n)
 }

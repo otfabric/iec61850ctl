@@ -14,7 +14,7 @@ import (
 // FormatLeafValue formats a leaf attribute value for display by MMS type.
 // For UTC_TIME accepts domain.Timestamp, time.Time, or milliseconds (uint64/int64).
 // attrNameOrPath is optional: when set, BIT_STRING is decoded as quality only if attrNameOrPath is "q" or ends with ".q".
-func FormatLeafValue(value interface{}, mmsType domain.MmsDataType, attrNameOrPath string) string {
+func FormatLeafValue(value any, mmsType domain.MmsDataType, attrNameOrPath string) string {
 	if value == nil {
 		return "(nil)"
 	}
@@ -33,7 +33,7 @@ func FormatLeafValue(value interface{}, mmsType domain.MmsDataType, attrNameOrPa
 	}
 }
 
-func formatUtcTimeLeaf(value interface{}) string {
+func formatUtcTimeLeaf(value any) string {
 	switch v := value.(type) {
 	case domain.Timestamp:
 		return FormatUtcTimestamp(v)
@@ -54,7 +54,7 @@ func formatUtcTimeLeaf(value interface{}) string {
 }
 
 // FormatAttributeValueWithError returns a display string for an attribute value, or an error message if err is non-nil.
-func FormatAttributeValueWithError(value interface{}, mmsType domain.MmsDataType, err error, attrNameOrPath string) string {
+func FormatAttributeValueWithError(value any, mmsType domain.MmsDataType, err error, attrNameOrPath string) string {
 	if err != nil {
 		return fmt.Sprintf("<error: %v>", err)
 	}
@@ -138,7 +138,7 @@ func arrayOrStructureElements(mv *mms.Value) ([]*mms.Value, bool) {
 	return mv.Structure()
 }
 
-func mmsLeafRaw(mv *mms.Value) interface{} {
+func mmsLeafRaw(mv *mms.Value) any {
 	switch mv.Type() {
 	case mms.ValueTypeBoolean:
 		b, _ := mv.Bool()

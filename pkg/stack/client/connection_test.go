@@ -62,8 +62,7 @@ func TestTimeoutConnAppliesDeadlines(t *testing.T) {
 	t.Parallel()
 	noDeadline := map[string]bool{"SubscribeReport": true, "DownloadFile": true, "Close": true, "Abort": true}
 	p := &probeConn{}
-	base, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	base := t.Context()
 	callAll(&timeoutConn{IEC61850Connection: p, base: base, timeout: time.Minute}, context.Background())
 	for _, m := range probeMethods {
 		got, ok := p.deadline[m]
@@ -232,8 +231,7 @@ func testdataSCL(t *testing.T) string {
 
 func TestNewConnectionRealServer(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	srv, err := server.Start(ctx, server.RunConfig{SclPath: testdataSCL(t), Host: "127.0.0.1", Port: 0})
 	if err != nil {
 		t.Fatal(err)

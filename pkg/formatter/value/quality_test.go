@@ -17,29 +17,18 @@ func TestFormatQuality(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, ""},
-		{"good", ptrQuality(domain.Quality(domain.ValidityGood)), "good"},
-		{"invalid", ptrQuality(domain.Quality(domain.ValidityInvalid)), "invalid"},
-		{"reserved", ptrQuality(domain.Quality(domain.ValidityReserved)), "reserved"},
-		{"questionable", ptrQuality(domain.Quality(domain.ValidityQuestionable)), "questionable"},
+		{"good", new(domain.Quality(domain.ValidityGood)), "good"},
+		{"invalid", new(domain.Quality(domain.ValidityInvalid)), "invalid"},
+		{"reserved", new(domain.Quality(domain.ValidityReserved)), "reserved"},
+		{"questionable", new(domain.Quality(domain.ValidityQuestionable)), "questionable"},
 		{
 			"good with overflow",
-			ptrQuality(domain.Quality(domain.ValidityGood) | domain.QualityOverflow),
+			new(domain.Quality(domain.ValidityGood) | domain.QualityOverflow),
 			"good,overflow",
 		},
 		{
 			"all detail flags",
-			ptrQuality(domain.Quality(domain.ValidityInvalid) |
-				domain.QualityOverflow |
-				domain.QualityOutOfRange |
-				domain.QualityBadReference |
-				domain.QualityOscillatory |
-				domain.QualityFailure |
-				domain.QualityOldData |
-				domain.QualityInconsistent |
-				domain.QualityInaccurate |
-				domain.QualitySubstituted |
-				domain.QualityTest |
-				domain.QualityOperatorBlocked),
+			new(domain.Quality(domain.ValidityInvalid) | domain.QualityOverflow | domain.QualityOutOfRange | domain.QualityBadReference | domain.QualityOscillatory | domain.QualityFailure | domain.QualityOldData | domain.QualityInconsistent | domain.QualityInaccurate | domain.QualitySubstituted | domain.QualityTest | domain.QualityOperatorBlocked),
 			"invalid,overflow,out-of-range,bad-ref,oscillatory,failure,old-data,inconsistent,inaccurate,substituted,test,operator-blocked",
 		},
 	}
@@ -57,7 +46,7 @@ func TestFormatQualityValue(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name       string
-		value      interface{}
+		value      any
 		wantSubstr []string
 	}{
 		{
@@ -131,8 +120,4 @@ func TestFormatQualityValue(t *testing.T) {
 			}
 		})
 	}
-}
-
-func ptrQuality(q domain.Quality) *domain.Quality {
-	return &q
 }

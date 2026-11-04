@@ -192,7 +192,7 @@ func writeDA(b *bytes.Buffer, da *domain.DataAttribute) {
 }
 
 // toInt64 converts a JSON-unmarshalled number (float64/int/etc.) to int64.
-func toInt64(v interface{}) int64 {
+func toInt64(v any) int64 {
 	if v == nil {
 		return 0
 	}
@@ -222,7 +222,7 @@ func formatCfgValue(da *domain.DataAttribute) string {
 	}
 	// UTC_TIME is serialized as {"seconds", "milliseconds", "time_quality"}; combine for .cfg value (ms since epoch).
 	if da.Type == domain.TypeUtcTime {
-		m, ok := raw.(map[string]interface{})
+		m, ok := raw.(map[string]any)
 		if !ok || (m["seconds"] == nil && m["milliseconds"] == nil) {
 			return ""
 		}

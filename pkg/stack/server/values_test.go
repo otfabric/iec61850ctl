@@ -69,7 +69,7 @@ func TestDomainValueToMMS(t *testing.T) {
 		{"bintime", domain.NewValue(int64(100), domain.TypeBinaryTime), true, mms.ValueTypeBinaryTime},
 		{"bitstr hex", domain.NewValue("0x00ff", domain.TypeBitString), true, mms.ValueTypeBitString},
 		{"octet", domain.NewValue("deadbeef", domain.TypeOctetString), true, mms.ValueTypeOctetString},
-		{"utc map", domain.NewValue(map[string]interface{}{
+		{"utc map", domain.NewValue(map[string]any{
 			"seconds": float64(10), "milliseconds": float64(5), "time_quality": float64(0),
 		}, domain.TypeUtcTime), true, mms.ValueTypeUTCTime},
 		{"unsupported", domain.NewValue(1, domain.TypeStructure), false, 0},

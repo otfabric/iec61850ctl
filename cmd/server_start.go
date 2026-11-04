@@ -23,6 +23,7 @@ var (
 	serverStartReadyJSON bool
 	serverStartFixtureID string
 	serverStartFilesDir  string
+	serverStartAllowROFC bool
 )
 
 var serverStartCmd = &cobra.Command{
@@ -42,6 +43,7 @@ func init() {
 	serverStartCmd.Flags().BoolVar(&serverStartReadyJSON, "ready-json", false, "emit one JSON readiness event on stdout after bind")
 	serverStartCmd.Flags().StringVar(&serverStartFixtureID, "fixture-id", "", "optional fixture identifier included in readiness JSON")
 	serverStartCmd.Flags().StringVar(&serverStartFilesDir, "files-dir", "", "directory served read-only over MMS file services (list files / get file)")
+	serverStartCmd.Flags().BoolVar(&serverStartAllowROFC, "allow-readonly-fc-writes", false, "accept client writes to status and measured values (FC ST, MX, SG, SR, OR, EX); simulators and test fixtures only, IEC 61850-7-2 makes them read-only")
 	_ = serverStartCmd.MarkFlagRequired("scl")
 }
 
@@ -62,19 +64,20 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg := server.RunConfig{
-		SclPath:        serverStartSCL,
-		IEDName:        getIEDName(),
-		ValuesPath:     serverStartValues,
-		Host:           serverStartHost,
-		Port:           serverStartPort,
-		MaxConnections: serverStartMaxConn,
-		ReadyJSON:      serverStartReadyJSON,
-		FixtureID:      serverStartFixtureID,
-		Version:        ver,
-		FilesDir:       serverStartFilesDir,
-		Logger:         cmdLogger(),
-		Stdout:         cmd.OutOrStdout(),
-		Stderr:         cmd.ErrOrStderr(),
+		SclPath:               serverStartSCL,
+		IEDName:               getIEDName(),
+		ValuesPath:            serverStartValues,
+		Host:                  serverStartHost,
+		Port:                  serverStartPort,
+		MaxConnections:        serverStartMaxConn,
+		ReadyJSON:             serverStartReadyJSON,
+		FixtureID:             serverStartFixtureID,
+		Version:               ver,
+		FilesDir:              serverStartFilesDir,
+		AllowReadOnlyFCWrites: serverStartAllowROFC,
+		Logger:                cmdLogger(),
+		Stdout:                cmd.OutOrStdout(),
+		Stderr:                cmd.ErrOrStderr(),
 	}
 
 	// Cancelling the command context (SIGINT/SIGTERM) shuts the server down cleanly.

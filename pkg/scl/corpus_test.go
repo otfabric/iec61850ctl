@@ -29,9 +29,7 @@ var loadCorpus = sync.OnceValue(func() []corpusDoc {
 	docs := make([]corpusDoc, len(paths))
 	var wg sync.WaitGroup
 	for i, p := range paths {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			docs[i].name = filepath.Base(p)
 			f, err := os.Open(p)
 			if err != nil {
@@ -40,7 +38,7 @@ var loadCorpus = sync.OnceValue(func() []corpusDoc {
 			}
 			defer func() { _ = f.Close() }()
 			docs[i].doc, docs[i].err = Parse(f)
-		}()
+		})
 	}
 	wg.Wait()
 	out := docs[:0]

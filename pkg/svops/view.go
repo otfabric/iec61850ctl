@@ -120,7 +120,7 @@ func ViewASDU(ev string, f *sv.Frame, a *sv.ASDU, i int, layout sv.Layout, lost 
 		var le sv.LESample
 		if sv.DecodeLE(a.Sample, &le) == nil {
 			lv := &LEView{Good: true}
-			for c := 0; c < 4; c++ {
+			for c := range 4 {
 				lv.Amps[c] = sv.Amps(le.Current[c].Value)
 				lv.Volts[c] = sv.Volts(le.Voltage[c].Value)
 				lv.Good = lv.Good && le.Current[c].Q.IsGood() && le.Voltage[c].Q.IsGood()

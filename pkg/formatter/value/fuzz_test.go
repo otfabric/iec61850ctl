@@ -85,7 +85,7 @@ func fuzzMMSValue(data []byte, depth int) (*mms.Value, []byte) {
 		}
 		n := int(op>>5) + 1
 		els := make([]*mms.Value, 0, n)
-		for i := 0; i < n; i++ {
+		for range n {
 			var el *mms.Value
 			el, data = fuzzMMSValue(data, depth+1)
 			els = append(els, el)

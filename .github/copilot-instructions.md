@@ -24,7 +24,7 @@ Operational policy: see [AGENTS.md](../AGENTS.md) — agents may edit code/docs;
   - [github.com/otfabric/go-iec61850](https://github.com/otfabric/go-iec61850) v1.2.2 — IEC 61850 client/server, SCL, directory discovery, GOOSE, Sampled Values
   - [github.com/otfabric/go-mms](https://github.com/otfabric/go-mms) v1.2.2 — MMS encoding and ISO transport, retry policy
 - **Module**: `github.com/otfabric/iec61850ctl` (binary: `iec61850ctl`)
-- **Go version**: 1.24+ (see `go.mod`)
+- **Go version**: 1.26+ (see `go.mod`)
 
 ## Project Structure
 

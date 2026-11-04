@@ -29,7 +29,7 @@ func (s *Server) handleListDataSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"datasets": datasets,
 	})
 }
@@ -54,7 +54,7 @@ func (s *Server) handleListDataSetNames(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"names": names,
 	})
 }
@@ -134,7 +134,7 @@ func (s *Server) handleListReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"unbuffered": unbuffered,
 		"buffered":   buffered,
 	})
@@ -153,7 +153,7 @@ func (s *Server) handleListAllReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"reports": refs,
 	})
 }
@@ -178,7 +178,7 @@ func (s *Server) handleListReportNames(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"unbuffered": unbuffered,
 		"buffered":   buffered,
 	})
@@ -227,7 +227,7 @@ func (s *Server) handleListJournals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
+	s.jsonResponse(w, http.StatusOK, map[string]any{
 		"journals": journals,
 	})
 }

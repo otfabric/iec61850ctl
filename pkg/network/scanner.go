@@ -190,8 +190,8 @@ func GetMACAddress(ip string) (string, error) {
 
 // parseARPOutput extracts MAC address from ARP command output.
 func parseARPOutput(output, platform string) string {
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(output, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

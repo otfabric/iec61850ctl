@@ -105,7 +105,7 @@ func ParseQuality(s string) (sv.Quality, error) {
 		"operator-blocked": sv.QualityOperatorBlocked,
 	}
 	var q sv.Quality
-	for _, part := range strings.Split(s, "+") {
+	for part := range strings.SplitSeq(s, "+") {
 		bit, ok := names[strings.ToLower(strings.TrimSpace(part))]
 		if !ok {
 			return 0, errs.Invalidf("invalid quality %q (good, invalid, questionable, test, ... joined with +; 0xNNNN; or 13 binary digits)", s)

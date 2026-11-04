@@ -85,7 +85,7 @@ func (j *Journal) GetEntries(domainID, journalName string, startMs uint64, endMs
 	if endMs != nil {
 		from := startMs
 		to := *endMs
-		for page := 0; page < MaxJournalPages; page++ {
+		for range MaxJournalPages {
 			entries, moreFollows, err := j.ReadTimeRange(domainID, journalName, from, to)
 			if err != nil {
 				return nil, err
@@ -109,7 +109,7 @@ func (j *Journal) GetEntries(domainID, journalName string, startMs uint64, endMs
 	} else {
 		from := startMs
 		var afterID []byte
-		for page := 0; page < MaxJournalPages; page++ {
+		for range MaxJournalPages {
 			entries, moreFollows, err := j.ReadStartAfter(domainID, journalName, from, afterID)
 			if err != nil {
 				return nil, err

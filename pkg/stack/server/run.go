@@ -26,19 +26,23 @@ import (
 
 // RunConfig holds options for starting the MMS server from an SCL file.
 type RunConfig struct {
-	SclPath        string       // path to SCL/CID/ICD file (required)
-	IEDName        string       // IED name in SCL; empty uses the first IED
-	ValuesPath     string       // optional path to serialized IED JSON for value seeding
-	FilesDir       string       // optional directory served read-only over MMS file services
-	Host           string       // bind address (e.g. "0.0.0.0")
-	Port           int          // MMS port; 0 binds an ephemeral port (see Running.Addr)
-	MaxConnections int          // max MMS connections (reserved; not yet enforced by go-mms)
-	ReadyJSON      bool         // emit one JSON readiness event on Stdout after bind
-	FixtureID      string       // optional fixture identifier for readiness JSON
-	Version        string       // build/version metadata for readiness JSON
-	Logger         *slog.Logger // structured go-iec61850/go-mms server logging; nil disables
-	Stdout         io.Writer    // readiness JSON destination (default os.Stdout)
-	Stderr         io.Writer    // human status line destination (default os.Stderr)
+	SclPath    string // path to SCL/CID/ICD file (required)
+	IEDName    string // IED name in SCL; empty uses the first IED
+	ValuesPath string // optional path to serialized IED JSON for value seeding
+	FilesDir   string // optional directory served read-only over MMS file services
+	// AllowReadOnlyFCWrites accepts client writes to attributes whose
+	// functional constraint IEC 61850-7-2 makes read-only to clients (ST,
+	// MX, SG, SR, OR, EX). For simulators and test fixtures only.
+	AllowReadOnlyFCWrites bool
+	Host                  string       // bind address (e.g. "0.0.0.0")
+	Port                  int          // MMS port; 0 binds an ephemeral port (see Running.Addr)
+	MaxConnections        int          // max MMS connections (reserved; not yet enforced by go-mms)
+	ReadyJSON             bool         // emit one JSON readiness event on Stdout after bind
+	FixtureID             string       // optional fixture identifier for readiness JSON
+	Version               string       // build/version metadata for readiness JSON
+	Logger                *slog.Logger // structured go-iec61850/go-mms server logging; nil disables
+	Stdout                io.Writer    // readiness JSON destination (default os.Stdout)
+	Stderr                io.Writer    // human status line destination (default os.Stderr)
 
 	// GOOSE, when non-nil, publishes the model's GoCBs on this transport
 	// and exposes them over MMS (LLN0$GO$<name>). GOOSEStartDisabled
@@ -118,7 +122,8 @@ func Start(ctx context.Context, cfg RunConfig) (*Running, error) {
 	}
 
 	opts := iec61850.ServerOptions{
-		Logger: cfg.Logger,
+		Logger:                cfg.Logger,
+		AllowReadOnlyFCWrites: cfg.AllowReadOnlyFCWrites,
 		Identity: &iec61850.ServerIdentity{
 			Vendor:   "OTFabric",
 			Model:    "iec61850ctl",

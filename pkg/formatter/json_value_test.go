@@ -38,7 +38,7 @@ func TestParseCLIFormat(t *testing.T) {
 	t.Parallel()
 	f, err := ParseCLIFormat("json")
 	if err != nil || f != OutputFormatJSON {
-		t.Fatalf("json: %v %q", err, f)
+		t.Fatalf("json: %v %v", err, f)
 	}
 	if _, err := ParseCLIFormat("yaml"); err == nil {
 		t.Fatal("expected error for yaml")

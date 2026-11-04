@@ -61,8 +61,7 @@ func ExitCode(err error) int {
 	if err == nil {
 		return ExitOK
 	}
-	var exitErr *ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*ExitError](err); ok {
 		return exitErr.Code
 	}
 	switch {
@@ -163,8 +162,7 @@ func IsTimeout(err error) bool {
 }
 
 func isNetError(err error) bool {
-	var ne net.Error
-	if errors.As(err, &ne) {
+	if _, ok := errors.AsType[net.Error](err); ok {
 		return true
 	}
 	var oe *net.OpError

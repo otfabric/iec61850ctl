@@ -21,13 +21,13 @@ type ObjectReference struct {
 func ParseObjectReference(ref string) (ObjectReference, error) {
 	r := ObjectReference{}
 
-	slashIdx := strings.Index(ref, "/")
-	if slashIdx < 0 {
+	before, after, ok := strings.Cut(ref, "/")
+	if !ok {
 		return r, errs.Newf(errs.ErrInvalidReference, "invalid reference %q: missing '/' separator", ref)
 	}
 
-	r.LD = ref[:slashIdx]
-	rest := ref[slashIdx+1:]
+	r.LD = before
+	rest := after
 
 	if rest == "" {
 		return r, errs.Newf(errs.ErrInvalidReference, "invalid reference %q: missing logical node after '/'", ref)

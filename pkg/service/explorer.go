@@ -183,13 +183,7 @@ func (e *Explorer) GetDataObjects(ldName, lnName string) ([]domain.DataObject, e
 
 func paginate[T any](all []T, opts PageOptions) *PagedResult[T] {
 	total := len(all)
-	offset := opts.Offset
-	if offset < 0 {
-		offset = 0
-	}
-	if offset > total {
-		offset = total
-	}
+	offset := min(max(opts.Offset, 0), total)
 	end := total
 	if opts.Limit > 0 && offset+opts.Limit < total {
 		end = offset + opts.Limit

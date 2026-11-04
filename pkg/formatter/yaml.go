@@ -36,7 +36,7 @@ func (r *yamlRenderer) RenderReportControlBlock(rcb *view.ReportControlBlock, w 
 	return encodeYAML(rcb, w)
 }
 
-func encodeYAML(v interface{}, w io.Writer) error {
+func encodeYAML(v any, w io.Writer) error {
 	enc := yaml.NewEncoder(w)
 	enc.SetIndent(2)
 	return enc.Encode(v)

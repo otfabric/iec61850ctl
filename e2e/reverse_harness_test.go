@@ -72,6 +72,8 @@ func startCtlServer(t *testing.T) *ctlServerHandle {
 		"--host", "0.0.0.0",
 		"--port", strconv.Itoa(port),
 		"--ready-json",
+		// The peer fixtures write Mod.stVal and SPS1.stVal (FC ST).
+		"--allow-readonly-fc-writes",
 	)
 
 	h := &ctlServerHandle{
