@@ -190,12 +190,12 @@ func buildStructAttrPath(object, parentName, attrName string) string {
 }
 
 func parseObjectRef(object string) (ld, ln, doName string) {
-	slash := strings.Index(object, "/")
-	if slash < 0 {
+	before, after, ok0 := strings.Cut(object, "/")
+	if !ok0 {
 		return "", "", ""
 	}
-	ld = object[:slash]
-	rest := object[slash+1:]
+	ld = before
+	rest := after
 	ln, doName, ok := strings.Cut(rest, ".")
 	if !ok {
 		return ld, rest, ""

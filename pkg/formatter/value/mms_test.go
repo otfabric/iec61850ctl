@@ -19,7 +19,7 @@ func TestFormatLeafValue(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		value      interface{}
+		value      any
 		mmsType    domain.MmsDataType
 		attr       string
 		wantExact  string
@@ -138,7 +138,7 @@ func TestFormatAttributeValueWithError(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name    string
-		value   interface{}
+		value   any
 		mmsType domain.MmsDataType
 		err     error
 		attr    string

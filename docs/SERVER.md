@@ -28,6 +28,7 @@ Stop with Ctrl+C.
 | `--host` | Bind address (default `0.0.0.0`) |
 | `--port` / `-p` | MMS port (default `102`; `0` binds an ephemeral port, printed on stderr and in `--ready-json`) |
 | `--files-dir` | Directory served read-only over MMS file services (`list files`, `get file`); not recursive, delete/rename are denied |
+| `--allow-readonly-fc-writes` | Accept client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`). Off by default: IEC 61850-7-2 makes them read-only to clients, and the server answers such a write with object-access-denied. For simulators and test fixtures only |
 | `--max-connections` | Reserved for future use (default `5`; not enforced by the current go-mms listener) |
 | `--ready-json` | After bind, emit one readiness JSON line on **stdout** |
 | `--fixture-id` | Fixture revision string included in the readiness event (e.g. `iec61850-v3`) |
@@ -178,7 +179,7 @@ publish` or `sv publish` (see [GOOSE.md](GOOSE.md) and [SV.md](SV.md)).
 
 ## Requirements
 
-- Build: Go **1.24+**, `CGO_ENABLED=0`
+- Build: Go **1.26+**, `CGO_ENABLED=0`
 - Runtime: no native IEC 61850 libraries
 - Binding privileged ports (e.g. 102) may require elevated privileges on some OS setups
 

@@ -5,6 +5,7 @@ package value
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/otfabric/iec61850ctl/pkg/domain"
@@ -41,11 +42,12 @@ func joinStrings(a []string, sep string) string {
 	if len(a) == 0 {
 		return ""
 	}
-	s := a[0]
+	var s strings.Builder
+	s.WriteString(a[0])
 	for i := 1; i < len(a); i++ {
-		s += sep + a[i]
+		s.WriteString(sep + a[i])
 	}
-	return s
+	return s.String()
 }
 
 // FormatUtcTimeValue formats an IEC 61850 UTC_TIME value for display.
@@ -71,7 +73,7 @@ func FormatUtcTimestamp(ts domain.Timestamp) string {
 // FormatBinaryTime formats IEC 61850 BINARY_TIME for display.
 // []byte: 4 bytes = ms since midnight; 6 bytes = days since 1984-01-01 + ms (raw MMS).
 // uint64: milliseconds since Unix epoch (1970-01-01).
-func FormatBinaryTime(value interface{}) string {
+func FormatBinaryTime(value any) string {
 	if value == nil {
 		return "(nil)"
 	}
@@ -114,7 +116,7 @@ func FormatBinaryTime(value interface{}) string {
 
 // FormatUnixTimestamp converts a Unix timestamp (seconds since 1970-01-01) to a human-readable string.
 // Supports int64, uint64, int32, uint32, int. Returns RFC 3339 format with Unix timestamp in parentheses.
-func FormatUnixTimestamp(value interface{}) string {
+func FormatUnixTimestamp(value any) string {
 	var unixSec int64
 
 	switch v := value.(type) {

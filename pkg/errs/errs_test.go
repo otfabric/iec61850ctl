@@ -33,8 +33,7 @@ func TestMark(t *testing.T) {
 	if Mark(base, nil) != base {
 		t.Fatal("nil sentinel must return err")
 	}
-	var pe *fs.PathError
-	if !errors.As(Mark(&fs.PathError{Op: "open", Path: "x", Err: fs.ErrNotExist}, ErrInvalidInput), &pe) {
+	if _, ok := errors.AsType[*fs.PathError](Mark(&fs.PathError{Op: "open", Path: "x", Err: fs.ErrNotExist}, ErrInvalidInput)); !ok {
 		t.Fatal("errors.As through Mark")
 	}
 	e := Invalidf("bad %d", 7)

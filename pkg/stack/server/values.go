@@ -177,11 +177,11 @@ func domainValueToMMS(v *domain.Value) (*mms.Value, bool) {
 	}
 }
 
-func parseUtcTime(raw interface{}) (time.Time, uint8, bool) {
+func parseUtcTime(raw any) (time.Time, uint8, bool) {
 	switch v := raw.(type) {
 	case utcTimeValue:
 		return utcTimeFromParts(v.Seconds, v.Milliseconds, v.TimeQuality)
-	case map[string]interface{}:
+	case map[string]any:
 		sec, _ := asInt64(v["seconds"])
 		ms, _ := asUint64(v["milliseconds"])
 		tq, _ := asUint64(v["time_quality"])
@@ -196,7 +196,7 @@ func utcTimeFromParts(seconds int64, millis uint16, quality uint8) (time.Time, u
 	return time.UnixMilli(epochMs), quality, true
 }
 
-func parseBitString(raw interface{}) ([]byte, int, bool) {
+func parseBitString(raw any) ([]byte, int, bool) {
 	switch v := raw.(type) {
 	case string:
 		s := strings.TrimSpace(v)
@@ -222,7 +222,7 @@ func parseBitString(raw interface{}) ([]byte, int, bool) {
 	}
 }
 
-func parseOctetString(raw interface{}) ([]byte, bool) {
+func parseOctetString(raw any) ([]byte, bool) {
 	s, ok := raw.(string)
 	if !ok {
 		return nil, false
@@ -238,7 +238,7 @@ func parseOctetString(raw interface{}) ([]byte, bool) {
 	return data, true
 }
 
-func asBool(raw interface{}) (bool, bool) {
+func asBool(raw any) (bool, bool) {
 	switch v := raw.(type) {
 	case bool:
 		return v, true
@@ -249,7 +249,7 @@ func asBool(raw interface{}) (bool, bool) {
 	}
 }
 
-func asInt64(raw interface{}) (int64, bool) {
+func asInt64(raw any) (int64, bool) {
 	switch v := raw.(type) {
 	case int64:
 		return v, true
@@ -264,7 +264,7 @@ func asInt64(raw interface{}) (int64, bool) {
 	}
 }
 
-func asUint64(raw interface{}) (uint64, bool) {
+func asUint64(raw any) (uint64, bool) {
 	switch v := raw.(type) {
 	case uint64:
 		return v, true
@@ -289,7 +289,7 @@ func asUint64(raw interface{}) (uint64, bool) {
 	}
 }
 
-func asFloat64(raw interface{}) (float64, bool) {
+func asFloat64(raw any) (float64, bool) {
 	switch v := raw.(type) {
 	case float64:
 		return v, true

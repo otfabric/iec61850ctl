@@ -62,7 +62,7 @@ func hasFCBracket(s string) bool {
 }
 
 // ReadLeafValue reads a leaf attribute and returns a Go value suitable for formatting/serialization.
-func (r *Reader) ReadLeafValue(refStr string, fc iec61850.FunctionalConstraint, mmsType mms.ValueType) (interface{}, error) {
+func (r *Reader) ReadLeafValue(refStr string, fc iec61850.FunctionalConstraint, mmsType mms.ValueType) (any, error) {
 	if r.conn == nil {
 		return nil, fmt.Errorf("reader: client is nil")
 	}
@@ -84,7 +84,7 @@ func (r *Reader) ReadLeafValue(refStr string, fc iec61850.FunctionalConstraint, 
 	return valueToInterface(v, mmsType)
 }
 
-func valueToInterface(v *iec61850.Value, mmsType mms.ValueType) (interface{}, error) {
+func valueToInterface(v *iec61850.Value, mmsType mms.ValueType) (any, error) {
 	if v == nil {
 		return nil, nil
 	}

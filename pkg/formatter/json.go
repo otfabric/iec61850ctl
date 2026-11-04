@@ -35,7 +35,7 @@ func (r *jsonRenderer) RenderReportControlBlock(rcb *view.ReportControlBlock, w 
 	return encodeJSON(rcb, w)
 }
 
-func encodeJSON(v interface{}, w io.Writer) error {
+func encodeJSON(v any, w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)

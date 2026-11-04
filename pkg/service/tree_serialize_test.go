@@ -103,9 +103,9 @@ func TestValueToModel_UTCTimePointerAndNil(t *testing.T) {
 func TestValueToModel_CommonScalars(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		val  interface{}
+		val  any
 		typ  mms.ValueType
-		want interface{}
+		want any
 	}{
 		{true, mms.ValueTypeBoolean, true},
 		{int32(3), mms.ValueTypeInteger, int32(3)},

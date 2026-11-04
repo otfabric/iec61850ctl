@@ -38,8 +38,8 @@ func (r *ReportService) listByFC(ldName, lnName, marker string) ([]string, error
 	prefix := lnName + marker
 	var names []string
 	for _, item := range all {
-		if strings.HasPrefix(item, prefix) {
-			names = append(names, strings.TrimPrefix(item, prefix))
+		if after, ok := strings.CutPrefix(item, prefix); ok {
+			names = append(names, after)
 		}
 	}
 	return names, nil

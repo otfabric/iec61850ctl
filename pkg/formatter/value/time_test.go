@@ -108,7 +108,7 @@ func TestFormatBinaryTime(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		value      interface{}
+		value      any
 		wantExact  string
 		wantSubstr []string
 	}{
@@ -180,7 +180,7 @@ func TestFormatUnixTimestamp(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		value interface{}
+		value any
 		want  string
 	}{
 		{"int64", int64(sec), "2024-10-30 12:00:00 UTC (1730289600)"},

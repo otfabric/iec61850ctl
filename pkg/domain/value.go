@@ -10,13 +10,13 @@ import (
 
 // Value is a typed container for any MMS leaf or constructed value.
 type Value struct {
-	Raw     interface{}
+	Raw     any
 	Type    MmsDataType
 	Display string
 }
 
 // NewValue creates a Value from a raw Go value and its MMS type.
-func NewValue(raw interface{}, mmsType MmsDataType) *Value {
+func NewValue(raw any, mmsType MmsDataType) *Value {
 	return &Value{Raw: raw, Type: mmsType}
 }
 

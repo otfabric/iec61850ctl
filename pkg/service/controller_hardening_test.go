@@ -44,10 +44,8 @@ func TestController_ConcurrentDirectOperate(t *testing.T) {
 	const n = 8
 	var wg sync.WaitGroup
 	errs := make(chan error, n)
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range n {
+		wg.Go(func() {
 			m := &controlMock{model: iec61850.CtlModelDirectNormal}
 			c := NewController(m)
 			res, err := c.Operate(context.Background(), domain.ControlRequest{
@@ -62,7 +60,7 @@ func TestController_ConcurrentDirectOperate(t *testing.T) {
 			if res.Status != domain.ControlStatusOperated {
 				errs <- errors.New("status not operated: " + string(res.Status))
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	close(errs)

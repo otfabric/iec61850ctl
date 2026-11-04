@@ -15,7 +15,7 @@ func isQualityAttr(nameOrPath string) bool {
 }
 
 // formatBitStringRaw formats a bitstring value as hex without interpreting it as quality.
-func formatBitStringRaw(value interface{}) string {
+func formatBitStringRaw(value any) string {
 	var q uint16
 	switch v := value.(type) {
 	case uint16:
@@ -104,7 +104,7 @@ func FormatQuality(q *domain.Quality) string {
 }
 
 // FormatQualityValue formats a quality bitfield value to human-readable flags.
-func FormatQualityValue(value interface{}) string {
+func FormatQualityValue(value any) string {
 	var q uint16
 
 	switch v := value.(type) {

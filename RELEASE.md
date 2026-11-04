@@ -1,5 +1,26 @@
 # iec61850ctl Releases
 
+## v0.7.0
+
+**Date:** 2026-11-04
+**Previous release:** v0.6.2
+
+### Breaking
+
+- Requires Go 1.26 (was 1.25). CI tests Go 1.26 and 1.27.
+- `server start` refuses client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`), which IEC 61850-7-2 makes read-only to clients; the client gets object-access-denied. The new `--allow-readonly-fc-writes` flag restores the old behaviour for simulators and test fixtures; the reverse e2e suite uses it.
+
+### Fixed
+
+- An unwritten UtcTime on `server start` (for example `SPS1.t`) was read back as 2042-07-14 01:04:00 because go-mms wrapped the zero time; it now reads as the epoch, 1970-01-01 00:00:00.
+- `server start` loads large SCL models much faster (go-mms no longer re-sorts its name list on every registration).
+
+### Changed
+
+- Built on go-iec61850 v1.5.0, go-mms v1.3.2, go-cotp v1.2.0, go-tpkt v1.1.0; shared workflows at v3.3.1. `go fix ./...` applied.
+
+---
+
 ## v0.6.2
 
 **Date:** 2026-10-31

@@ -157,7 +157,7 @@ func OptFldsNames(o sv.OptFlds) []string {
 // "none" or an empty string clears all.
 func ParseOptFlds(s string) (sv.OptFlds, error) {
 	var o sv.OptFlds
-	for _, part := range strings.Split(s, ",") {
+	for part := range strings.SplitSeq(s, ",") {
 		name := strings.TrimSpace(part)
 		if name == "" || name == "none" {
 			continue
@@ -210,7 +210,7 @@ func ParseLayout(s string) (sv.Layout, error) {
 		names = append(names, k.String())
 	}
 	var out sv.Layout
-	for _, part := range strings.Split(s, ",") {
+	for part := range strings.SplitSeq(s, ",") {
 		part = strings.TrimSpace(part)
 		found := false
 		for _, k := range layoutKinds {

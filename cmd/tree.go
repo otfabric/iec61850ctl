@@ -121,7 +121,7 @@ func runTree(cmd *cobra.Command, args []string) error {
 }
 
 func parseTreeInclude(include string) (dataSets, reports bool) {
-	for _, s := range strings.Split(include, ",") {
+	for s := range strings.SplitSeq(include, ",") {
 		s = strings.TrimSpace(strings.ToLower(s))
 		switch s {
 		case "all":

@@ -118,7 +118,7 @@ func TestIEDToCfg_ConstructedAndValues(t *testing.T) {
 										Name: "t",
 										FC:   domain.FC_ST,
 										Type: domain.TypeUtcTime,
-										Value: domain.NewValue(map[string]interface{}{
+										Value: domain.NewValue(map[string]any{
 											"seconds":      float64(1700000000),
 											"milliseconds": float64(123),
 										}, domain.TypeUtcTime),

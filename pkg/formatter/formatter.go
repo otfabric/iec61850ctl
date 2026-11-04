@@ -183,7 +183,7 @@ func (f *Formatter) formatDuration(d time.Duration) string {
 }
 
 // BinaryTime formats a binary time value (Unix ms as interface{}) into ISO string.
-func (f *Formatter) BinaryTime(value interface{}) string {
+func (f *Formatter) BinaryTime(value any) string {
 	switch v := value.(type) {
 	case []byte:
 		if len(v) == 6 {
@@ -248,7 +248,7 @@ func (f *Formatter) TypeSpec(spec *mms.TypeSpec) string {
 }
 
 // LeafValue formats a leaf value for display based on its MMS type.
-func (f *Formatter) LeafValue(val interface{}, mmsType domain.MmsDataType, attrNameOrPath string) string {
+func (f *Formatter) LeafValue(val any, mmsType domain.MmsDataType, attrNameOrPath string) string {
 	if val == nil {
 		return "(null)"
 	}
@@ -277,7 +277,7 @@ func FormatDomainValue(v *domain.Value) string {
 }
 
 // FormatBinaryTime formats a binary time value (milliseconds since epoch or raw bytes).
-func FormatBinaryTime(v interface{}) string {
+func FormatBinaryTime(v any) string {
 	return value.FormatBinaryTime(v)
 }
 
@@ -297,17 +297,17 @@ func FormatUtcTimestamp(ts domain.Timestamp) string {
 }
 
 // FormatUnixTimestamp formats a Unix timestamp value to human-readable string.
-func FormatUnixTimestamp(v interface{}) string {
+func FormatUnixTimestamp(v any) string {
 	return value.FormatUnixTimestamp(v)
 }
 
 // FormatQualityValue formats a quality bitfield value to human-readable flags.
-func FormatQualityValue(v interface{}) string {
+func FormatQualityValue(v any) string {
 	return value.FormatQualityValue(v)
 }
 
 // FormatLeafValue formats a leaf attribute value for display by MMS type.
-func FormatLeafValue(v interface{}, mmsType domain.MmsDataType, attrNameOrPath string) string {
+func FormatLeafValue(v any, mmsType domain.MmsDataType, attrNameOrPath string) string {
 	return value.FormatLeafValue(v, mmsType, attrNameOrPath)
 }
 
