@@ -109,6 +109,11 @@ func openClientSessionTo(ctx context.Context, cmd *cobra.Command, h string, p in
 		stderr = cmd.ErrOrStderr()
 	}
 
+	isoAddr, err := addressing()
+	if err != nil {
+		return nil, err
+	}
+
 	if !opts.Quiet {
 		_, _ = fmt.Fprintf(stderr, "Connecting to %s\n", net.JoinHostPort(h, strconv.Itoa(p)))
 	}
@@ -130,6 +135,7 @@ func openClientSessionTo(ctx context.Context, cmd *cobra.Command, h string, p in
 		IEDName:        getIEDName(),
 		Retry:          client.RetryPolicy{Retries: retryFlag, MaxDelay: retryMaxDelayFlag},
 		Logger:         cmdLogger(),
+		Addressing:     isoAddr,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connection failed: %w", err)

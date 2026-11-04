@@ -52,6 +52,38 @@ type ConnectionInput struct {
 	// Logger receives structured go-iec61850/go-mms and retry diagnostics.
 	// Nil disables logging.
 	Logger *slog.Logger
+
+	// Addressing overrides the ISO addressing sent to the IED. The zero
+	// value sends the go-mms defaults (T-selector 0001/0001, TPDU size
+	// 1024, S-selector 0001, P-selector 00000001, AP-titles 1.1.1.999 /
+	// 1.1.1.999.1, AE-qualifier 12), which IEDs expect.
+	Addressing Addressing
+}
+
+// Addressing is the ISO addressing of a connection. A nil selector or
+// AP-title keeps the go-mms default; a non-nil empty one omits the
+// parameter.
+type Addressing struct {
+	LocalTSelector    []byte      // calling T-selector (COTP 0xC1)
+	RemoteTSelector   []byte      // called T-selector (COTP 0xC2)
+	RemoteSSelector   []byte      // called session selector
+	RemotePSelector   []byte      // called presentation selector
+	RemoteAPTitle     mms.APTitle // called AP-title
+	RemoteAEQualifier *int        // called AE-qualifier; nil keeps the default
+	MaxTPDULength     int         // COTP TPDU size; 0 keeps the default (1024)
+}
+
+// apply sets the addressing on opts.
+func (a Addressing) apply(opts *iec61850.DialOptions) {
+	opts.MMS.Transport.LocalTSelector = a.LocalTSelector
+	opts.MMS.Transport.RemoteTSelector = a.RemoteTSelector
+	opts.MMS.ISO.RemoteSSelector = a.RemoteSSelector
+	opts.MMS.ISO.RemotePSelector = a.RemotePSelector
+	opts.MMS.ISO.RemoteAPTitle = a.RemoteAPTitle
+	if a.RemoteAEQualifier != nil {
+		opts.MMS.ISO.RemoteAEQualifier = *a.RemoteAEQualifier
+	}
+	opts.MaxTPDULength = a.MaxTPDULength
 }
 
 // Addr returns the host:port dial address (IPv6-safe).
@@ -97,6 +129,7 @@ func newConnection(ctx context.Context, in ConnectionInput, dial dialFunc) (serv
 
 	addr := in.Addr()
 	opts := iec61850.DialOptions{IEDName: in.IEDName, Logger: in.Logger}
+	in.Addressing.apply(&opts)
 	var c *iec61850.Client
 	attempt := 0
 	err := in.Retry.Do(ctx, logger, func(ctx context.Context) error {

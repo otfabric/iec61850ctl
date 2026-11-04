@@ -52,8 +52,11 @@ func init() {
 
 func runHTTP(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
+	isoAddr, err := addressing()
+	if err != nil {
+		return err
+	}
 	_, _ = fmt.Fprintf(out, "Connecting to IEC 61850 device at %s\n", net.JoinHostPort(httpIECHost, strconv.Itoa(httpIECPort)))
-
 	srv, err := httpTransport.NewServer(cmd.Context(), httpTransport.Config{
 		ListenAddr: httpListenAddr,
 		Connection: client.ConnectionInput{
@@ -64,6 +67,7 @@ func runHTTP(cmd *cobra.Command, args []string) error {
 			IEDName:        getIEDName(),
 			Retry:          client.RetryPolicy{Retries: retryFlag, MaxDelay: retryMaxDelayFlag},
 			Logger:         cmdLogger(),
+			Addressing:     isoAddr,
 		},
 	})
 	if err != nil {
