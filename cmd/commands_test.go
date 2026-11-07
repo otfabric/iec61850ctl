@@ -30,12 +30,10 @@ import (
 
 func TestVersion(t *testing.T) {
 	const sha = "1802d0f9afe8642d1e278120b76fcdfac967cb9e"
-	// The libraries come from the test binary's build info (go-iec61850,
-	// go-mms, …); their formatting is tested in internal/buildinfo.
+	// The libraries come from the test binary's build info, which may
+	// list none (it depends on the Go version); their formatting with zero,
+	// one and two libraries is tested in internal/buildinfo.
 	libs := buildinfo.Resolve("x", "1", "", "c", "").Libraries
-	if len(libs) == 0 {
-		t.Fatal("no github.com/otfabric/go-* library in the build info")
-	}
 	libsJSON, _ := json.Marshal(libs)
 	plat := runtime.Version() + ", " + runtime.GOOS + "/" + runtime.GOARCH
 	for _, l := range slices.Backward(libs) {
