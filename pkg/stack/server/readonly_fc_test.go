@@ -30,7 +30,7 @@ func TestStartReadOnlyFCWrites(t *testing.T) {
 			cancel()
 			t.Fatal(err)
 		}
-		ref, err := iec61850.ParseRef("InteropLD/GGIO1.SPS1.stVal[ST]")
+		ref, err := iec61850.ParseRef("InteropIEDInteropLD/GGIO1.SPS1.stVal[ST]")
 		if err != nil {
 			t.Fatal(err)
 		}

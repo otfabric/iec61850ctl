@@ -24,7 +24,7 @@ SV fixture (`pkg/svops/testdata/interop-sv.cid`). It has two streams:
 
 For the receive and MMS examples, an in-process `iec61850ctl` server publishes
 both blocks on an in-memory hub that stands in for `eth0`. Its samples are
-zero, and its datSet uses the bare LD as MMS domain (see `--bare-domain`).
+zero, and its datSet uses the IEC 61850-8-1 MMS domain (`InteropIEDInteropLD`).
 
 ## Interfaces and permissions
 
@@ -222,8 +222,8 @@ header field, including the optional ones (`dat_set`, `refr_tm`, `smp_rate`,
 ```console
 $ iec61850ctl sv sniff --iface eth0 --appid 0x4001 --layout FLOAT32,Quality,INT32U,Quality,INT32 --count 1 --format jsonl
 Sniffing SV on eth0 (Ctrl+C to stop)
-{"event":"asdu","received":"2026-10-28T12:58:15.687764Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:04:00:01","app_id":"0x4001","vlan_id":0,"vlan_priority":4,"simulation":false,"no_asdu":4,"asdu_index":0,"sv_id":"InteropSvGeneric","dat_set":"InteropLD/LLN0$dsSvGeneric","smp_cnt":8,"conf_rev":1,"refr_tm":"2026-10-28T12:58:15.68472898Z","smp_synch":0,"smp_rate":1000,"smp_mod":"SmpPerSec","values":[0,{"bits":"0000","len":13},0,{"bits":"0000","len":13},0]}
-{"event":"summary","frames":1,"asdus":1,"printed":1,"filtered":12,"decode_errors":0}
+{"event":"asdu","received":"2026-11-07T04:36:07.805871Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:04:00:01","app_id":"0x4001","vlan_id":0,"vlan_priority":4,"simulation":false,"no_asdu":4,"asdu_index":0,"sv_id":"InteropSvGeneric","dat_set":"InteropIEDInteropLD/LLN0$dsSvGeneric","smp_cnt":0,"conf_rev":1,"refr_tm":"2026-11-07T04:36:07.802857995Z","smp_synch":0,"smp_rate":1000,"smp_mod":"SmpPerSec","values":[0,{"bits":"0000","len":13},0,{"bits":"0000","len":13},0]}
+{"event":"summary","frames":1,"asdus":1,"printed":1,"filtered":0,"decode_errors":0}
 ```
 
 ## sv subscribe
@@ -303,33 +303,38 @@ Subscribing to InteropIEDInteropLD/LLN0$MS$MSVCB01 (svID InteropSv92LE) on eth0 
   InteropSv92LE  0x4000  02:00:00:00:00:01  ok      3880.3  9915   86    0    0    0        0         2051/4000  0      1
 ```
 
-In JSON Lines, `start`, `asdu`, `stats` and `summary` are separate records. A
-generic stream from a publisher whose datSet uses the bare LD needs
-`--bare-domain`:
+In JSON Lines, `start`, `asdu`, `stats` and `summary` are separate records.
+The generic stream carries its datSet, which the subscriber checks against
+the SCL:
 
 ```console
-$ iec61850ctl sv subscribe --iface eth0 --scl pkg/svops/testdata/interop-sv.cid --svcb MSVCB02 --bare-domain --sample-every 500 --stats-interval 1s --count 1000 --format jsonl
+$ iec61850ctl sv subscribe --iface eth0 --scl pkg/svops/testdata/interop-sv.cid --svcb MSVCB02 --sample-every 500 --stats-interval 1s --count 1000 --format jsonl
 Subscribing to InteropIEDInteropLD/LLN0$MS$MSVCB02 (svID InteropSvGeneric) on eth0 (Ctrl+C to stop)
-{"event":"start","time":"2026-10-28T12:58:18.191769Z","src":"02:00:00:00:00:01","app_id":"0x4001","sv_id":"InteropSvGeneric","smp_cnt":512,"smp_synch":0,"conf_rev":1}
-{"event":"asdu","received":"2026-10-28T12:58:18.191769Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:04:00:01","app_id":"0x4001","vlan_id":0,"vlan_priority":4,"simulation":false,"no_asdu":4,"asdu_index":0,"sv_id":"InteropSvGeneric","dat_set":"InteropLD/LLN0$dsSvGeneric","smp_cnt":512,"conf_rev":1,"refr_tm":"2026-10-28T12:58:18.188728988Z","smp_synch":0,"smp_rate":1000,"smp_mod":"SmpPerSec","values":[0,{"bits":"0000","len":13},0,{"bits":"0000","len":13},0]}
-{"event":"asdu","received":"2026-10-28T12:58:18.739357Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:04:00:01","app_id":"0x4001","vlan_id":0,"vlan_priority":4,"simulation":false,"no_asdu":4,"asdu_index":0,"sv_id":"InteropSvGeneric","dat_set":"InteropLD/LLN0$dsSvGeneric","smp_cnt":12,"conf_rev":1,"refr_tm":"2026-10-28T12:58:18.688728988Z","smp_synch":0,"smp_rate":1000,"smp_mod":"SmpPerSec","values":[0,{"bits":"0000","len":13},0,{"bits":"0000","len":13},0]}
-{"event":"summary","time":"2026-10-28T12:58:19.187981Z","asdus":1000,"streams":[{"src":"02:00:00:00:00:01","app_id":"0x4001","sv_id":"InteropSvGeneric","status":"ok","frames":250,"asdus":1000,"rate":885.7,"lost":0,"duplicates":0,"out_of_order":0,"invalid":0,"timeouts":0,"queue_drops":0,"last_smp_cnt":511,"smp_cnt_wrap":1000,"smp_synch":0,"conf_rev":1,"simulation":false}]}
+{"event":"start","time":"2026-11-07T04:31:39.671169Z","src":"02:00:00:00:00:01","app_id":"0x4001","sv_id":"InteropSvGeneric","smp_cnt":508,"smp_synch":0,"conf_rev":1}
+{"event":"asdu","received":"2026-11-07T04:31:39.671169Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:04:00:01","app_id":"0x4001","vlan_id":0,"vlan_priority":4,"simulation":false,"no_asdu":4,"asdu_index":0,"sv_id":"InteropSvGeneric","dat_set":"InteropIEDInteropLD/LLN0$dsSvGeneric","smp_cnt":508,"conf_rev":1,"refr_tm":"2026-11-07T04:31:39.668201983Z","smp_synch":0,"smp_rate":1000,"smp_mod":"SmpPerSec","values":[0,{"bits":"0000","len":13},0,{"bits":"0000","len":13},0]}
+{"event":"asdu","received":"2026-11-07T04:31:40.171086Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:04:00:01","app_id":"0x4001","vlan_id":0,"vlan_priority":4,"simulation":false,"no_asdu":4,"asdu_index":0,"sv_id":"InteropSvGeneric","dat_set":"InteropIEDInteropLD/LLN0$dsSvGeneric","smp_cnt":8,"conf_rev":1,"refr_tm":"2026-11-07T04:31:40.168201983Z","smp_synch":0,"smp_rate":1000,"smp_mod":"SmpPerSec","values":[0,{"bits":"0000","len":13},0,{"bits":"0000","len":13},0]}
+{"event":"summary","time":"2026-11-07T04:31:40.667099Z","asdus":1000,"streams":[{"src":"02:00:00:00:00:01","app_id":"0x4001","sv_id":"InteropSvGeneric","status":"ok","frames":250,"asdus":1000,"rate":1002.1,"lost":0,"duplicates":0,"out_of_order":0,"invalid":0,"timeouts":0,"queue_drops":0,"last_smp_cnt":507,"smp_cnt_wrap":1000,"smp_synch":0,"conf_rev":1,"simulation":false}]}
 ```
 
-Without `--bare-domain` every ASDU of that stream fails the datSet check. The
-error is printed once, the table counts them all, and `--count` is not
-reached (exit `5`):
+A publisher whose datSet uses the bare LD (go-iec61850 before v1.7.0,
+`server start --instance-domain-names`) needs `--bare-domain`. Against this
+one, `--bare-domain` makes every ASDU fail the datSet check. The error is
+printed once, the table counts them all, and `--count` is not reached (exit
+`5`):
 
 ```console
-$ iec61850ctl sv subscribe --iface eth0 --scl pkg/svops/testdata/interop-sv.cid --svcb MSVCB02 --count 1 --duration 1s
+$ iec61850ctl sv subscribe --iface eth0 --scl pkg/svops/testdata/interop-sv.cid --svcb MSVCB02 --bare-domain --count 1 --duration 1s
 Subscribing to InteropIEDInteropLD/LLN0$MS$MSVCB02 (svID InteropSvGeneric) on eth0 (Ctrl+C to stop)
-12:58:19.191 invalid     InteropSvGeneric 0x4001 02:00:00:00:00:01 smpCnt=512 error=sv: InteropSvGeneric: datSet: want InteropIEDInteropLD/LLN0$dsSvGeneric, got InteropLD/LLN0$dsSvGeneric
-12:58:20 summary: 1000 ASDU(s)
+04:31:40.671 invalid     InteropSvGeneric 0x4001 02:00:00:00:00:01 smpCnt=508 error=sv: InteropSvGeneric: datSet: want InteropLD/LLN0$dsSvGeneric, got InteropIEDInteropLD/LLN0$dsSvGeneric
+04:31:41 stats: 1000 ASDU(s)
   SVID              APPID   SRC                STATUS   RATE/s  ASDUS  LOST  DUP  OOO  INVALID  TIMEOUTS  SMPCNT   SYNCH  CONFREV
-  InteropSvGeneric  0x4001  02:00:00:00:00:01  invalid  1001.2  1000   0     0    0    1000     0         0/65536  0      0
+  InteropSvGeneric  0x4001  02:00:00:00:00:01  invalid  1002.0  1000   0     0    0    1000     0         0/65536  0      0
+04:31:41 summary: 1000 ASDU(s)
+  SVID              APPID   SRC                STATUS   RATE/s  ASDUS  LOST  DUP  OOO  INVALID  TIMEOUTS  SMPCNT   SYNCH  CONFREV
+  InteropSvGeneric  0x4001  02:00:00:00:00:01  invalid  1002.0  1000   0     0    0    1000     0         0/65536  0      0
 received 0 of 1 SV ASDU(s) before --duration elapsed
 $ echo $?
-4
+5
 ```
 
 ## sv publish
@@ -486,12 +491,12 @@ flags (`--host`, `--port`, timeouts). Unicast USVCBs are not supported.
 | `--smp-mod` | set | new SmpMod: `SmpPerPeriod`, `SmpPerSec`, `SecPerSmp` (only while disabled) |
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb get --ld InteropLD --svcb MSVCB01
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb get --ld InteropIEDInteropLD --svcb MSVCB01
 Connecting to 127.0.0.1:10103
-MSVCB InteropLD/LLN0$MS$MSVCB01
+MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01
   SvEna:      true
   MsvID:      InteropSv92LE
-  DatSet:     InteropLD/LLN0$PhsMeas1
+  DatSet:     InteropIEDInteropLD/LLN0$PhsMeas1
   ConfRev:    1
   SmpRate:    80 SmpPerPeriod
   OptFlds:    sample-synchronized
@@ -500,13 +505,13 @@ MSVCB InteropLD/LLN0$MS$MSVCB01
 ```
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb get --ld InteropLD --svcb MSVCB02 --format json
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb get --ld InteropIEDInteropLD --svcb MSVCB02 --format json
 Connecting to 127.0.0.1:10103
 {
-  "reference": "InteropLD/LLN0$MS$MSVCB02",
+  "reference": "InteropIEDInteropLD/LLN0$MS$MSVCB02",
   "sv_ena": true,
   "msv_id": "InteropSvGeneric",
-  "dat_set": "InteropLD/LLN0$dsSvGeneric",
+  "dat_set": "InteropIEDInteropLD/LLN0$dsSvGeneric",
   "conf_rev": 1,
   "smp_rate": 1000,
   "smp_mod": "SmpPerSec",
@@ -531,9 +536,9 @@ Connecting to 127.0.0.1:10103
 An OptFlds change on an enabled block is refused:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate
 Connecting to 127.0.0.1:10103
-set MSVCB InteropLD/LLN0$MS$MSVCB01: iec61850: set MSVCB InteropLD/LLN0$MS$MSVCB01.OptFlds: mms: data access error: TemporarilyUnavailable
+set MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01: iec61850: set MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01.OptFlds: mms: data access error: TemporarilyUnavailable
 $ echo $?
 6
 ```
@@ -541,12 +546,12 @@ $ echo $?
 Disable the block first, then change it and re-enable it in one call:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropLD --svcb MSVCB01 --disable
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --disable
 Connecting to 127.0.0.1:10103
-MSVCB InteropLD/LLN0$MS$MSVCB01
+MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01
   SvEna:      false
   MsvID:      InteropSv92LE
-  DatSet:     InteropLD/LLN0$PhsMeas1
+  DatSet:     InteropIEDInteropLD/LLN0$PhsMeas1
   ConfRev:    1
   SmpRate:    80 SmpPerPeriod
   OptFlds:    sample-synchronized
@@ -555,12 +560,12 @@ MSVCB InteropLD/LLN0$MS$MSVCB01
 ```
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate --enable
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate --enable
 Connecting to 127.0.0.1:10103
-MSVCB InteropLD/LLN0$MS$MSVCB01
+MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01
   SvEna:      true
   MsvID:      InteropSv92LE
-  DatSet:     InteropLD/LLN0$PhsMeas1
+  DatSet:     InteropIEDInteropLD/LLN0$PhsMeas1
   ConfRev:    1
   SmpRate:    80 SmpPerPeriod
   OptFlds:    refresh-time,sample-rate

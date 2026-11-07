@@ -59,8 +59,9 @@ stacks = {
     "iec61850bean": "IEC61850BEAN_IMAGE",
     "dscsystems": "DSCSYSTEMS_IMAGE",
     "iec61850-rust": "IEC61850RUST_IMAGE",
+    "cbsigma": "CBSIGMA_IMAGE",
 }
-goose = ["libiec61850", "dscsystems", "iec61850-rust"]
+goose = ["libiec61850", "dscsystems", "iec61850-rust", "cbsigma"]
 sv = [s for s in stacks if caps["commands"].get(f"{s}-sv-publisher")]
 files = ["interop.icd", "expected-values.json", "self-server-values.json", "interop-goose.cid", "goose.json",
          "interop-sv.cid", "sv.json"]

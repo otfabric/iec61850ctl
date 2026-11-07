@@ -19,9 +19,12 @@ import (
 //
 // OnOperate updates the corresponding stVal in the value store.
 //
-// Models without the InteropLD logical device are left untouched.
+// The logical device is the one with LDevice@inst InteropLD, whatever its
+// MMS domain (InteropIEDInteropLD by default, InteropLD with instance
+// domain names). Models without it are left untouched.
 func registerInteropControls(srv *iec61850.Server) error {
-	if !hasLogicalDevice(srv, interopLD) {
+	ld, ok := interopDomain(srv)
+	if !ok {
 		return nil
 	}
 	vs := srv.ValueStore()
@@ -47,12 +50,12 @@ func registerInteropControls(srv *iec61850.Server) error {
 		stValKey string
 	}
 	controls := []ctrl{
-		{"GGIO1.SPCSO1", iec61850.CtlModelDirectNormal, "InteropLD/GGIO1$ST$SPCSO1$stVal"},
-		{"GGIO1.SPCSO2", iec61850.CtlModelSBONormal, "InteropLD/GGIO1$ST$SPCSO2$stVal"},
-		{"GGIO1.SPCSO3", iec61850.CtlModelSBOEnhanced, "InteropLD/GGIO1$ST$SPCSO3$stVal"},
+		{"GGIO1.SPCSO1", iec61850.CtlModelDirectNormal, ld + "/GGIO1$ST$SPCSO1$stVal"},
+		{"GGIO1.SPCSO2", iec61850.CtlModelSBONormal, ld + "/GGIO1$ST$SPCSO2$stVal"},
+		{"GGIO1.SPCSO3", iec61850.CtlModelSBOEnhanced, ld + "/GGIO1$ST$SPCSO3$stVal"},
 	}
 	for _, c := range controls {
-		if err := srv.RegisterControl(interopLD, c.doRef, c.ctlModel, makeOperateHandler(c.stValKey)); err != nil {
+		if err := srv.RegisterControl(ld, c.doRef, c.ctlModel, makeOperateHandler(c.stValKey)); err != nil {
 			return fmt.Errorf("register control %s: %w", c.doRef, err)
 		}
 	}
@@ -61,15 +64,17 @@ func registerInteropControls(srv *iec61850.Server) error {
 
 const interopLD = "InteropLD"
 
-func hasLogicalDevice(srv *iec61850.Server, name string) bool {
+// interopDomain is the MMS domain of the logical device whose
+// LDevice@inst (or domain) is InteropLD.
+func interopDomain(srv *iec61850.Server) (string, bool) {
 	m := srv.Model()
 	if m == nil {
-		return false
+		return "", false
 	}
-	for i := range m.LogicalDevices {
-		if m.LogicalDevices[i].Name == name {
-			return true
+	for _, ld := range m.LogicalDevices {
+		if ld.Inst == interopLD || ld.Name == interopLD {
+			return ld.Name, true
 		}
 	}
-	return false
+	return "", false
 }

@@ -21,7 +21,7 @@ For scripting, every command has stable exit codes, and the browse, read, contro
 
 **No CGO.** Binaries are static Go builds — no libiec61850 native library at runtime.
 
-Black-box e2e runs the built CLI against the four independent stacks of [iec61850-interop](https://github.com/otfabric/iec61850-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). It covers their IED servers, their controller/reporter/client adapters against `server start`, and — for the three stacks with GOOSE and SV support (all but IEC61850bean) — GOOSE and Sampled Values in both directions. See [docs/INTEROP.md](docs/INTEROP.md).
+Black-box e2e runs the built CLI against the five independent stacks of [iec61850-interop](https://github.com/otfabric/iec61850-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850), [iec61850-rust](https://github.com/csp0924/iec61850-rust) and cbsigma ([cB-Sigma/iec61850](https://github.com/cB-Sigma/iec61850) and [iec61850-sim](https://github.com/cB-Sigma/iec61850-sim)). It covers their IED servers, their controller/reporter/client adapters against `server start`, GOOSE in both directions with every stack but IEC61850bean, and Sampled Values in both directions with libiec61850, dscsystems and iec61850-rust. See [docs/INTEROP.md](docs/INTEROP.md).
 
 ## Table of Contents
 

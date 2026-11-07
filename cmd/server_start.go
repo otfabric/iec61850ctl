@@ -15,15 +15,16 @@ import (
 )
 
 var (
-	serverStartSCL       string
-	serverStartValues    string
-	serverStartHost      string
-	serverStartPort      int
-	serverStartMaxConn   int
-	serverStartReadyJSON bool
-	serverStartFixtureID string
-	serverStartFilesDir  string
-	serverStartAllowROFC bool
+	serverStartSCL             string
+	serverStartValues          string
+	serverStartHost            string
+	serverStartPort            int
+	serverStartMaxConn         int
+	serverStartReadyJSON       bool
+	serverStartFixtureID       string
+	serverStartFilesDir        string
+	serverStartAllowROFC       bool
+	serverStartInstanceDomains bool
 )
 
 var serverStartCmd = &cobra.Command{
@@ -43,6 +44,7 @@ func init() {
 	serverStartCmd.Flags().BoolVar(&serverStartReadyJSON, "ready-json", false, "emit one JSON readiness event on stdout after bind")
 	serverStartCmd.Flags().StringVar(&serverStartFixtureID, "fixture-id", "", "optional fixture identifier included in readiness JSON")
 	serverStartCmd.Flags().StringVar(&serverStartFilesDir, "files-dir", "", "directory served read-only over MMS file services (list files / get file)")
+	serverStartCmd.Flags().BoolVar(&serverStartInstanceDomains, "instance-domain-names", false, "name each MMS domain by its LDevice@inst alone (InteropLD), as iec61850ctl before v0.9.0, instead of the IEC 61850-8-1 name (ldName, else IED name + inst: InteropIEDInteropLD)")
 	serverStartCmd.Flags().BoolVar(&serverStartAllowROFC, "allow-readonly-fc-writes", false, "accept client writes to status and measured values (FC ST, MX, SG, SR, OR, EX); simulators and test fixtures only, IEC 61850-7-2 makes them read-only")
 	_ = serverStartCmd.MarkFlagRequired("scl")
 }
@@ -75,6 +77,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		Version:               ver,
 		FilesDir:              serverStartFilesDir,
 		AllowReadOnlyFCWrites: serverStartAllowROFC,
+		InstanceDomainNames:   serverStartInstanceDomains,
 		Logger:                cmdLogger(),
 		Stdout:                cmd.OutOrStdout(),
 		Stderr:                cmd.ErrOrStderr(),

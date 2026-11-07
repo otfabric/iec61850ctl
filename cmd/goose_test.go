@@ -42,7 +42,7 @@ func withHub(t *testing.T, hub *goose.Hub) {
 func startGooseServer(t *testing.T, hub *goose.Hub) *server.Running {
 	t.Helper()
 	port := hub.NewPort(goose.MAC{0x02, 0, 0, 0, 0, 0x01})
-	srv, err := server.Start(context.Background(), server.RunConfig{SclPath: gooseFixture(), Host: "127.0.0.1", GOOSE: port})
+	srv, err := server.Start(context.Background(), server.RunConfig{InstanceDomainNames: true, SclPath: gooseFixture(), Host: "127.0.0.1", GOOSE: port})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,7 +335,7 @@ func TestGocbItem(t *testing.T) {
 // A server without a GOOSE publisher accepts the GoEna write but reads back
 // false: set --enable must exit 7, not 0.
 func TestGooseGoCBEnableNotPublishing(t *testing.T) {
-	srv, err := server.Start(context.Background(), server.RunConfig{SclPath: gooseFixture(), Host: "127.0.0.1"})
+	srv, err := server.Start(context.Background(), server.RunConfig{InstanceDomainNames: true, SclPath: gooseFixture(), Host: "127.0.0.1"})
 	if err != nil {
 		t.Fatal(err)
 	}

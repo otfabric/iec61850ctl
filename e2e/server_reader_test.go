@@ -35,6 +35,10 @@ func TestReverse_ServerReader(t *testing.T) {
 	}
 }
 
+// selfServerDomain is the MMS domain of the fixture LD on `server start`:
+// IED name + LD inst (IEC 61850-8-1), as on the reference servers.
+const selfServerDomain = "InteropIEDInteropLD"
+
 func assertReaderJourney(t *testing.T, results []adapterOpResult) {
 	t.Helper()
 
@@ -42,8 +46,8 @@ func assertReaderJourney(t *testing.T, results []adapterOpResult) {
 	requireExactOpOK(t, results, "conclude")
 
 	dir := requireExactOpOK(t, results, "get-server-directory")
-	if !containsString(dir.Names, "InteropLD") {
-		t.Fatalf("get-server-directory names missing InteropLD: %v", dir.Names)
+	if !containsString(dir.Names, selfServerDomain) {
+		t.Fatalf("get-server-directory names missing %s: %v", selfServerDomain, dir.Names)
 	}
 
 	ld := requireExactOpOK(t, results, "get-ld-directory")
@@ -60,34 +64,34 @@ func assertReaderJourney(t *testing.T, results []adapterOpResult) {
 		}
 	}
 
-	st := requireReadOK(t, results, "InteropLD/GGIO1.SPS1.stVal[ST]")
+	st := requireReadOK(t, results, selfServerDomain+"/GGIO1.SPS1.stVal[ST]")
 	if b, ok := st.Value.(bool); !ok || b != false {
 		t.Fatalf("ST read: want false, got %#v", st.Value)
 	}
 
-	mx := requireReadOK(t, results, "InteropLD/MMXU1.TotW.mag.f[MX]")
+	mx := requireReadOK(t, results, selfServerDomain+"/MMXU1.TotW.mag.f[MX]")
 	f, ok := asFloat64(mx.Value)
 	if !ok || math.Abs(f-1234.5) > floatCompareEpsilon {
 		t.Fatalf("MX read: want 1234.5, got %#v", mx.Value)
 	}
 
-	cf := requireReadOK(t, results, "InteropLD/LLN0.Mod.ctlModel[CF]")
+	cf := requireReadOK(t, results, selfServerDomain+"/LLN0.Mod.ctlModel[CF]")
 	n, ok := asInt64(cf.Value)
 	if !ok || n != 1 {
 		t.Fatalf("CF read: want 1, got %#v", cf.Value)
 	}
 
-	dc := requireReadOK(t, results, "InteropLD/LLN0.Mod.d[DC]")
+	dc := requireReadOK(t, results, selfServerDomain+"/LLN0.Mod.d[DC]")
 	if s, ok := dc.Value.(string); !ok || s != "mode" {
 		t.Fatalf("DC read: want %q, got %#v", "mode", dc.Value)
 	}
 
-	wr := findOpTarget(results, "write", "InteropLD/LLN0.Mod.stVal[ST]")
+	wr := findOpTarget(results, "write", selfServerDomain+"/LLN0.Mod.stVal[ST]")
 	if wr == nil || !wr.OK {
 		t.Fatalf("write Mod.stVal missing or not ok")
 	}
 
-	ds := findOpTarget(results, "read-dataset", "InteropLD/LLN0$dsInterop")
+	ds := findOpTarget(results, "read-dataset", selfServerDomain+"/LLN0$dsInterop")
 	if ds == nil || !ds.OK {
 		t.Fatalf("read-dataset missing or not ok")
 	}

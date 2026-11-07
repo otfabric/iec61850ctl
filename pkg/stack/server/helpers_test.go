@@ -143,7 +143,8 @@ func TestSeedValuesSkipsAndSets(t *testing.T) {
 		{Ref: "InteropLD/GGIO1.SPCSO1.stVal", FC: domain.FC_ST, Type: domain.TypeBoolean, Value: domain.NewValue("nope", domain.TypeBoolean)},
 	}}
 	SeedValues(srv, ied)
-	v := srv.ValueStore().Get("InteropLD/GGIO1$ST$SPCSO1$stVal")
+	// The ref names the LD instance; the store key is its IEC 61850-8-1 domain.
+	v := srv.ValueStore().Get("InteropIEDInteropLD/GGIO1$ST$SPCSO1$stVal")
 	if v == nil {
 		t.Fatal("stVal not seeded")
 	}
@@ -166,7 +167,7 @@ func TestInteropControlOperate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = c.Close(ctx) }()
-	ref, err := iec61850.ParseRef("InteropLD/GGIO1.SPCSO1")
+	ref, err := iec61850.ParseRef("InteropIEDInteropLD/GGIO1.SPCSO1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,10 +194,67 @@ func TestRegisterInteropControlsSkipsForeignModel(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer srv.Close()
-	if hasLogicalDevice(srv, interopLD) {
-		t.Fatal("unexpected InteropLD")
+	if ld, ok := interopDomain(srv); ok {
+		t.Fatalf("unexpected interop LD %q", ld)
 	}
 	if err := registerInteropControls(srv); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestSeedValuesByDomain seeds refs that name the MMS domain itself.
+func TestSeedValuesByDomain(t *testing.T) {
+	t.Parallel()
+	srv := newInteropServer(t)
+	SeedValues(srv, &domain.IED{Leaves: []domain.LeafEntry{
+		{Ref: "InteropIEDInteropLD/GGIO1.SPS1.stVal", FC: domain.FC_ST, Type: domain.TypeBoolean, Value: domain.NewValue(true, domain.TypeBoolean)},
+	}})
+	v := srv.ValueStore().Get("InteropIEDInteropLD/GGIO1$ST$SPS1$stVal")
+	if b, _ := v.Bool(); v == nil || !b {
+		t.Fatalf("stVal = %v", v)
+	}
+}
+
+// TestStartDomainNames checks the MMS domain of the interop LD: the IEC
+// 61850-8-1 name by default, LDevice@inst with InstanceDomainNames, and
+// that controls and seeded values follow it.
+func TestStartDomainNames(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		instance bool
+		domain   string
+	}{{false, "InteropIEDInteropLD"}, {true, "InteropLD"}} {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		r, err := Start(ctx, RunConfig{
+			SclPath: interopICD(t), Host: "127.0.0.1", InstanceDomainNames: tc.instance,
+			ValuesPath: repoPath(t, "e2e", "testdata", "self-server-values.json"),
+		})
+		if err != nil {
+			cancel()
+			t.Fatal(err)
+		}
+		c, err := iec61850.Dial(ctx, r.Addr(), iec61850.DialOptions{})
+		if err != nil {
+			cancel()
+			_ = r.Close()
+			t.Fatal(err)
+		}
+		lds, err := c.ListLogicalDevices(ctx)
+		if err != nil || len(lds) != 1 || lds[0].Name != tc.domain {
+			t.Errorf("instance=%v: logical devices %v, %v; want [%s]", tc.instance, lds, err, tc.domain)
+		}
+		ref, _ := iec61850.ParseRef(tc.domain + "/MMXU1.TotW.mag.f[MX]")
+		if v, err := c.Read(ctx, ref); err != nil {
+			t.Errorf("instance=%v: read seeded %s: %v", tc.instance, ref, err)
+		} else if f, _ := v.Float32(); f != 1234.5 {
+			t.Errorf("instance=%v: TotW = %v, want the seeded 1234.5", tc.instance, f)
+		}
+		op, _ := iec61850.ParseRef(tc.domain + "/GGIO1.SPCSO1")
+		if err := c.Operate(ctx, op, iec61850.OperateParams{CtlVal: iec61850.BoolCtlVal(true)}); err != nil {
+			t.Errorf("instance=%v: operate: %v", tc.instance, err)
+		}
+		_ = c.Close(ctx)
+		_ = r.Close()
+		cancel()
 	}
 }

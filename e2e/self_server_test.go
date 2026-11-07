@@ -87,12 +87,13 @@ func TestSelfSmoke(t *testing.T) {
 		t.Fatal("ready ied_name is empty")
 	}
 
-	// The iec61850ctl / go-iec61850 server registers MMS domains as LD names
-	// without an IED prefix, so the client must not set IEC61850_IED_NAME.
+	// The server names its MMS domains as IEC 61850-8-1 requires (IED name +
+	// LD inst, go-iec61850 v1.7.0), like the reference servers, so the
+	// client normalises with the IED name of the ready event.
 	env := map[string]string{
 		"IEC61850_HOST":     "127.0.0.1",
 		"IEC61850_PORT":     strconv.Itoa(port),
-		"IEC61850_IED_NAME": "",
+		"IEC61850_IED_NAME": ready.IEDName,
 	}
 	waitForCtlReady(t, env, 5*time.Second)
 
