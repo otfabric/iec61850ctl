@@ -1,4 +1,4 @@
-.PHONY: help all run fmt lint lint-ci vet test coverage coverage-pkg-check fuzz cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs vuln
+.PHONY: help all run fmt lint lint-ci vet test coverage coverage-pkg-check fuzz cover check build build-nocheck build-all release-all install clean e2e e2e-self e2e-verify-fixtures e2e-update-fixtures e2e-docs vuln docs-check
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -54,6 +54,8 @@ vet: ## Run go vet on project packages
 
 # Minimum statement coverage per package, cmd/ included (TEST-012).
 COVER_PKG_MIN := 90
+# docsync release of docs-check (DOC-008).
+DOCSYNC_VERSION := v0.2.0
 # Duration per fuzz target for `make fuzz`.
 FUZZTIME ?= 10s
 
@@ -76,7 +78,7 @@ cover: coverage ## Open coverage report in browser
 	@echo "Opening coverage report"
 	@go tool cover -html=coverage.out
 
-check: fmt lint lint-ci vet vuln test coverage-pkg-check ## Run all checks (format, lint, vet, race tests, coverage gate)
+check: fmt lint lint-ci vet vuln test coverage-pkg-check docs-check ## Run all checks (format, lint, vet, race tests, coverage gate, docs)
 
 build: check ## Build the application (runs full check first)
 	@$(MAKE) build-nocheck
@@ -155,3 +157,7 @@ e2e-self: build-nocheck e2e-verify-fixtures ## Self-server smoke only
 
 e2e-docs: ## Generate docs/interop-examples.md from e2e/testdata/examples.json
 	@./scripts/generate-interop-examples.sh
+
+# The documents against the code (DOC-008): docsync, as docs-check.yml runs it.
+docs-check: ## Check that the documents agree with the code (docsync)
+	@go run github.com/otfabric/docsync@$(DOCSYNC_VERSION) check .
