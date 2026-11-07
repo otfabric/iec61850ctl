@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -20,6 +21,7 @@ import (
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
 
+	"github.com/otfabric/iec61850ctl/internal/buildinfo"
 	"github.com/otfabric/iec61850ctl/pkg/errs"
 	"github.com/otfabric/iec61850ctl/pkg/service"
 	"github.com/otfabric/iec61850ctl/pkg/stack/client"
@@ -28,8 +30,18 @@ import (
 
 func TestVersion(t *testing.T) {
 	const sha = "1802d0f9afe8642d1e278120b76fcdfac967cb9e"
+	// The libraries come from the test binary's build info (go-iec61850,
+	// go-mms, …); their formatting is tested in internal/buildinfo.
+	libs := buildinfo.Resolve("x", "1", "", "c", "").Libraries
+	if len(libs) == 0 {
+		t.Fatal("no github.com/otfabric/go-* library in the build info")
+	}
+	libsJSON, _ := json.Marshal(libs)
 	plat := runtime.Version() + ", " + runtime.GOOS + "/" + runtime.GOARCH
-	jsonTail := `","go":"` + runtime.Version() + `","platform":"` + runtime.GOOS + "/" + runtime.GOARCH + `"}` + "\n"
+	for _, l := range slices.Backward(libs) {
+		plat = l.Name + " " + l.Version + ", " + plat
+	}
+	jsonTail := `","libraries":` + string(libsJSON) + `,"go":"` + runtime.Version() + `","platform":"` + runtime.GOOS + "/" + runtime.GOARCH + `"}` + "\n"
 	SetBuildMeta("v9.9.9", "v9.9.9", sha, "2026-01-01T00:00:00Z")
 	t.Cleanup(func() { SetBuildMeta("", "", "", "") })
 

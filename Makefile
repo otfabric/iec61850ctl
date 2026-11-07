@@ -12,8 +12,12 @@ export CGO_ENABLED := 0
 APP_NAME       = iec61850ctl
 APP_SRC        = main.go
 ARCHS          = linux/amd64 linux/arm64 linux/arm/v7 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
-VERSION       := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-TAG           := $(shell git tag --points-at HEAD 2>/dev/null | head -1)
+# Version and tag only when HEAD is exactly on a tag; otherwise they stay
+# empty and the binary reports "dev" (internal/buildinfo).
+TAG           := $(shell git describe --tags --exact-match HEAD 2>/dev/null)
+VERSION       := $(patsubst v%,%,$(TAG))
+# Version in the build-all/release-all archive names.
+ARTIFACT_VERSION := $(or $(VERSION),dev)
 COMMIT        := $(shell git rev-parse HEAD 2>/dev/null)
 BUILD_DATE    := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 LDFLAGS       := -ldflags "-s -w \
@@ -98,11 +102,11 @@ build-all: ## Build the application for all architectures
 		ext=""; \
 		if [ "$$os" = "windows" ]; then ext=".exe"; fi; \
 		if [ "$$cpu" = "arm" ] && [ "$$variant" = "v7" ]; then \
-			out=$(APP_NAME)-$(VERSION)-$$os-armv7$$ext; \
+			out=$(APP_NAME)-$(ARTIFACT_VERSION)-$$os-armv7$$ext; \
 			echo "Building $$out..."; \
 			GOOS=$$os GOARCH=$$cpu GOARM=7 go build $(LDFLAGS) -o $(RELEASE_DIR)/$$out $(APP_SRC); \
 		else \
-			out=$(APP_NAME)-$(VERSION)-$$os-$$cpu$$ext; \
+			out=$(APP_NAME)-$(ARTIFACT_VERSION)-$$os-$$cpu$$ext; \
 			echo "Building $$out..."; \
 			GOOS=$$os GOARCH=$$cpu go build $(LDFLAGS) -o $(RELEASE_DIR)/$$out $(APP_SRC); \
 		fi \
@@ -118,9 +122,9 @@ release-all: build-all ## Package the build binaries into tar.gz archives for al
 		ext=""; \
 		if [ "$$os" = "windows" ]; then ext=".exe"; fi; \
 		if [ "$$cpu" = "arm" ] && [ "$$variant" = "v7" ]; then \
-			bin=$(APP_NAME)-$(VERSION)-$$os-armv7$$ext; \
+			bin=$(APP_NAME)-$(ARTIFACT_VERSION)-$$os-armv7$$ext; \
 		else \
-			bin=$(APP_NAME)-$(VERSION)-$$os-$$cpu$$ext; \
+			bin=$(APP_NAME)-$(ARTIFACT_VERSION)-$$os-$$cpu$$ext; \
 		fi; \
 		echo "Packaging $$bin.tar.gz..."; \
 		tar czf $(RELEASE_DIR)/$$bin.tar.gz -C $(RELEASE_DIR) $$bin; \

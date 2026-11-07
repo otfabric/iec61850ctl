@@ -258,10 +258,10 @@ Event names per command are in [AUTOMATION.md](AUTOMATION.md#goose-and-sampled-v
 
 ## `version --json`
 
-One line (also with `--format json` or `IEC61850CTL_FORMAT=json`), keys always in this order. `tag` is `""` when the binary was not built from a tag; `version` is `dev` and `commit`/`built` are `unknown` when not known.
+One line (also with `--format json` or `IEC61850CTL_FORMAT=json`), keys always in this order. `tag` is `""` when the binary was not built from a tag; `version` is `dev` and `commit`/`built` are `unknown` when not known. `libraries` lists the `github.com/otfabric/go-*` modules the binary is built on, sorted by name, without the leading `v` (`[]` when there are none).
 
 ```json
-{"name":"iec61850ctl","version":"0.11.0","tag":"v0.11.0","commit":"1802d0f9afe8642d1e278120b76fcdfac967cb9e","built":"2026-11-05T15:41:49Z","go":"go1.26.10","platform":"linux/amd64"}
+{"name":"iec61850ctl","version":"0.11.0","tag":"v0.11.0","commit":"1802d0f9afe8642d1e278120b76fcdfac967cb9e","built":"2026-11-05T15:41:49Z","libraries":[{"name":"go-cotp","version":"1.3.0"},{"name":"go-iec61850","version":"1.7.0"},{"name":"go-mms","version":"1.4.0"},{"name":"go-tpkt","version":"1.1.0"}],"go":"go1.26.10","platform":"linux/amd64"}
 ```
 
 ## Server readiness
