@@ -2,7 +2,7 @@
 
 Generated from `e2e/testdata/examples.json`. Do not edit by hand; run `make e2e-docs`.
 
-iec61850-interop: `v1.3.0` · IED fixture: `iec61850-v3` · IED name: `InteropIED`
+iec61850-interop: `v1.4.0` · IED fixture: `iec61850-v3` · IED name: `InteropIED`
 
 See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).
 
@@ -43,10 +43,10 @@ docker run --rm -p 1102:1102 --entrypoint iec61850-rust-ied-server \
 ### Digest-pinned images (CI / reproducible)
 
 ```bash
-LIBIEC61850_IMAGE=ghcr.io/otfabric/iec61850-interop-libiec61850@sha256:36256bf2fff44d46bf9df3f77bd3f41527f7c40bbc776b4f103db27086f8e1d8
-IEC61850BEAN_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850bean@sha256:7c9d84d098b4e985d5213335493092e419dd1fe221fa56fda28e778aeb16241c
-DSCSYSTEMS_IMAGE=ghcr.io/otfabric/iec61850-interop-dscsystems@sha256:e98845163756609d789711e03a85f06f27518ff5022ec3bfa89669f9af5f2dbe
-IEC61850RUST_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850-rust@sha256:b3aacbdf75734729c0b8ca37cb704f97b6359d97368113d15488a0fef7ad8b39
+LIBIEC61850_IMAGE=ghcr.io/otfabric/iec61850-interop-libiec61850@sha256:5f865e1917f246763e992701c688a58d157d641ca91674e51bbc342ef945adad
+IEC61850BEAN_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850bean@sha256:df9b48b5f903ec55f7bcb7baabe651ae204c685702d77979e89165fad00c6416
+DSCSYSTEMS_IMAGE=ghcr.io/otfabric/iec61850-interop-dscsystems@sha256:bba8bc1653b4c5bb51c4b8766f0bd99d77dd3523574ed2630b09695212618f2e
+IEC61850RUST_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850-rust@sha256:c961c039384b0ea968e786a259e1f7a3a4781f2b544ff50d794bd965e991314c
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
   "$LIBIEC61850_IMAGE" --port 1102
 ```
