@@ -23,10 +23,24 @@ For scripting, every command has stable exit codes, and the browse, read, contro
 
 Black-box e2e runs the built CLI against the five independent stacks of [iec61850-interop](https://github.com/otfabric/iec61850-interop): [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850), [iec61850-rust](https://github.com/csp0924/iec61850-rust) and cbsigma ([cB-Sigma/iec61850](https://github.com/cB-Sigma/iec61850) and [iec61850-sim](https://github.com/cB-Sigma/iec61850-sim)). It covers their IED servers, their controller/reporter/client adapters against `server start`, GOOSE in both directions with every stack but IEC61850bean, and Sampled Values in both directions with libiec61850, dscsystems and iec61850-rust. See [docs/INTEROP.md](docs/INTEROP.md).
 
+## Install
+
+```sh
+curl -fsSL https://get.otfabric.io/iec61850ctl | sh
+```
+
+```powershell
+irm https://get.otfabric.io/iec61850ctl.ps1 | iex
+```
+
+Linux (amd64, arm64, armv7), macOS (Intel, Apple silicon) and Windows (amd64, arm64). The installer verifies the release's SHA-256 checksum, installs per user without `sudo` (`~/.local/bin`, Windows `%LOCALAPPDATA%\OTFabric\bin`), and upgrades in place when run again. Pin a version with `OTF_VERSION=x.y.z`; for CI, containers and device images use `OTF_UNMANAGED_INSTALL=<dir>`; all options: [otfabric/install](https://github.com/otfabric/install#options). For offline machines, the archives and checksums are on [Releases](https://github.com/otfabric/iec61850ctl/releases).
+
+From source (Go 1.26+): `go install github.com/otfabric/iec61850ctl@latest`
+
 ## Table of Contents
 
+- [Install](#install)
 - [Features](#features)
-- [Installation](#installation)
 - [Platform Support](#platform-support)
 - [Quick Start](#quick-start)
 - [Command Reference](#command-reference)
@@ -66,45 +80,6 @@ Black-box e2e runs the built CLI against the five independent stacks of [iec6185
 - **HTTP** — read-only JSON API for browse/read/find (**no** control or write over HTTP; no authentication — see [docs/HTTP.md](docs/HTTP.md))
 
 See [RELEASE.md](RELEASE.md) for the latest release notes. Protocol model primer: [docs/PROTOCOL.md](docs/PROTOCOL.md).
-
-## Installation
-
-### Pre-built binaries
-
-[GitHub Releases](https://github.com/otfabric/iec61850ctl/releases) has archives for linux (amd64, arm64, armv7), darwin (amd64, arm64) and windows (amd64, arm64), plus a SHA-256 checksum file:
-
-```sh
-VERSION=0.4.0
-curl -LO https://github.com/otfabric/iec61850ctl/releases/download/v$VERSION/iec61850ctl-$VERSION-linux-amd64.tar.gz
-curl -LO https://github.com/otfabric/iec61850ctl/releases/download/v$VERSION/iec61850ctl-$VERSION-checksums.txt
-sha256sum --ignore-missing -c iec61850ctl-$VERSION-checksums.txt
-tar xzf iec61850ctl-$VERSION-linux-amd64.tar.gz
-```
-
-### From source
-
-Requires Go 1.26+.
-
-```sh
-git clone https://github.com/otfabric/iec61850ctl.git
-cd iec61850ctl
-make build-nocheck
-# binary: ./bin/iec61850ctl
-```
-
-Or:
-
-```sh
-go install github.com/otfabric/iec61850ctl@latest
-```
-
-### Cross-platform builds
-
-```sh
-make build-all
-```
-
-Produces linux/darwin/windows binaries under `release/` for amd64/arm64 (and linux arm/v7). See `Makefile`.
 
 ## Platform Support
 
