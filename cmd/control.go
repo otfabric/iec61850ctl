@@ -31,6 +31,7 @@ var (
 	controlConfirmRef    string
 	controlNoConfirm     bool
 	controlDryRunFlag    bool
+	controlYesFlag       bool
 	controlFormatFlag    string
 )
 
@@ -52,7 +53,14 @@ var controlInspectCmd = &cobra.Command{
 var controlOperateCmd = &cobra.Command{
 	Use:   "operate",
 	Short: "Atomically select (if required) and operate a controllable object",
-	RunE:  runControlOperate,
+	Long: `Atomically select (if required) and operate a controllable object.
+
+Operating a control changes device state, so --yes is required; without it
+the command refuses (exit 2) before contacting the device. --dry-run only
+plans the sequence and does not need --yes.`,
+	Example: `  iec61850ctl control operate --object LD/GGIO1.SPCSO1 --type bool --value true --yes
+  iec61850ctl control operate --object LD/GGIO1.SPCSO1 --type bool --value true --dry-run`,
+	RunE: runControlOperate,
 }
 
 func init() {
@@ -73,6 +81,7 @@ func init() {
 	controlOperateCmd.Flags().StringVar(&controlConfirmRef, "confirm-ref", "", "complete reference for status read-back, e.g. LD/LN.DO.stVal[ST]")
 	controlOperateCmd.Flags().BoolVar(&controlNoConfirm, "no-confirm", false, "skip confirmation even if --confirm-ref is set")
 	controlOperateCmd.Flags().BoolVar(&controlDryRunFlag, "dry-run", false, "plan the sequence without writing SBO/SBOw/Oper")
+	controlOperateCmd.Flags().BoolVar(&controlYesFlag, "yes", false, "confirm that the control may change device state (required unless --dry-run)")
 	controlOperateCmd.Flags().StringVar(&controlFormatFlag, "format", "text", "Output format: text, json")
 	_ = controlOperateCmd.MarkFlagRequired("object")
 	_ = controlOperateCmd.MarkFlagRequired("type")
@@ -141,6 +150,9 @@ func runControlOperate(cmd *cobra.Command, _ []string) error {
 	}
 	if len([]byte(controlOrIdentFlag)) > domain.MaxOrIdentBytes {
 		return errs.Invalidf("or-ident exceeds %d bytes", domain.MaxOrIdentBytes)
+	}
+	if !controlYesFlag && !controlDryRunFlag {
+		return errs.Invalidf("refusing to operate %s without --yes: the control changes device state (missing confirmation)", controlObjectFlag)
 	}
 
 	session, err := openClientSession(cmd, clientSessionOptions{})

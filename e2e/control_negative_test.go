@@ -28,6 +28,7 @@ func TestControl_NegativeConfirmationMismatch(t *testing.T) {
 			// Operate true but confirm against a seeded-false SPS — mismatch.
 			op := runCtl(t, h.ctlEnv(), commandTimeout,
 				"control", "operate",
+				"--yes",
 				"--object", "InteropLD/GGIO1.SPCSO1",
 				"--value", "true",
 				"--type", "bool",
@@ -69,6 +70,7 @@ func TestControl_NegativeModeMismatch(t *testing.T) {
 			// SPCSO2 is SBO; force direct mode → mismatch reject.
 			op := runCtl(t, h.ctlEnv(), commandTimeout,
 				"control", "operate",
+				"--yes",
 				"--object", "InteropLD/GGIO1.SPCSO2",
 				"--value", "true",
 				"--type", "bool",
@@ -101,6 +103,7 @@ func TestWrite_NegativeRejectCO(t *testing.T) {
 		"IEC61850_IED_NAME": "InteropIED",
 	}, commandTimeout,
 		"set", "object",
+		"--yes",
 		"--object", "InteropLD/GGIO1.SPCSO1.Oper.ctlVal",
 		"--fc", "CO",
 		"--value", "true",

@@ -31,6 +31,7 @@ var (
 	subscribeReportPurgeBuf      bool
 	subscribeReportEntryID       string
 	subscribeReportResvTms       int
+	subscribeReportYes           bool
 )
 
 var subscribeReportCmd = &cobra.Command{
@@ -41,7 +42,9 @@ var subscribeReportCmd = &cobra.Command{
 Use --format jsonl for machine-readable JSON Lines on stdout (diagnostics on stderr).
 
 BRCB-only pre-enable flags (written before RptEna):
-  --purge-buf     Purge the report buffer
+  --purge-buf     Purge the report buffer (discards the buffered entries;
+                  requires --yes, without it the command refuses with exit 2
+                  before contacting the device)
   --entry-id HEX  Resume from EntryID (hex octets, e.g. 0000000000000001)
   --resv-tms N    Write ResvTms when the server supports it
 
@@ -51,7 +54,7 @@ Difference:
 
 Examples:
   iec61850ctl subscribe report ... --type BR --interrogation
-  iec61850ctl subscribe report ... --type BR --purge-buf --interrogation
+  iec61850ctl subscribe report ... --type BR --purge-buf --yes --interrogation
   iec61850ctl subscribe report ... --type BR --entry-id 0000000000000001
   iec61850ctl subscribe report ... --interrogation --format jsonl`,
 	RunE: runSubscribeReport,
@@ -70,7 +73,8 @@ func init() {
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportInterrogation, "interrogation", false, "Trigger General Interrogation (GI) on the RCB after enabling to request an immediate report (may include 0 items)")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportSync, "sync", false, "Read the report dataset once to obtain a full baseline snapshot (one-shot state sync)")
 	subscribeReportCmd.Flags().StringVar(&subscribeReportFormat, "format", "text", "Output format: text, jsonl")
-	subscribeReportCmd.Flags().BoolVar(&subscribeReportPurgeBuf, "purge-buf", false, "BRCB: purge buffer before enable")
+	subscribeReportCmd.Flags().BoolVar(&subscribeReportPurgeBuf, "purge-buf", false, "BRCB: purge buffer before enable (requires --yes)")
+	subscribeReportCmd.Flags().BoolVar(&subscribeReportYes, "yes", false, "confirm that --purge-buf may discard the BRCB buffer on the device (required with --purge-buf)")
 	subscribeReportCmd.Flags().StringVar(&subscribeReportEntryID, "entry-id", "", "BRCB: resume EntryID as hex octets")
 	subscribeReportCmd.Flags().IntVar(&subscribeReportResvTms, "resv-tms", 0, "BRCB: write ResvTms before enable")
 	_ = subscribeReportCmd.MarkFlagRequired("ld")
@@ -116,6 +120,9 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 	}
 	if fc != "BR" && (subscribeReportPurgeBuf || len(entryID) > 0 || resvTms != nil) {
 		return errs.Invalidf("--purge-buf/--entry-id/--resv-tms require --type BR")
+	}
+	if subscribeReportPurgeBuf && !subscribeReportYes {
+		return errs.Invalidf("refusing to purge the buffer of %s without --yes: --purge-buf discards the buffered reports (missing confirmation)", subscribeReportName)
 	}
 
 	session, err := openClientSession(cmd, clientSessionOptions{RequestTimeout: 30 * time.Second})

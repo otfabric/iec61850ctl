@@ -15,7 +15,7 @@ Authoritative machine-facing contract for scripting `iec61850ctl`: the MMS clien
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `2` | Usage error: invalid flag, argument or value, including a refused `goose`/`sv publish` without `--yes`, `--iface` or `--live` |
+| `2` | Usage error: invalid flag, argument or value, a `goose`/`sv publish` without `--iface`, and a missing confirmation: `control operate` (unless `--dry-run`), `set object`, `goose gocb set`, `sv svcb set` or `subscribe report --purge-buf` without `--yes`, refused before the device is contacted |
 | `3` | Invalid reference, configuration or SCL |
 | `4` | Connection failed or lost (including a dropped report subscription) |
 | `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
@@ -25,9 +25,11 @@ Authoritative machine-facing contract for scripting `iec61850ctl`: the MMS clien
 | `10` | Failure (unclassified) |
 | `11` | Not found (object, file, dataset, IED, RCB, journal, control block, network interface), including a server answer of MMS *object-non-existent* |
 | `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or GoCB/MSVCB enable read-back mismatch |
+| `13` | Safety refusal (organisation code): `goose publish` / `sv publish` without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`; nothing is sent |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
-- `goose publish` and `sv publish` refused by their guard rails (no `--iface`, no `--yes`, or operational frames without `--live`) exit `2` before anything is sent.
+- `goose publish` and `sv publish` refused by their guard rails exit before anything is sent: no `--iface` exits `2`; no `--yes`, or operational frames without `--live`, exits `13`, the organisation safety code.
+- `control operate` (unless `--dry-run`), `set object`, `goose gocb set`, `sv svcb set` and `subscribe report --purge-buf` without `--yes` exit `2` (missing confirmation) before the device is contacted; no JSON document is printed.
 - For `control operate` / `set object` with `--format json`, protocol outcomes that reach execution still print one JSON document; non-zero exit is driven by `status` / `write_ok` ([json-output.md](json-output.md)), not by omitting JSON.
 - Runtime errors are printed once to stderr (usage is not appended).
 - `--help` still prints help to stdout and exits `0`.

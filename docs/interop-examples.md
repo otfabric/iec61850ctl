@@ -201,7 +201,7 @@ Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 One association: select → operate → optional confirm-ref. No cross-process select.
 
 ```bash
-iec61850ctl control operate --object InteropLD/GGIO1.SPCSO2 --value true --type bool --mode auto --confirm-ref InteropLD/GGIO1.SPCSO2.stVal[ST] --format json
+iec61850ctl control operate --yes --object InteropLD/GGIO1.SPCSO2 --value true --type bool --mode auto --confirm-ref InteropLD/GGIO1.SPCSO2.stVal[ST] --format json
 ```
 
 ### Set scalar object (ING)
@@ -211,17 +211,17 @@ Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 Writable fixture InteropLD/GGIO1.SetInt1.setVal[SP]. FC=CO is rejected — use control operate.
 
 ```bash
-iec61850ctl set object --object InteropLD/GGIO1.SetInt1.setVal --fc SP --value 5 --type int --verify --format json
+iec61850ctl set object --yes --object InteropLD/GGIO1.SetInt1.setVal --fc SP --value 5 --type int --verify --format json
 ```
 
 ### BRCB subscribe with purge
 
 Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
-Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.
+Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable; --purge-buf needs --yes.
 
 ```bash
-iec61850ctl subscribe report --ld InteropLD --ln LLN0 --report REPORT_INSTANCE --type BR --purge-buf --interrogation --max-reports 1 --duration 15s --format jsonl
+iec61850ctl subscribe report --ld InteropLD --ln LLN0 --report REPORT_INSTANCE --type BR --purge-buf --yes --interrogation --max-reports 1 --duration 15s --format jsonl
 ```
 
 Discover the instance name first:

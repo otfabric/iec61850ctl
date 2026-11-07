@@ -58,6 +58,7 @@ func TestControl_ClientOperate(t *testing.T) {
 				confirmRef := j.object + ".stVal[ST]"
 				op := runCtl(t, h.ctlEnv(), commandTimeout,
 					"control", "operate",
+					"--yes",
 					"--object", j.object,
 					"--value", "true",
 					"--type", "bool",

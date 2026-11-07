@@ -106,6 +106,7 @@ var gooseGocbFlags struct {
 	disable bool
 	goID    string
 	datSet  string
+	yes     bool
 }
 
 var gooseGocbGetCmd = &cobra.Command{
@@ -118,8 +119,12 @@ var gooseGocbGetCmd = &cobra.Command{
 var gooseGocbSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Write GoCB attributes (GoEna written last)",
-	Example: `  iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
-  iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --dat-set LD0/LLN0\$ds2 --enable`,
+	Long: `Write GoCB attributes (GoEna written last).
+
+Writing a GoCB changes device state, so --yes is required; without it the
+command refuses (exit 2) before contacting the device.`,
+	Example: `  iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable --yes
+  iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --dat-set LD0/LLN0\$ds2 --enable --yes`,
 	RunE: runGooseGocbSet,
 }
 
@@ -178,6 +183,7 @@ func init() {
 	sf.BoolVar(&gooseGocbFlags.disable, "disable", false, "set GoEna=false")
 	sf.StringVar(&gooseGocbFlags.goID, "go-id", "", "new GoID (only while disabled)")
 	sf.StringVar(&gooseGocbFlags.datSet, "dat-set", "", "new DatSet reference (only while disabled; increments ConfRev)")
+	sf.BoolVar(&gooseGocbFlags.yes, "yes", false, "confirm that the GoCB write may change device state (required)")
 	gooseGocbSetCmd.MarkFlagsMutuallyExclusive("enable", "disable")
 	gooseGocbSetCmd.MarkFlagsOneRequired("enable", "disable", "go-id", "dat-set")
 
@@ -508,6 +514,9 @@ func runGooseGocbSet(cmd *cobra.Command, _ []string) error {
 	}
 	if cmd.Flags().Changed("dat-set") {
 		upd.DatSet = &gooseGocbFlags.datSet
+	}
+	if !gooseGocbFlags.yes {
+		return errs.Invalidf("refusing to write GoCB %s without --yes: the write changes device state (missing confirmation)", gooseGocbFlags.gocb)
 	}
 	s, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {

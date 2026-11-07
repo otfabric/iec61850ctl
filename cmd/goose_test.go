@@ -82,16 +82,17 @@ func TestGoosePublishSafety(t *testing.T) {
 		name string
 		args []string
 		msg  string
+		code int
 	}{
-		{"no iface", append(base, "--yes"), "iface"},
-		{"empty iface", append(base, "--iface", " ", "--yes"), "explicit --iface"},
-		{"no yes", append(base, "--iface", "hub0"), "without --yes"},
-		{"live frames without --live", append(base, "--iface", "hub0", "--yes", "--test=false"), "without --live"},
+		{"no iface", append(base, "--yes"), "iface", errs.ExitUsage},
+		{"empty iface", append(base, "--iface", " ", "--yes"), "explicit --iface", errs.ExitUsage},
+		{"no yes", append(base, "--iface", "hub0"), "without --yes", errs.ExitSafety},
+		{"live frames without --live", append(base, "--iface", "hub0", "--yes", "--test=false"), "without --live", errs.ExitSafety},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := runCLI(t, c.args...)
-			expectCode(t, r, errs.ExitUsage)
+			expectCode(t, r, c.code)
 			if !strings.Contains(r.stderr, c.msg) {
 				t.Fatalf("stderr %q lacks %q", r.stderr, c.msg)
 			}
@@ -293,34 +294,34 @@ func TestGooseGoCB(t *testing.T) {
 	}
 
 	// GoID is writable only while disabled.
-	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--go-id", "X")...)
+	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--go-id", "X")...)
 	expectCode(t, r, errs.ExitRejected)
 
-	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--disable", "--format", "json")...)
+	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--disable", "--format", "json")...)
 	expectCode(t, r, errs.ExitOK)
 	if err := json.Unmarshal([]byte(r.stdout), &v); err != nil || v.GoEna {
 		t.Fatalf("after disable: %q", r.stdout)
 	}
-	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--go-id", "renamed", "--enable")...)
+	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--go-id", "renamed", "--enable")...)
 	expectCode(t, r, errs.ExitOK)
 	if !strings.Contains(r.stdout, "GoID:       renamed") || !strings.Contains(r.stdout, "GoEna:      true") {
 		t.Fatalf("after rename:\n%s", r.stdout)
 	}
 
-	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool")...), errs.ExitUsage)
-	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable", "--disable")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable", "--disable")...), errs.ExitUsage)
 	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "get", "--ld", "InteropLD", "--gocb", "gcbBool", "--format", "yaml")...), errs.ExitUsage)
-	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable", "--format", "yaml")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable", "--format", "yaml")...), errs.ExitUsage)
 	if r := runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "get", "--ld", "InteropLD", "--gocb", "nope")...); r.code == errs.ExitOK {
 		t.Fatal("unknown GoCB read succeeded")
 	}
 	expectCode(t, runCLI(t, "--port", "1", "--host", "127.0.0.1", "--connect-timeout", "200ms", "goose", "gocb", "get", "--ld", "X", "--gocb", "g"), errs.ExitConnection)
-	expectCode(t, runCLI(t, "--port", "1", "--host", "127.0.0.1", "--connect-timeout", "200ms", "goose", "gocb", "set", "--ld", "X", "--gocb", "g", "--enable"), errs.ExitConnection)
+	expectCode(t, runCLI(t, "--port", "1", "--host", "127.0.0.1", "--connect-timeout", "200ms", "goose", "gocb", "set", "--yes", "--ld", "X", "--gocb", "g", "--enable"), errs.ExitConnection)
 
 	// A connection without GoCB support.
 	withFakeConn(t, emptyConn{})
 	expectCode(t, runCLI(t, "--host", "fake", "goose", "gocb", "get", "--ld", "X", "--gocb", "g"), errs.ExitUnsupported)
-	expectCode(t, runCLI(t, "--host", "fake", "goose", "gocb", "set", "--ld", "X", "--gocb", "g", "--enable"), errs.ExitUnsupported)
+	expectCode(t, runCLI(t, "--host", "fake", "goose", "gocb", "set", "--yes", "--ld", "X", "--gocb", "g", "--enable"), errs.ExitUnsupported)
 }
 
 func TestGocbItem(t *testing.T) {
@@ -341,9 +342,9 @@ func TestGooseGoCBEnableNotPublishing(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = srv.Close() })
 
-	r := runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--disable")...)
+	r := runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--disable")...)
 	expectCode(t, r, errs.ExitOK)
-	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable")...)
+	r = runCLI(t, gooseSrvArgs(srv, "goose", "gocb", "set", "--yes", "--ld", "InteropLD", "--gocb", "gcbBool", "--enable")...)
 	expectCode(t, r, errs.ExitMismatch)
 	if !strings.Contains(r.stdout, "GoEna:      false") || !strings.Contains(r.stderr, "GoEna reads back false") {
 		t.Fatalf("stdout:\n%s\nstderr:\n%s", r.stdout, r.stderr)

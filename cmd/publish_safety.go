@@ -33,17 +33,19 @@ func (s *publishSafety) register(cmd *cobra.Command, markerUsage string) {
 	f.BoolVar(&s.yes, "yes", false, "confirm that frames may be sent on --iface (required)")
 }
 
-// check enforces the guard rails before anything is sent.
+// check enforces the guard rails before anything is sent. A missing --iface
+// is a usage error (exit 2); a refusal for missing --yes or for unmarked
+// frames without --live is a safety refusal (exit 13).
 func (s *publishSafety) check(cmd *cobra.Command) error {
 	iface := strings.TrimSpace(*s.iface)
 	if !cmd.Flags().Changed("iface") || iface == "" {
 		return errs.Invalidf("%s publish needs an explicit --iface", strings.ToLower(s.protocol))
 	}
 	if !s.yes {
-		return errs.Invalidf("refusing to publish %s on %s without --yes: frames reach every subscriber on that LAN", s.protocol, iface)
+		return errs.Safetyf("refusing to publish %s on %s without --yes: frames reach every subscriber on that LAN", s.protocol, iface)
 	}
 	if !s.marked && !s.live {
-		return errs.Invalidf("refusing to publish with %s=false without --live: subscribers would act on these frames", s.marker)
+		return errs.Safetyf("refusing to publish with %s=false without --live: subscribers would act on these frames", s.marker)
 	}
 	return nil
 }

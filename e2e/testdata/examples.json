@@ -77,7 +77,7 @@
       "title": "Control operate (atomic SBO)",
       "notes": "One association: select → operate → optional confirm-ref. No cross-process select.",
       "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
-      "argv": ["control", "operate", "--object", "InteropLD/GGIO1.SPCSO2", "--value", "true", "--type", "bool", "--mode", "auto", "--confirm-ref", "InteropLD/GGIO1.SPCSO2.stVal[ST]", "--format", "json"],
+      "argv": ["control", "operate", "--yes", "--object", "InteropLD/GGIO1.SPCSO2", "--value", "true", "--type", "bool", "--mode", "auto", "--confirm-ref", "InteropLD/GGIO1.SPCSO2.stVal[ST]", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"status": "confirmed"}
     },
@@ -85,15 +85,15 @@
       "title": "Set scalar object (ING)",
       "notes": "Writable fixture InteropLD/GGIO1.SetInt1.setVal[SP]. FC=CO is rejected — use control operate.",
       "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
-      "argv": ["set", "object", "--object", "InteropLD/GGIO1.SetInt1.setVal", "--fc", "SP", "--value", "5", "--type", "int", "--verify", "--format", "json"],
+      "argv": ["set", "object", "--yes", "--object", "InteropLD/GGIO1.SetInt1.setVal", "--fc", "SP", "--value", "5", "--type", "int", "--verify", "--format", "json"],
       "expected_exit": 0,
       "expect_json_fields": {"write_ok": true}
     },
     {
       "title": "BRCB subscribe with purge",
-      "notes": "Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.",
+      "notes": "Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable; --purge-buf needs --yes.",
       "stacks": ["libiec61850", "iec61850bean", "dscsystems", "iec61850-rust"],
-      "argv": ["subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "REPORT_INSTANCE", "--type", "BR", "--purge-buf", "--interrogation", "--max-reports", "1", "--duration", "15s", "--format", "jsonl"],
+      "argv": ["subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "REPORT_INSTANCE", "--type", "BR", "--purge-buf", "--yes", "--interrogation", "--max-reports", "1", "--duration", "15s", "--format", "jsonl"],
       "expected_exit": 0,
       "expect_jsonl_events": ["report", "summary"]
     },

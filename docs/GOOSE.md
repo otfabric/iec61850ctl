@@ -274,14 +274,14 @@ The checks run before the interface is opened, so a refused publish sends nothin
 $ iec61850ctl goose publish --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool
 refusing to publish GOOSE on eth0 without --yes: frames reach every subscriber on that LAN
 $ echo $?
-2
+13
 ```
 
 ```console
 $ iec61850ctl goose publish --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --yes --test=false
 refusing to publish with test=false without --live: subscribers would act on these frames
 $ echo $?
-2
+13
 ```
 
 ### Values and state changes
@@ -386,7 +386,7 @@ Connecting to 127.0.0.1:10102
 A GoID change on an enabled block is refused:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --go-id renamed
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --go-id renamed --yes
 Connecting to 127.0.0.1:10102
 set GoCB InteropIEDInteropLD/LLN0$GO$gcbBool: iec61850: set GoCB InteropIEDInteropLD/LLN0$GO$gcbBool.GoID: mms: data access error: TemporarilyUnavailable
 $ echo $?
@@ -396,7 +396,7 @@ $ echo $?
 Disable the block first, then rename and re-enable it in one call:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --disable
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --disable --yes
 Connecting to 127.0.0.1:10102
 GoCB InteropIEDInteropLD/LLN0$GO$gcbBool
   GoEna:      false
@@ -411,7 +411,7 @@ GoCB InteropIEDInteropLD/LLN0$GO$gcbBool
 ```
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --go-id renamed --enable
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --go-id renamed --enable --yes
 Connecting to 127.0.0.1:10102
 GoCB InteropIEDInteropLD/LLN0$GO$gcbBool
   GoEna:      true
@@ -431,13 +431,14 @@ The codes are the same as for the rest of the CLI ([AUTOMATION.md](AUTOMATION.md
 
 | Code | GOOSE cases |
 |------|-------------|
-| `2` | missing `--yes`, `--iface` or `--live`; bad APPID or MAC |
+| `2` | missing `--iface`; `gocb set` without `--yes`; bad APPID or MAC |
 | `3` | bad `--value`; an SCL that cannot be parsed |
 | `5` | `--count` not reached before `--duration` (sniff and subscribe) |
 | `6` | GoCB write rejected |
 | `9` | raw socket permission denied |
 | `8` | platform without a raw transport; a connection without GoCB access |
 | `11` | interface or control block not found |
+| `13` | safety refusal (organisation code): `publish` without `--yes`, or `--test=false` without `--live` |
 
 ## Limitations
 

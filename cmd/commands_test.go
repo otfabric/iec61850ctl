@@ -43,10 +43,10 @@ func TestVersion(t *testing.T) {
 
 func TestSetObject(t *testing.T) {
 	obj := "InteropLD/GGIO1.SetInt1.setVal"
-	r := runSrv(t, "set", "object", "--object", obj, "--fc", "SP", "--value", "7", "--type", "int", "--verify", "--format", "json")
+	r := runSrv(t, "set", "object", "--object", obj, "--fc", "SP", "--value", "7", "--type", "int", "--verify", "--yes", "--format", "json")
 	expectCode(t, r, errs.ExitOK)
 	golden(t, "set_object_json", r.stdout)
-	r = runSrv(t, "set", "object", "--object", obj, "--fc", "SP", "--value", "5", "--type", "int", "--verify")
+	r = runSrv(t, "set", "object", "--object", obj, "--fc", "SP", "--value", "5", "--type", "int", "--verify", "--yes")
 	expectCode(t, r, errs.ExitOK)
 	golden(t, "set_object_text", r.stdout)
 	r = runSrv(t, "get", "object", "--object", obj, "--fc", "SP", "--format", "json")
@@ -55,7 +55,7 @@ func TestSetObject(t *testing.T) {
 		t.Fatalf("read-back: %s", r.stdout)
 	}
 	// Write failure prints the result and exits 6.
-	r = runSrv(t, "set", "object", "--object", "InteropLD/MMXU1.Nope.x", "--fc", "MX", "--value", "1", "--type", "float", "--format", "json")
+	r = runSrv(t, "set", "object", "--object", "InteropLD/MMXU1.Nope.x", "--fc", "MX", "--value", "1", "--type", "float", "--yes", "--format", "json")
 	expectCode(t, r, errs.ExitRejected)
 	if !strings.Contains(r.stdout, `"write_ok": false`) {
 		t.Fatalf("json failure body: %s", r.stdout)
@@ -74,16 +74,16 @@ func TestControlOperate(t *testing.T) {
 		{"control_operate_no_confirm", []string{"--object", "InteropLD/GGIO1.SPCSO1", "--type", "bool", "--value", "false", "--no-confirm", "--confirm-ref", "InteropLD/GGIO1.SPCSO1.stVal[ST]"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			r := runSrv(t, append([]string{"control", "operate"}, tc.args...)...)
+			r := runSrv(t, append([]string{"control", "operate", "--yes"}, tc.args...)...)
 			expectCode(t, r, errs.ExitOK)
 			golden(t, tc.name, r.stdout)
 		})
 	}
 	// Mode incompatible with ctlModel is a usage error.
-	r := runSrv(t, "control", "operate", "--object", "InteropLD/GGIO1.SPCSO1", "--type", "bool", "--value", "true", "--mode", "sbo")
+	r := runSrv(t, "control", "operate", "--yes", "--object", "InteropLD/GGIO1.SPCSO1", "--type", "bool", "--value", "true", "--mode", "sbo")
 	expectCode(t, r, errs.ExitUsage)
 	// A confirmation mismatch is a rejection.
-	r = runSrv(t, "control", "operate", "--object", "InteropLD/GGIO1.SPCSO1", "--type", "bool", "--value", "true", "--confirm-ref", "InteropLD/GGIO1.SPS1.stVal[ST]", "--format", "json")
+	r = runSrv(t, "control", "operate", "--yes", "--object", "InteropLD/GGIO1.SPCSO1", "--type", "bool", "--value", "true", "--confirm-ref", "InteropLD/GGIO1.SPS1.stVal[ST]", "--format", "json")
 	expectCode(t, r, errs.ExitMismatch)
 }
 
@@ -102,7 +102,7 @@ func TestSubscribeReport(t *testing.T) {
 		}
 	})
 	t.Run("brcb jsonl sync", func(t *testing.T) {
-		r := runSrv(t, append(base, "--report", "brcb01", "--type", "BR", "--purge-buf", "--entry-id", "0000000000000000", "--sync", "--format", "jsonl")...)
+		r := runSrv(t, append(base, "--report", "brcb01", "--type", "BR", "--purge-buf", "--yes", "--entry-id", "0000000000000000", "--sync", "--format", "jsonl")...)
 		expectCode(t, r, errs.ExitOK)
 		var events []string
 		sc := bufio.NewScanner(strings.NewReader(r.stdout))

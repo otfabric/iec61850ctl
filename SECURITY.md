@@ -30,8 +30,8 @@ We will acknowledge your report within 48 hours and aim to provide a fix or miti
 
 `goose publish` and `sv publish` inject frames onto the station or process bus, where protection IEDs subscribe to them. A GOOSE trip or an SV stream with the wrong values can cause a protection function to operate.
 
-- **Do not point write or control commands at production equipment** unless you are authorized to operate it and the site's switching procedures allow it. There is no interactive confirmation prompt
-- `goose publish` and `sv publish` require an explicit `--iface` and `--yes`, and send test (GOOSE) or simulation (SV) frames unless you add both `--test=false`/`--simulation=false` and `--live`. Subscribers that honour those flags ignore the frames, but not every subscriber does: publish only on isolated test networks unless you intend to drive the subscribers
+- **Do not point write or control commands at production equipment** unless you are authorized to operate it and the site's switching procedures allow it. There is no interactive confirmation prompt; `control operate`, `set object`, `goose gocb set`, `sv svcb set` and `subscribe report --purge-buf` refuse to run without `--yes` (exit `2`, before connecting), so a script must confirm each state change explicitly
+- `goose publish` and `sv publish` require an explicit `--iface` and `--yes` (refused with exit `13`, the organisation safety code, otherwise), and send test (GOOSE) or simulation (SV) frames unless you add both `--test=false`/`--simulation=false` and `--live`. Subscribers that honour those flags ignore the frames, but not every subscriber does: publish only on isolated test networks unless you intend to drive the subscribers
 - Use `control inspect` and `control operate --dry-run` to see the planned sequence before operating
 - `set object` rejects `FC=CO`, so it cannot be used to bypass the control model. It does not stop writes to settings (`SP`, `SE`, `CF` and others)
 - `discover` opens TCP connections to every address in the given range. Scan only networks you are allowed to scan

@@ -27,6 +27,7 @@ const (
 	ExitFailure      = 10  // unclassified failure
 	ExitNotFound     = 11  // object, file, dataset, report or IED does not exist
 	ExitMismatch     = 12  // write verification read-back mismatch
+	ExitSafety       = 13  // organisation safety code: refused by a safety guard rail (live GOOSE/SV publication)
 	ExitInterrupted  = 130 // cancelled by SIGINT/SIGTERM (128 + SIGINT)
 )
 
@@ -71,6 +72,8 @@ func ExitCode(err error) int {
 		return ExitTimeout
 	case errors.Is(err, ErrVerifyMismatch):
 		return ExitMismatch
+	case errors.Is(err, ErrSafety):
+		return ExitSafety
 	case errors.Is(err, ErrInvalidInput):
 		return ExitUsage
 	case errors.Is(err, ErrInvalidReference),

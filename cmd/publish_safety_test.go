@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"bytes"
-	"errors"
 	"strings"
 	"testing"
 
@@ -19,14 +18,15 @@ func TestPublishSafetySimulationMarker(t *testing.T) {
 	for _, tc := range []struct {
 		args []string
 		want string // error substring; "" = allowed
+		code int    // exit code of the refusal
 		warn bool
 	}{
-		{nil, "sv publish needs an explicit --iface", false},
-		{[]string{"--iface", " "}, "needs an explicit --iface", false},
-		{[]string{"--iface", "eth0"}, "refusing to publish SV on eth0 without --yes", false},
-		{[]string{"--iface", "eth0", "--yes"}, "", false},
-		{[]string{"--iface", "eth0", "--yes", "--simulation=false"}, "simulation=false without --live", true},
-		{[]string{"--iface", "eth0", "--yes", "--simulation=false", "--live"}, "", true},
+		{nil, "sv publish needs an explicit --iface", errs.ExitUsage, false},
+		{[]string{"--iface", " "}, "needs an explicit --iface", errs.ExitUsage, false},
+		{[]string{"--iface", "eth0"}, "refusing to publish SV on eth0 without --yes", errs.ExitSafety, false},
+		{[]string{"--iface", "eth0", "--yes"}, "", errs.ExitOK, false},
+		{[]string{"--iface", "eth0", "--yes", "--simulation=false"}, "simulation=false without --live", errs.ExitSafety, true},
+		{[]string{"--iface", "eth0", "--yes", "--simulation=false", "--live"}, "", errs.ExitOK, true},
 	} {
 		var iface string
 		s := publishSafety{protocol: "SV", iface: &iface, marker: "simulation"}
@@ -40,8 +40,10 @@ func TestPublishSafetySimulationMarker(t *testing.T) {
 		switch {
 		case tc.want == "" && err != nil:
 			t.Fatalf("%v: unexpected error %v", tc.args, err)
-		case tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want) || !errors.Is(err, errs.ErrInvalidInput)):
-			t.Fatalf("%v: got %v, want usage error containing %q", tc.args, err, tc.want)
+		case tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)):
+			t.Fatalf("%v: got %v, want error containing %q", tc.args, err, tc.want)
+		case errs.ExitCode(err) != tc.code:
+			t.Fatalf("%v: exit %d, want %d (%v)", tc.args, errs.ExitCode(err), tc.code, err)
 		}
 		// warnLive runs after a passing check; it only looks at the marker.
 		var w bytes.Buffer

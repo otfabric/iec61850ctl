@@ -387,7 +387,7 @@ $ echo $?
 $ iec61850ctl sv publish --iface eth0 --scl pkg/svops/testdata/interop-sv.cid --svcb MSVCB01 --yes --simulation=false
 refusing to publish with simulation=false without --live: subscribers would act on these frames
 $ echo $?
-2
+13
 ```
 
 ### Static values
@@ -536,7 +536,7 @@ Connecting to 127.0.0.1:10103
 An OptFlds change on an enabled block is refused:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate --yes
 Connecting to 127.0.0.1:10103
 set MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01: iec61850: set MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01.OptFlds: mms: data access error: TemporarilyUnavailable
 $ echo $?
@@ -546,7 +546,7 @@ $ echo $?
 Disable the block first, then change it and re-enable it in one call:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --disable
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --disable --yes
 Connecting to 127.0.0.1:10103
 MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01
   SvEna:      false
@@ -560,7 +560,7 @@ MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01
 ```
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate --enable
+$ iec61850ctl --host 127.0.0.1 --port 10103 sv svcb set --ld InteropIEDInteropLD --svcb MSVCB01 --opt-flds refresh-time,sample-rate --enable --yes
 Connecting to 127.0.0.1:10103
 MSVCB InteropIEDInteropLD/LLN0$MS$MSVCB01
   SvEna:      true
@@ -579,13 +579,14 @@ The codes are the same as for the rest of the CLI ([AUTOMATION.md](AUTOMATION.md
 
 | Code | SV cases |
 |------|----------|
-| `2` | missing `--yes`, `--iface` or `--live`; bad `--waveform`, `--layout`, APPID or MAC; `--waveform` on a non-9-2LE block |
+| `2` | missing `--iface`; `svcb set` without `--yes`; bad `--waveform`, `--layout`, APPID or MAC; `--waveform` on a non-9-2LE block |
 | `3` | bad `--value`; an SCL that cannot be parsed |
 | `5` | `--count` not reached before `--duration` (sniff and subscribe) |
 | `6` | MSVCB write rejected |
 | `9` | raw socket permission denied |
 | `8` | platform without a raw transport; a connection without MSVCB access |
 | `11` | interface or control block not found |
+| `13` | safety refusal (organisation code): `publish` without `--yes`, or `--simulation=false` without `--live` |
 
 ## Limitations
 
