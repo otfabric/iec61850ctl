@@ -49,7 +49,7 @@ func TestCaptureDocExamples(t *testing.T) {
 	t.Chdir(repoRoot())
 	gcid, scid := "pkg/gooseops/testdata/interop-goose.cid", "pkg/svops/testdata/interop-sv.cid"
 
-	// GOOSE: the server publishes its GoCBs (bare-LD references) on the hub.
+	// GOOSE: the server publishes its GoCBs (IEC 61850-8-1 references) on the hub.
 	ghub := goose.NewHub()
 	withHub(t, ghub)
 	gport := ghub.NewPort(goose.MAC{0x02, 0, 0, 0, 0, 0x01})
@@ -63,21 +63,21 @@ func TestCaptureDocExamples(t *testing.T) {
 	capture("goose_list", "goose", "list", "--scl", gcid)
 	capture("goose_list_json", "goose", "list", "--scl", gcid, "--format", "json")
 	capture("goose_sniff", "goose", "sniff", "--iface", "eth0", "--appid", "0x1002", "--count", "3")
-	capture("goose_sniff_jsonl", "goose", "sniff", "--iface", "eth0", "--gocb-ref", "InteropLD/LLN0$GO$gcbBool", "--count", "1", "--format", "jsonl")
-	capture("goose_subscribe", "goose", "subscribe", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--bare-domain", "--count", "3")
-	capture("goose_subscribe_jsonl", "goose", "subscribe", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--bare-domain", "--only-changes", "--count", "1", "--format", "jsonl")
-	capture("goose_subscribe_no_bare_domain", "goose", "subscribe", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--count", "1", "--duration", "2s")
+	capture("goose_sniff_jsonl", "goose", "sniff", "--iface", "eth0", "--gocb-ref", "InteropIEDInteropLD/LLN0$GO$gcbBool", "--count", "1", "--format", "jsonl")
+	capture("goose_subscribe", "goose", "subscribe", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--count", "3")
+	capture("goose_subscribe_jsonl", "goose", "subscribe", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--only-changes", "--count", "1", "--format", "jsonl")
+	capture("goose_subscribe_bare_domain_mismatch", "goose", "subscribe", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--bare-domain", "--count", "1", "--duration", "2s")
 	capture("goose_publish_no_yes", "goose", "publish", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool")
 	capture("goose_publish_no_live", "goose", "publish", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--yes", "--test=false")
 	capture("goose_publish", "goose", "publish", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--yes",
 		"--value", "0=true", "--changes", "2", "--interval", "500ms", "--duration", "2s")
 	capture("goose_publish_live", "goose", "publish", "--iface", "eth0", "--scl", gcid, "--gocb", "gcbBool", "--yes",
 		"--test=false", "--live", "--duration", "1s", "--format", "jsonl")
-	capture("goose_gocb_get", append(mms, "goose", "gocb", "get", "--ld", "InteropLD", "--gocb", "gcbBool")...)
-	capture("goose_gocb_get_json", append(mms, "goose", "gocb", "get", "--ld", "InteropLD", "--gocb", "gcbBool", "--format", "json")...)
-	capture("goose_gocb_set_rejected", append(mms, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--go-id", "renamed")...)
-	capture("goose_gocb_set_disable", append(mms, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--disable")...)
-	capture("goose_gocb_set_enable", append(mms, "goose", "gocb", "set", "--ld", "InteropLD", "--gocb", "gcbBool", "--go-id", "renamed", "--enable")...)
+	capture("goose_gocb_get", append(mms, "goose", "gocb", "get", "--ld", "InteropIEDInteropLD", "--gocb", "gcbBool")...)
+	capture("goose_gocb_get_json", append(mms, "goose", "gocb", "get", "--ld", "InteropIEDInteropLD", "--gocb", "gcbBool", "--format", "json")...)
+	capture("goose_gocb_set_rejected", append(mms, "goose", "gocb", "set", "--ld", "InteropIEDInteropLD", "--gocb", "gcbBool", "--go-id", "renamed")...)
+	capture("goose_gocb_set_disable", append(mms, "goose", "gocb", "set", "--ld", "InteropIEDInteropLD", "--gocb", "gcbBool", "--disable")...)
+	capture("goose_gocb_set_enable", append(mms, "goose", "gocb", "set", "--ld", "InteropIEDInteropLD", "--gocb", "gcbBool", "--go-id", "renamed", "--enable")...)
 
 	// SV: the server publishes MSVCB01 (9-2LE) and MSVCB02 (generic) on the hub.
 	shub := sv.NewHub()
@@ -96,9 +96,9 @@ func TestCaptureDocExamples(t *testing.T) {
 	capture("sv_sniff_scl", "sv", "sniff", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB01", "--sample-every", "1000", "--count", "4000")
 	capture("sv_sniff_layout_jsonl", "sv", "sniff", "--iface", "eth0", "--appid", "0x4001", "--layout", "FLOAT32,Quality,INT32U,Quality,INT32", "--count", "1", "--format", "jsonl")
 	capture("sv_subscribe", "sv", "subscribe", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB01", "--sample-every", "4000", "--duration", "2500ms")
-	capture("sv_subscribe_jsonl", "sv", "subscribe", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB02", "--bare-domain",
+	capture("sv_subscribe_jsonl", "sv", "subscribe", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB02",
 		"--sample-every", "500", "--stats-interval", "1s", "--count", "1000", "--format", "jsonl")
-	capture("sv_subscribe_invalid", "sv", "subscribe", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB02", "--count", "1", "--duration", "1s")
+	capture("sv_subscribe_invalid", "sv", "subscribe", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB02", "--bare-domain", "--count", "1", "--duration", "1s")
 
 	// SV publish runs on a quiet hub, with a subscriber in the background.
 	_ = ssrv.Close()
@@ -151,11 +151,11 @@ func TestCaptureDocExamples(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = ssrv2.Close() })
-	capture("sv_svcb_get", append(mms, "sv", "svcb", "get", "--ld", "InteropLD", "--svcb", "MSVCB01")...)
-	capture("sv_svcb_get_json", append(mms, "sv", "svcb", "get", "--ld", "InteropLD", "--svcb", "MSVCB02", "--format", "json")...)
-	capture("sv_svcb_set_rejected", append(mms, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--opt-flds", "refresh-time,sample-rate")...)
-	capture("sv_svcb_set_disable", append(mms, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable")...)
-	capture("sv_svcb_set_enable", append(mms, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--opt-flds", "refresh-time,sample-rate", "--enable")...)
+	capture("sv_svcb_get", append(mms, "sv", "svcb", "get", "--ld", "InteropIEDInteropLD", "--svcb", "MSVCB01")...)
+	capture("sv_svcb_get_json", append(mms, "sv", "svcb", "get", "--ld", "InteropIEDInteropLD", "--svcb", "MSVCB02", "--format", "json")...)
+	capture("sv_svcb_set_rejected", append(mms, "sv", "svcb", "set", "--ld", "InteropIEDInteropLD", "--svcb", "MSVCB01", "--opt-flds", "refresh-time,sample-rate")...)
+	capture("sv_svcb_set_disable", append(mms, "sv", "svcb", "set", "--ld", "InteropIEDInteropLD", "--svcb", "MSVCB01", "--disable")...)
+	capture("sv_svcb_set_enable", append(mms, "sv", "svcb", "set", "--ld", "InteropIEDInteropLD", "--svcb", "MSVCB01", "--opt-flds", "refresh-time,sample-rate", "--enable")...)
 }
 
 // shellJoin quotes the arguments that a POSIX shell would split or expand.

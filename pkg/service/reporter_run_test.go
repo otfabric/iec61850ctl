@@ -38,7 +38,7 @@ func startInteropServer(t *testing.T) *iec61850.Client {
 	if err != nil {
 		t.Fatalf("parse ICD: %v", err)
 	}
-	model, err := iec61850.NewServerModelFromSCL(sclData, "InteropIED", "")
+	model, err := iec61850.NewServerModelFromSCLWithOptions(sclData, "InteropIED", "", iec61850.ServerModelOptions{InstanceDomainNames: true})
 	if err != nil {
 		t.Fatalf("model: %v", err)
 	}

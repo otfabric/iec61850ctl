@@ -222,7 +222,7 @@ func TestChaosSubscribeConnectionLoss(t *testing.T) {
 	baseline := runtime.NumGoroutine()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	srv, err := server.Start(ctx, server.RunConfig{SclPath: fixture("interop.icd"), Host: "127.0.0.1"})
+	srv, err := server.Start(ctx, server.RunConfig{InstanceDomainNames: true, SclPath: fixture("interop.icd"), Host: "127.0.0.1"})
 	if err != nil {
 		t.Fatal(err)
 	}

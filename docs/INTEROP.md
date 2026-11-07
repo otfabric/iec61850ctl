@@ -18,7 +18,7 @@ The `e2e` package treats `iec61850ctl` as an **external executable**. It does no
 
 ### Client direction (independent interop)
 
-Every iec61850-interop stack is a peer: [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850) and [iec61850-rust](https://github.com/csp0924/iec61850-rust). The harness keeps them in one registry (`adapterStacks` in `e2e/harness_test.go`), so each journey runs against all four.
+Every iec61850-interop stack is a peer: [libiec61850](https://libiec61850.com), [IEC61850bean](https://www.beanit.com/iec-61850/), [dscsystems/go-iec61850](https://github.com/dscsystems/go-iec61850), [iec61850-rust](https://github.com/csp0924/iec61850-rust) and cbsigma ([cB-Sigma/iec61850](https://github.com/cB-Sigma/iec61850) and [iec61850-sim](https://github.com/cB-Sigma/iec61850-sim)). The harness keeps them in one registry (`adapterStacks` in `e2e/harness_test.go`), so each journey runs against all five.
 
 | Client | Server | CI job |
 |--------|--------|--------|
@@ -26,6 +26,7 @@ Every iec61850-interop stack is a peer: [libiec61850](https://libiec61850.com), 
 | `iec61850ctl` | iec61850bean-ied-server | `e2e / iec61850bean` |
 | `iec61850ctl` | dscsystems-ied-server | `e2e / dscsystems` |
 | `iec61850ctl` | iec61850-rust-ied-server | `e2e / iec61850-rust` |
+| `iec61850ctl` | cbsigma-ied-server | `e2e / cbsigma` |
 
 Journeys include association/browse, ST/MX reads against `expected-values.json`, datasets, RCB discovery/config, URCB GI subscribe (`--format jsonl`), atomic control operate (SPCSO1/2/3; Bean SBOw = expected failure), scalar write to `GGIO1.SetInt1.setVal[SP]`, BRCB purge/resume (iec61850-rust = expected failure), and negative control/write cases.
 
@@ -36,7 +37,9 @@ Journeys include association/browse, ST/MX reads against `expected-values.json`,
 | `<stack>-ied-controller` / `-ied-reporter` | `iec61850ctl server start` | `e2e / server-<stack>` |
 | `<stack>-ied-client` | `iec61850ctl server start` | `e2e / server-reader-<stack>` |
 
-`<stack>` is each of `libiec61850`, `iec61850bean`, `dscsystems` and `iec61850-rust`: eight reverse jobs.
+`<stack>` is each of `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust` and `cbsigma`: ten reverse jobs.
+
+`server start` names its MMS domains as IEC 61850-8-1 requires (`InteropIEDInteropLD`), like the reference servers, so the adapters address it the same way (`--instance-domain-names` restores the bare `InteropLD`).
 
 **Phase 3A** claims:
 
@@ -59,7 +62,7 @@ Requires iec61850-interop adapters that declare the `*-ied-client` commands in `
 | `<stack>-goose-publisher` | `iec61850ctl goose subscribe` and `goose sniff` | `e2e / goose-<stack>` |
 | `iec61850ctl goose publish` | `<stack>-goose-subscriber` | `e2e / goose-<stack>` |
 
-`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no GOOSE adapter). The fixture is iec61850-interop `goose-v1` (`interop-goose.cid` and `goose.json`, control block `gcbAll`: eight members including a float32, bit strings, a UTC time and a nested structure).
+`<stack>` is `libiec61850`, `dscsystems`, `iec61850-rust` or `cbsigma` (IEC61850bean has no GOOSE adapter). The fixture is iec61850-interop `goose-v1` (`interop-goose.cid` and `goose.json`, control block `gcbAll`: eight members including a float32, bit strings, a UTC time and a nested structure).
 
 GOOSE has no IP, so each journey creates its own Docker bridge network and runs `iec61850ctl` there too: a static Linux build (built by the test for the Docker server's architecture, or `IEC61850CTL_LINUX_BIN`), mounted into a container with `NET_RAW`. This works on Linux CI and on Docker Desktop, where the bridge lives in the VM.
 
@@ -76,7 +79,7 @@ GOOSE has no IP, so each journey creates its own Docker bridge network and runs 
 | `<stack>-sv-publisher` | `iec61850ctl sv subscribe` and `sv sniff` | `e2e / sv-<stack>` |
 | `iec61850ctl sv publish` | `<stack>-sv-subscriber` | `e2e / sv-<stack>` |
 
-`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no SV support). The fixture is iec61850-interop `sv-v1` (`interop-sv.cid` and `sv.json`). Every journey runs for both streams: `MSVCB01`, the 9-2LE profile (4000 samples/s, one ASDU per frame, no optional fields), and `MSVCB02`, a generic dataset (1000 samples/s, four ASDUs per frame, datSet/refrTm/smpRate/smpMod sent). The network setup is the GOOSE one.
+`<stack>` is `libiec61850`, `dscsystems` or `iec61850-rust` (IEC61850bean has no SV support, and the cbsigma image adapts none). The fixture is iec61850-interop `sv-v1` (`interop-sv.cid` and `sv.json`). Every journey runs for both streams: `MSVCB01`, the 9-2LE profile (4000 samples/s, one ASDU per frame, no optional fields), and `MSVCB02`, a generic dataset (1000 samples/s, four ASDUs per frame, datSet/refrTm/smpRate/smpMod sent). The network setup is the GOOSE one.
 
 | Journey | Asserted |
 |---------|----------|
@@ -87,7 +90,7 @@ GOOSE has no IP, so each journey creates its own Docker bridge network and runs 
 
 Registered limitations (iec61850-interop `capabilities.json`), asserted rather than skipped:
 - **libiec61850 subscriber, two-octet smpMod.** libiec61850's SVReceiver accepts smpMod only as one octet. go-iec61850 sends two, as libiec61850's own publisher does, so `sv publish` of `MSVCB02` → `libiec61850-sv-subscriber` must receive nothing.
-- **SVCB over MMS.** iec61850-rust and IEC61850bean IED servers do not expose `LLN0$MS$MSVCB02`; `sv svcb get` against them must fail.
+- **SVCB over MMS.** iec61850-rust, IEC61850bean and cbsigma (iec61850-sim) IED servers do not expose `LLN0$MS$MSVCB02`; `sv svcb get` against them must fail.
 
 ### Phase 4 — Control and scalar write
 
@@ -98,7 +101,7 @@ Registered limitations (iec61850-interop `capabilities.json`), asserted rather t
 | SPCSO3 SBOw + one `ctl_num` + confirm | required | **expected failure** (registered limitation) |
 | `set object` `SetInt1.setVal[SP]` + `--verify` | required | required |
 
-dscsystems and iec61850-rust: all four required.
+dscsystems, iec61850-rust and cbsigma: all four required.
 
 Mutating journeys use **isolated** adapter servers (no `t.Parallel()`). Bean SBOw asserts non-zero exit and unchanged `stVal` (not a skip).
 
@@ -146,8 +149,8 @@ Local images default to `iec61850-interop-*:local`. CI uses digest pins from the
 
 | Stack | Client `IEC61850_IED_NAME` |
 |-------|----------------------------|
-| `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust` | `InteropIED` (required for domain normalisation) |
-| `self`, `server-*` (CLI as server) | **unset** for CLI clients talking to the Go server |
+| `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`, `cbsigma` | `InteropIED` (required for domain normalisation) |
+| `self` (CLI as server) | `InteropIED`: `server start` names domains IED name + LD inst like the reference servers (unset only with `--instance-domain-names`) |
 
 ## Local execution
 
@@ -159,11 +162,11 @@ IEC61850CTL_E2E_STACKS=server-iec61850-rust make e2e  # reverse control/report
 IEC61850CTL_E2E_STACKS=server-reader-dscsystems make e2e
 IEC61850CTL_E2E_STACKS=goose-libiec61850 make e2e     # GOOSE both directions
 IEC61850CTL_E2E_STACKS=sv-dscsystems make e2e         # Sampled Values both directions, both streams
-make e2e                                              # default: the four client stacks + self
-IEC61850CTL_E2E_STACKS=all make e2e                   # all 19 CI jobs' stacks
+make e2e                                              # default: the five client stacks + self
+IEC61850CTL_E2E_STACKS=all make e2e                   # all 23 CI jobs' stacks
 ```
 
-Images come from `<STACK>_IMAGE` (`LIBIEC61850_IMAGE`, `IEC61850BEAN_IMAGE`, `DSCSYSTEMS_IMAGE`, `IEC61850RUST_IMAGE`), else the lock digest when `CI` is set, else `iec61850-interop-<stack>:local`.
+Images come from `<STACK>_IMAGE` (`LIBIEC61850_IMAGE`, `IEC61850BEAN_IMAGE`, `DSCSYSTEMS_IMAGE`, `IEC61850RUST_IMAGE`, `CBSIGMA_IMAGE`), else the lock digest when `CI` is set, else `iec61850-interop-<stack>:local`.
 
 CI runs each stack as a separate matrix job (`fail-fast: false`). Requires Docker for external/reverse stacks. `IEC61850CTL_BIN` is set by the Makefile.
 
@@ -171,7 +174,7 @@ CI runs each stack as a separate matrix job (`fail-fast: false`). Requires Docke
 
 - **iec61850-rust server, BRCB.** A read of BRCB `TimeOfEntry` is answered object-access-unsupported, and so is a read of the whole BRCB. `get report` and `subscribe report --type BR` on a BRCB therefore fail with exit `6`. The e2e asserts that deterministic failure, naming `ObjectAccessUnsupported` (`adapterStack.brcbUnreadable`). Its URCBs work, since the client reserves before enabling.
 - **dscsystems server, unknown LD.** GetNameList for an unknown domain returns an empty list rather than an error. `list lns` detects an empty LD missing from the server directory and exits `11`, the same as against the other stacks.
-- **Peer limitations upstream.** iec61850-interop `fixtures/capabilities.json` lists the rest, such as ST writes being denied by every adapter server and dscsystems describing Enum as Integer. None of them affects these journeys.
+- **Peer limitations upstream.** iec61850-interop `fixtures/capabilities.json` lists the rest, such as ST writes being denied by every adapter server and dscsystems and cbsigma describing Enum as Integer. None of them affects these journeys.
 - IEC61850bean SBOw as a **server** (forward `control operate` on SPCSO3) is a registered expected failure; when Bean gains support, replace the failure assertion (do not leave a silent skip). Phase 3A still exercises Bean as a **client** against the Go CLI server.
 - Complex JSON encodings (timestamps, bit/octet strings, arrays, structures) are deferred; see [AUTOMATION.md](AUTOMATION.md).
 - Adapter fault-injection modes (e.g. mid-sequence disconnect, `--skip-select`) are not yet exposed; negative coverage today is CLI/unit + mode/confirmation/CO reject e2e.

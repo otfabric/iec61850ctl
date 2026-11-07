@@ -333,7 +333,7 @@ func TestJournals(t *testing.T) {
 	}
 
 	// Real server with a journal-enabled model.
-	jsrv, err := server.Start(context.Background(), server.RunConfig{SclPath: filepath.Join("testdata", "journal.icd"), Host: "127.0.0.1"})
+	jsrv, err := server.Start(context.Background(), server.RunConfig{InstanceDomainNames: true, SclPath: filepath.Join("testdata", "journal.icd"), Host: "127.0.0.1"})
 	if err != nil {
 		t.Fatal(err)
 	}

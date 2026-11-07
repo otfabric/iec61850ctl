@@ -32,6 +32,7 @@ const (
 	stackIEC61850Bean = "iec61850bean"
 	stackDSCSystems   = "dscsystems"
 	stackRust         = "iec61850-rust"
+	stackCBSigma      = "cbsigma"
 	stackSelf         = "self"
 
 	// Reverse stacks (adapter clients → iec61850ctl server), GOOSE and SV stacks
@@ -70,6 +71,9 @@ var adapterStacks = []adapterStack{
 	{name: stackIEC61850Bean, imageEnv: "IEC61850BEAN_IMAGE", readyTimeout: beanReadyTimeout},
 	{name: stackDSCSystems, imageEnv: "DSCSYSTEMS_IMAGE", readyTimeout: libReadyTimeout, goose: true, sv: true},
 	{name: stackRust, imageEnv: "IEC61850RUST_IMAGE", readyTimeout: libReadyTimeout, goose: true, sv: true, brcbUnreadable: true},
+	// cbsigma: cB-Sigma/iec61850 (client, controller, reporter, GOOSE) and
+	// cB-Sigma/iec61850-sim (the IED server); no SV commands.
+	{name: stackCBSigma, imageEnv: "CBSIGMA_IMAGE", readyTimeout: libReadyTimeout, goose: true},
 }
 
 func lookupAdapter(name string) (adapterStack, bool) {

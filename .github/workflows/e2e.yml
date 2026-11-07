@@ -31,6 +31,8 @@ jobs:
             timeout: 20
           - stack: iec61850-rust
             timeout: 20
+          - stack: cbsigma
+            timeout: 20
           - stack: self
             timeout: 10
           - stack: server-libiec61850
@@ -41,6 +43,8 @@ jobs:
             timeout: 25
           - stack: server-iec61850-rust
             timeout: 25
+          - stack: server-cbsigma
+            timeout: 25
           - stack: server-reader-libiec61850
             timeout: 25
           - stack: server-reader-iec61850bean
@@ -49,11 +53,15 @@ jobs:
             timeout: 25
           - stack: server-reader-iec61850-rust
             timeout: 25
+          - stack: server-reader-cbsigma
+            timeout: 25
           - stack: goose-libiec61850
             timeout: 15
           - stack: goose-dscsystems
             timeout: 15
           - stack: goose-iec61850-rust
+            timeout: 15
+          - stack: goose-cbsigma
             timeout: 15
           - stack: sv-libiec61850
             timeout: 20
@@ -88,6 +96,7 @@ jobs:
             echo "bean=$(img iec61850bean)"
             echo "dsc=$(img dscsystems)"
             echo "rust=$(img iec61850-rust)"
+            echo "cbsigma=$(img cbsigma)"
           } >> "$GITHUB_OUTPUT"
 
       # Pull before the suite: the harness's 30 s timers (adapter
@@ -101,12 +110,14 @@ jobs:
           BEAN: ${{ steps.lock.outputs.bean }}
           DSC: ${{ steps.lock.outputs.dsc }}
           RUST: ${{ steps.lock.outputs.rust }}
+          CBSIGMA: ${{ steps.lock.outputs.cbsigma }}
         run: |
           case "$STACK" in
             *libiec61850)   img="$LIB" ;;
             *iec61850bean)  img="$BEAN" ;;
             *dscsystems)    img="$DSC" ;;
             *iec61850-rust) img="$RUST" ;;
+            *cbsigma)       img="$CBSIGMA" ;;
             *) echo "no peer image for $STACK"; exit 0 ;;
           esac
           docker pull -q "$img"
@@ -119,6 +130,7 @@ jobs:
           IEC61850BEAN_IMAGE: ${{ steps.lock.outputs.bean }}
           DSCSYSTEMS_IMAGE: ${{ steps.lock.outputs.dsc }}
           IEC61850RUST_IMAGE: ${{ steps.lock.outputs.rust }}
+          CBSIGMA_IMAGE: ${{ steps.lock.outputs.cbsigma }}
         run: make e2e
 
       - name: Collect diagnostics

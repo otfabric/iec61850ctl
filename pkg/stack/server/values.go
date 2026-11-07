@@ -49,12 +49,16 @@ func seedValuesFromFile(srv *iec61850.Server, path string) error {
 
 // SeedValues best-effort seeds the server ValueStore from IED JSON leaf entries.
 // Leaf refs use dot notation (LD/LN.DO.attr); store keys use MMS format (LD/LN$FC$DO$attr).
+// The LD of a ref is an MMS domain of the model or an LDevice@inst, which
+// maps to its domain ("InteropLD" → "InteropIEDInteropLD"), so a values
+// file keyed by LD instance seeds a server with IEC 61850-8-1 domain names.
 // Skips leaves without values, unsupported types, or keys that cannot be mapped.
 func SeedValues(srv *iec61850.Server, ied *domain.IED) {
 	if srv == nil || ied == nil {
 		return
 	}
 	vs := srv.ValueStore()
+	domains := domainsByLD(srv)
 	for i := range ied.Leaves {
 		leaf := &ied.Leaves[i]
 		if leaf.ValueError != "" || leaf.Value == nil || leaf.Value.Raw == nil {
@@ -63,7 +67,7 @@ func SeedValues(srv *iec61850.Server, ied *domain.IED) {
 		if leaf.Type == domain.TypeStructure || leaf.Type == domain.TypeArray {
 			continue
 		}
-		key, err := leafRefToStoreKey(leaf.Ref, leaf.FC)
+		key, err := leafRefToStoreKey(leaf.Ref, leaf.FC, domains)
 		if err != nil {
 			continue
 		}
@@ -75,7 +79,7 @@ func SeedValues(srv *iec61850.Server, ied *domain.IED) {
 	}
 }
 
-func leafRefToStoreKey(ref string, fc domain.FunctionalConstraint) (string, error) {
+func leafRefToStoreKey(ref string, fc domain.FunctionalConstraint, domains map[string]string) (string, error) {
 	objRef, err := domain.ParseObjectReference(ref)
 	if err != nil {
 		return "", err
@@ -88,7 +92,31 @@ func leafRefToStoreKey(ref string, fc domain.FunctionalConstraint) (string, erro
 		return "", errs.Invalidf("missing FC for %q", ref)
 	}
 	itemID := objRef.LN + "$" + fcStr + "$" + strings.Join(objRef.Path, "$")
-	return objRef.LD + "/" + itemID, nil
+	ld := objRef.LD
+	if d, ok := domains[ld]; ok {
+		ld = d
+	}
+	return ld + "/" + itemID, nil
+}
+
+// domainsByLD maps each LDevice@inst of the server's model to its MMS
+// domain. A domain name maps to itself, and wins over an instance of the
+// same name.
+func domainsByLD(srv *iec61850.Server) map[string]string {
+	out := map[string]string{}
+	m := srv.Model()
+	if m == nil {
+		return out
+	}
+	for _, ld := range m.LogicalDevices {
+		if ld.Inst != "" {
+			out[ld.Inst] = ld.Name
+		}
+	}
+	for _, ld := range m.LogicalDevices {
+		out[ld.Name] = ld.Name
+	}
+	return out
 }
 
 func domainValueToMMS(v *domain.Value) (*mms.Value, bool) {

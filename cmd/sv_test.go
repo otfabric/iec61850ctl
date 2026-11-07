@@ -43,7 +43,7 @@ func withSVHub(t *testing.T, hub *sv.Hub) {
 func startSVServer(t *testing.T, hub *sv.Hub) *server.Running {
 	t.Helper()
 	port := hub.NewPort(sv.MAC{0x02, 0, 0, 0, 0, 0x01})
-	srv, err := server.Start(context.Background(), server.RunConfig{SclPath: svFixture(), Host: "127.0.0.1", SV: port})
+	srv, err := server.Start(context.Background(), server.RunConfig{InstanceDomainNames: true, SclPath: svFixture(), Host: "127.0.0.1", SV: port})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -426,7 +426,7 @@ func TestSvcbItem(t *testing.T) {
 // A server without an SV publisher accepts the SvEna write but reads back
 // false: set --enable must exit 7, not 0.
 func TestSVSvcbEnableNotPublishing(t *testing.T) {
-	srv, err := server.Start(context.Background(), server.RunConfig{SclPath: svFixture(), Host: "127.0.0.1"})
+	srv, err := server.Start(context.Background(), server.RunConfig{InstanceDomainNames: true, SclPath: svFixture(), Host: "127.0.0.1"})
 	if err != nil {
 		t.Fatal(err)
 	}

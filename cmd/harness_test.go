@@ -58,7 +58,10 @@ func TestMain(m *testing.M) {
 	_ = os.WriteFile(filepath.Join(dir, "events.log"), []byte(strings.Repeat("event line\n", 100)), 0o600)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	srv, err := server.Start(ctx, server.RunConfig{
+	// The shared server keeps instance domain names (InteropLD) so the CLI
+	// tests and goldens address it as before; pkg/stack/server tests the
+	// default IEC 61850-8-1 names.
+	srv, err := server.Start(ctx, server.RunConfig{InstanceDomainNames: true,
 		SclPath:    fixture("interop.icd"),
 		ValuesPath: fixture("self-server-values.json"),
 		FilesDir:   dir,

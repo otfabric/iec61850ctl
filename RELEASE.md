@@ -1,5 +1,24 @@
 # iec61850ctl Releases
 
+## v0.9.0
+
+**Date:** 2026-11-07
+**Previous release:** v0.8.0
+
+### Breaking
+
+- `server start` names its MMS domains as IEC 61850-8-1 requires, like other IEC 61850 servers: LDevice@ldName if set, else the IED name followed by the LD instance (`InteropIEDInteropLD`, was `InteropLD`). GoCB, dataset and SVCB references follow. Clients of the self-server set `IEC61850_IED_NAME` / `--ied-name` (`InteropIED`) as for any other server, or address the full domain. The new `--instance-domain-names` flag restores the bare LD instance names. `--values` files keyed by LD instance still apply.
+
+### Added
+
+- The e2e suite runs against a fifth independent stack, cbsigma (cB-Sigma/iec61850 and iec61850-sim v0.1.0, iec61850-interop v1.4.0): client journeys, reverse control/report/reader, and GOOSE in both directions (23 CI jobs).
+
+### Changed
+
+- Built on go-iec61850 v1.7.0. The e2e lock pins iec61850-interop v1.4.0, whose reference reporters and controllers find the logical device from the server directory.
+
+---
+
 ## v0.8.0
 
 **Date:** 2026-11-04

@@ -33,20 +33,20 @@ func TestResolveIEDName(t *testing.T) {
 }
 
 func TestLeafRefToStoreKey(t *testing.T) {
-	key, err := leafRefToStoreKey("LD0/LLN0.Mod.stVal", domain.FC_ST)
+	key, err := leafRefToStoreKey("LD0/LLN0.Mod.stVal", domain.FC_ST, nil)
 	if err != nil {
 		t.Fatalf("leafRefToStoreKey: %v", err)
 	}
 	if key != "LD0/LLN0$ST$Mod$stVal" {
 		t.Errorf("key = %q", key)
 	}
-	if _, err := leafRefToStoreKey("bad", domain.FC_ST); err == nil {
+	if _, err := leafRefToStoreKey("bad", domain.FC_ST, nil); err == nil {
 		t.Fatal("expected invalid ref error")
 	}
-	if _, err := leafRefToStoreKey("LD0/LLN0", domain.FC_ST); err == nil {
+	if _, err := leafRefToStoreKey("LD0/LLN0", domain.FC_ST, nil); err == nil {
 		t.Fatal("expected not-a-leaf error")
 	}
-	if _, err := leafRefToStoreKey("LD0/LLN0.Mod.stVal", ""); err == nil {
+	if _, err := leafRefToStoreKey("LD0/LLN0.Mod.stVal", "", nil); err == nil {
 		t.Fatal("expected missing FC error")
 	}
 }

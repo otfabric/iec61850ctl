@@ -131,7 +131,7 @@ Serialized `--values` JSON uses PascalCase (`Meta`, `LogicalDevices`, `Leaves`).
 
 - [docs/AUTOMATION.md](../docs/AUTOMATION.md) — stdout/stderr, JSON/JSONL contracts
 - [docs/GOOSE.md](../docs/GOOSE.md), [docs/SV.md](../docs/SV.md) — raw-Ethernet command reference; kept in sync by `cmd/docs_test.go`, examples captured by `cmd/docs_capture_test.go`
-- [docs/INTEROP.md](../docs/INTEROP.md) — 19 CI e2e jobs: client, reverse control/report/reader, GOOSE and SV against libiec61850, iec61850bean, dscsystems and iec61850-rust (GOOSE/SV: not iec61850bean), plus self
+- [docs/INTEROP.md](../docs/INTEROP.md) — 23 CI e2e jobs: client, reverse control/report/reader, GOOSE and SV against libiec61850, iec61850bean, dscsystems, iec61850-rust and cbsigma (GOOSE/SV: not iec61850bean), plus self
 - [docs/SERVER.md](../docs/SERVER.md) — readiness JSON, value seeding
 - [RELEASE.md](../RELEASE.md) — release notes (v0.4.1: iec61850-interop v1.0.1, CLI consistency fixes)
 

@@ -8,7 +8,7 @@ See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).
 
 ## Environment
 
-Against **external** adapter servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust):
+Against **external** adapter servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust, cbsigma):
 
 ```bash
 export IEC61850_HOST=127.0.0.1
@@ -16,7 +16,7 @@ export IEC61850_PORT=1102
 export IEC61850_IED_NAME=InteropIED
 ```
 
-Against **`iec61850ctl server start` (self-server)**, leave `IEC61850_IED_NAME` **unset** — Go domains are bare LD names.
+Against **`iec61850ctl server start` (self-server)**, set `IEC61850_IED_NAME=InteropIED` as well: the server names its domains IED name + LD inst (`InteropIEDInteropLD`), like the reference servers. Only a server started with `--instance-domain-names` needs it unset.
 
 ## Starting adapters
 
@@ -38,6 +38,10 @@ docker run --rm -p 1102:1102 --entrypoint dscsystems-ied-server \
 # iec61850-rust
 docker run --rm -p 1102:1102 --entrypoint iec61850-rust-ied-server \
   iec61850-interop-iec61850-rust:local --port 1102
+
+# cbsigma
+docker run --rm -p 1102:1102 --entrypoint cbsigma-ied-server \
+  iec61850-interop-cbsigma:local --port 1102
 ```
 
 ### Digest-pinned images (CI / reproducible)
@@ -47,6 +51,7 @@ LIBIEC61850_IMAGE=ghcr.io/otfabric/iec61850-interop-libiec61850@sha256:5f865e191
 IEC61850BEAN_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850bean@sha256:df9b48b5f903ec55f7bcb7baabe651ae204c685702d77979e89165fad00c6416
 DSCSYSTEMS_IMAGE=ghcr.io/otfabric/iec61850-interop-dscsystems@sha256:bba8bc1653b4c5bb51c4b8766f0bd99d77dd3523574ed2630b09695212618f2e
 IEC61850RUST_IMAGE=ghcr.io/otfabric/iec61850-interop-iec61850-rust@sha256:c961c039384b0ea968e786a259e1f7a3a4781f2b544ff50d794bd965e991314c
+CBSIGMA_IMAGE=ghcr.io/otfabric/iec61850-interop-cbsigma@sha256:bf0597703e7d1495ab3aa144d481bc92a0a4aef87a2bfafcbd75f7c1fbb4aa16
 docker run --rm -p 1102:1102 --entrypoint libiec61850-ied-server \
   "$LIBIEC61850_IMAGE" --port 1102
 ```

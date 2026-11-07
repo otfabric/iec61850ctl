@@ -245,7 +245,7 @@ func TestStartWithSV(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = c.Close(ctx) }()
-	cb, err := c.GetMSVCB(ctx, "InteropLD", "LLN0$MS$MSVCB01")
+	cb, err := c.GetMSVCB(ctx, "InteropIEDInteropLD", "LLN0$MS$MSVCB01")
 	if err != nil {
 		t.Fatal(err)
 	}

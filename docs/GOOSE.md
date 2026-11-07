@@ -16,8 +16,8 @@ The example sessions on this page are real output. They were captured with
 `TestCaptureDocExamples` (`cmd/docs_capture_test.go`) against an in-process
 `iec61850ctl` server for the iec61850-interop GOOSE fixture
 (`pkg/gooseops/testdata/interop-goose.cid`). That server publishes both GoCBs
-on an in-memory hub that stands in for `eth0`. Its references use the bare LD
-as MMS domain, which is why the subscribe examples pass `--bare-domain`.
+on an in-memory hub that stands in for `eth0`. Its references use the IEC
+61850-8-1 MMS domain (`InteropIEDInteropLD`), as the SCL binding expects.
 
 ## Interfaces and permissions
 
@@ -41,9 +41,10 @@ A name that matches several blocks is a usage error (exit `2`).
 
 The SCL binding uses the on-wire references of IEC 61850-8-1, where the MMS
 domain is the IED name followed by the LD instance. Some publishers use the
-bare LD instance as their domain instead, such as go-iec61850 servers and
-`iec61850ctl server start`. For those, pass `--bare-domain` to `subscribe`
-(match their references) or `publish` (send that form).
+bare LD instance as their domain instead, such as go-iec61850 servers before
+v1.7.0 and `iec61850ctl server start --instance-domain-names`. For those,
+pass `--bare-domain` to `subscribe` (match their references) or `publish`
+(send that form).
 
 ## goose list
 
@@ -137,13 +138,13 @@ summary. Each text record is one header line followed by the dataset values.
 ```console
 $ iec61850ctl goose sniff --iface eth0 --appid 0x1002 --count 3
 Sniffing GOOSE on eth0 (Ctrl+C to stop)
-12:58:06.362 frame     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropLD/LLN0$GO$gcbBool st=1 sq=1 ttl=2000ms confRev=1
+04:35:58.511 frame     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropIEDInteropLD/LLN0$GO$gcbBool st=1 sq=1 ttl=2000ms confRev=1
     [0] false
     [1] 0x0000
-12:58:06.383 frame     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropLD/LLN0$GO$gcbBool st=1 sq=2 ttl=2000ms confRev=1
+04:35:58.532 frame     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropIEDInteropLD/LLN0$GO$gcbBool st=1 sq=2 ttl=2000ms confRev=1
     [0] false
     [1] 0x0000
-12:58:06.424 frame     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropLD/LLN0$GO$gcbBool st=1 sq=3 ttl=2000ms confRev=1
+04:35:58.573 frame     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropIEDInteropLD/LLN0$GO$gcbBool st=1 sq=3 ttl=2000ms confRev=1
     [0] false
     [1] 0x0000
 Frames: 3 (filtered 3, undecodable 0)
@@ -152,10 +153,10 @@ Frames: 3 (filtered 3, undecodable 0)
 In JSON Lines each frame is one object, and the summary is the last line:
 
 ```console
-$ iec61850ctl goose sniff --iface eth0 --gocb-ref 'InteropLD/LLN0$GO$gcbBool' --count 1 --format jsonl
+$ iec61850ctl goose sniff --iface eth0 --gocb-ref 'InteropIEDInteropLD/LLN0$GO$gcbBool' --count 1 --format jsonl
 Sniffing GOOSE on eth0 (Ctrl+C to stop)
-{"event":"frame","received":"2026-10-28T12:58:06.50544Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:01:00:02","app_id":"0x1002","vlan_id":0,"vlan_priority":4,"simulation":false,"gocb_ref":"InteropLD/LLN0$GO$gcbBool","dat_set":"InteropLD/LLN0$dsGooseBool","go_id":"InteropGooseBool","t":"2026-10-28T12:58:06.351800025Z","ttl_ms":2000,"st_num":1,"sq_num":4,"test":false,"conf_rev":1,"nds_com":false,"entries":2,"values":[false,{"bits":"0000","len":13}]}
-{"event":"summary","frames":1,"filtered":0,"decode_errors":0}
+{"event":"frame","received":"2026-11-07T04:35:58.653423Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:01:00:02","app_id":"0x1002","vlan_id":0,"vlan_priority":4,"simulation":false,"gocb_ref":"InteropIEDInteropLD/LLN0$GO$gcbBool","dat_set":"InteropIEDInteropLD/LLN0$dsGooseBool","go_id":"InteropGooseBool","t":"2026-11-07T04:35:58.500087023Z","ttl_ms":2000,"st_num":1,"sq_num":4,"test":false,"conf_rev":1,"nds_com":false,"entries":2,"values":[false,{"bits":"0000","len":13}]}
+{"event":"summary","frames":1,"filtered":1,"decode_errors":0}
 ```
 
 ## goose subscribe
@@ -193,46 +194,46 @@ Supervision runs per stream and is modelled on the LGOS logical node. It emits t
 Each run ends with a summary per stream: status, last stNum/sqNum and counters.
 
 ```console
-$ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --bare-domain --count 3
-Subscribing to InteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
-12:58:06.665 supervision 02:00:00:00:00:01 0x1002 InteropLD/LLN0$GO$gcbBool status=ok
-12:58:06.665 state     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropLD/LLN0$GO$gcbBool st=1 sq=5 ttl=2000ms confRev=1
+$ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --count 3
+Subscribing to InteropIEDInteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
+04:31:27.136 supervision 02:00:00:00:00:01 0x1002 InteropIEDInteropLD/LLN0$GO$gcbBool status=ok
+04:31:27.136 state     02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropIEDInteropLD/LLN0$GO$gcbBool st=1 sq=66 ttl=2000ms confRev=1
     [0] false
     [1] 0x0000
-12:58:06.987 message   02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropLD/LLN0$GO$gcbBool st=1 sq=6 ttl=2000ms confRev=1
+04:31:28.137 message   02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropIEDInteropLD/LLN0$GO$gcbBool st=1 sq=67 ttl=2000ms confRev=1
     [0] false
     [1] 0x0000
-12:58:07.627 message   02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropLD/LLN0$GO$gcbBool st=1 sq=7 ttl=2000ms confRev=1
+04:31:29.139 message   02:00:00:00:00:01 -> 01:0c:cd:01:00:02 appid=0x1002 vlan=0/4 InteropIEDInteropLD/LLN0$GO$gcbBool st=1 sq=68 ttl=2000ms confRev=1
     [0] false
     [1] 0x0000
 
 Messages: 3
-Stream 02:00:00:00:00:01 0x1002 InteropLD/LLN0$GO$gcbBool: status=ok st=1 sq=7 messages=3 states=1 timeouts=0 invalid=0 gaps=0/0 dup=0 ooo=0 restarts=0
+Stream 02:00:00:00:00:01 0x1002 InteropIEDInteropLD/LLN0$GO$gcbBool: status=ok st=1 sq=68 messages=3 states=1 timeouts=0 invalid=0 gaps=0/0 dup=0 ooo=0 restarts=0
 ```
 
 With `--only-changes` only state changes are printed. In JSON Lines, the
 `supervision` and `summary` records carry the full supervision state:
 
 ```console
-$ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --bare-domain --only-changes --count 1 --format jsonl
-Subscribing to InteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
-{"event":"supervision","received":"2026-10-28T12:58:08.629031Z","stream":"02:00:00:00:00:01 0x1002 InteropLD/LLN0$GO$gcbBool","status":"ok","state":{"src":"02:00:00:00:00:01","app_id":"0x1002","gocb_ref":"InteropLD/LLN0$GO$gcbBool","status":"ok","st":true,"sim_st":false,"nds_com":false,"last_st_num":1,"last_sq_num":8,"conf_rev":1,"rx_conf_rev":1,"messages":1,"state_changes":1,"duplicates":0,"out_of_order":0,"st_num_gaps":0,"sq_num_gaps":0,"restarts":0,"timeouts":0,"invalid":0,"dropped_events":0}}
-{"event":"state","received":"2026-10-28T12:58:08.629031Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:01:00:02","app_id":"0x1002","vlan_id":0,"vlan_priority":4,"simulation":false,"gocb_ref":"InteropLD/LLN0$GO$gcbBool","dat_set":"InteropLD/LLN0$dsGooseBool","go_id":"InteropGooseBool","t":"2026-10-28T12:58:06.351800025Z","ttl_ms":2000,"st_num":1,"sq_num":8,"test":false,"conf_rev":1,"nds_com":false,"entries":2,"values":[false,{"bits":"0000","len":13}]}
-{"event":"summary","messages":1,"streams":[{"src":"02:00:00:00:00:01","app_id":"0x1002","gocb_ref":"InteropLD/LLN0$GO$gcbBool","status":"ok","st":true,"sim_st":false,"nds_com":false,"last_st_num":1,"last_sq_num":8,"conf_rev":1,"rx_conf_rev":1,"messages":1,"state_changes":1,"duplicates":0,"out_of_order":0,"st_num_gaps":0,"sq_num_gaps":0,"restarts":0,"timeouts":0,"invalid":0,"dropped_events":0}]}
+$ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --only-changes --count 1 --format jsonl
+Subscribing to InteropIEDInteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
+{"event":"supervision","received":"2026-11-07T04:31:30.139497Z","stream":"02:00:00:00:00:01 0x1002 InteropIEDInteropLD/LLN0$GO$gcbBool","status":"ok","state":{"src":"02:00:00:00:00:01","app_id":"0x1002","gocb_ref":"InteropIEDInteropLD/LLN0$GO$gcbBool","status":"ok","st":true,"sim_st":false,"nds_com":false,"last_st_num":1,"last_sq_num":69,"conf_rev":1,"rx_conf_rev":1,"messages":1,"state_changes":1,"duplicates":0,"out_of_order":0,"st_num_gaps":0,"sq_num_gaps":0,"restarts":0,"timeouts":0,"invalid":0,"dropped_events":0}}
+{"event":"state","received":"2026-11-07T04:31:30.139497Z","src":"02:00:00:00:00:01","dst":"01:0c:cd:01:00:02","app_id":"0x1002","vlan_id":0,"vlan_priority":4,"simulation":false,"gocb_ref":"InteropIEDInteropLD/LLN0$GO$gcbBool","dat_set":"InteropIEDInteropLD/LLN0$dsGooseBool","go_id":"InteropGooseBool","t":"2026-11-07T04:30:26.789098978Z","ttl_ms":2000,"st_num":1,"sq_num":69,"test":false,"conf_rev":1,"nds_com":false,"entries":2,"values":[false,{"bits":"0000","len":13}]}
+{"event":"summary","messages":1,"streams":[{"src":"02:00:00:00:00:01","app_id":"0x1002","gocb_ref":"InteropIEDInteropLD/LLN0$GO$gcbBool","status":"ok","st":true,"sim_st":false,"nds_com":false,"last_st_num":1,"last_sq_num":69,"conf_rev":1,"rx_conf_rev":1,"messages":1,"state_changes":1,"duplicates":0,"out_of_order":0,"st_num_gaps":0,"sq_num_gaps":0,"restarts":0,"timeouts":0,"invalid":0,"dropped_events":0}]}
 ```
 
-Without `--bare-domain`, the subscription expects the SCL's on-wire gocbRef
-(`InteropIEDInteropLD/...`). That filter matches none of this publisher's
-frames, so `--count` is not reached and the command exits `5`:
+With `--bare-domain`, the subscription expects `InteropLD/...` instead of the
+SCL's on-wire gocbRef. That filter matches none of this publisher's frames, so
+`--count` is not reached and the command exits `5`:
 
 ```console
-$ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --count 1 --duration 2s
-Subscribing to InteropIEDInteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
+$ iec61850ctl goose subscribe --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --bare-domain --count 1 --duration 2s
+Subscribing to InteropLD/LLN0$GO$gcbBool on eth0 (Ctrl+C to stop)
 
 Messages: 0
 received 0 of 1 GOOSE message(s) before --duration elapsed
 $ echo $?
-4
+5
 ```
 
 ## goose publish
@@ -343,12 +344,12 @@ MMS command.
 | `--dat-set` | set | new DatSet reference (only while disabled; the server increments ConfRev) |
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb get --ld InteropLD --gocb gcbBool
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb get --ld InteropIEDInteropLD --gocb gcbBool
 Connecting to 127.0.0.1:10102
-GoCB InteropLD/LLN0$GO$gcbBool
+GoCB InteropIEDInteropLD/LLN0$GO$gcbBool
   GoEna:      true
   GoID:       InteropGooseBool
-  DatSet:     InteropLD/LLN0$dsGooseBool
+  DatSet:     InteropIEDInteropLD/LLN0$dsGooseBool
   ConfRev:    1
   NdsCom:     false
   DstAddress: 01:0c:cd:01:00:02 appid 0x1002 vlan 0 prio 4
@@ -358,13 +359,13 @@ GoCB InteropLD/LLN0$GO$gcbBool
 ```
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb get --ld InteropLD --gocb gcbBool --format json
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb get --ld InteropIEDInteropLD --gocb gcbBool --format json
 Connecting to 127.0.0.1:10102
 {
-  "reference": "InteropLD/LLN0$GO$gcbBool",
+  "reference": "InteropIEDInteropLD/LLN0$GO$gcbBool",
   "go_ena": true,
   "go_id": "InteropGooseBool",
-  "dat_set": "InteropLD/LLN0$dsGooseBool",
+  "dat_set": "InteropIEDInteropLD/LLN0$dsGooseBool",
   "conf_rev": 1,
   "nds_com": false,
   "dst": "01:0c:cd:01:00:02",
@@ -385,9 +386,9 @@ Connecting to 127.0.0.1:10102
 A GoID change on an enabled block is refused:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropLD --gocb gcbBool --go-id renamed
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --go-id renamed
 Connecting to 127.0.0.1:10102
-set GoCB InteropLD/LLN0$GO$gcbBool: iec61850: set GoCB InteropLD/LLN0$GO$gcbBool.GoID: mms: data access error: TemporarilyUnavailable
+set GoCB InteropIEDInteropLD/LLN0$GO$gcbBool: iec61850: set GoCB InteropIEDInteropLD/LLN0$GO$gcbBool.GoID: mms: data access error: TemporarilyUnavailable
 $ echo $?
 6
 ```
@@ -395,12 +396,12 @@ $ echo $?
 Disable the block first, then rename and re-enable it in one call:
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropLD --gocb gcbBool --disable
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --disable
 Connecting to 127.0.0.1:10102
-GoCB InteropLD/LLN0$GO$gcbBool
+GoCB InteropIEDInteropLD/LLN0$GO$gcbBool
   GoEna:      false
   GoID:       InteropGooseBool
-  DatSet:     InteropLD/LLN0$dsGooseBool
+  DatSet:     InteropIEDInteropLD/LLN0$dsGooseBool
   ConfRev:    1
   NdsCom:     false
   DstAddress: 01:0c:cd:01:00:02 appid 0x1002 vlan 0 prio 4
@@ -410,12 +411,12 @@ GoCB InteropLD/LLN0$GO$gcbBool
 ```
 
 ```console
-$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropLD --gocb gcbBool --go-id renamed --enable
+$ iec61850ctl --host 127.0.0.1 --port 10102 goose gocb set --ld InteropIEDInteropLD --gocb gcbBool --go-id renamed --enable
 Connecting to 127.0.0.1:10102
-GoCB InteropLD/LLN0$GO$gcbBool
+GoCB InteropIEDInteropLD/LLN0$GO$gcbBool
   GoEna:      true
   GoID:       renamed
-  DatSet:     InteropLD/LLN0$dsGooseBool
+  DatSet:     InteropIEDInteropLD/LLN0$dsGooseBool
   ConfRev:    1
   NdsCom:     false
   DstAddress: 01:0c:cd:01:00:02 appid 0x1002 vlan 0 prio 4
@@ -450,8 +451,8 @@ Sampled Values have their own command tree: see [SV.md](SV.md).
 ## Interoperability
 
 The e2e suite runs `goose subscribe`, `goose sniff` and `goose publish`
-against the GOOSE publishers and subscribers of libiec61850, dscsystems and
-iec61850-rust (iec61850-interop `goose-v1`) on a Docker bridge network. See
+against the GOOSE publishers and subscribers of libiec61850, dscsystems,
+iec61850-rust and cbsigma (iec61850-interop `goose-v1`) on a Docker bridge network. See
 [INTEROP.md](INTEROP.md#goose-raw-ethernet).
 
 ## Server

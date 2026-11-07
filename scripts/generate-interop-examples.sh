@@ -20,6 +20,7 @@ stacks = [
     ("iec61850bean", "IEC61850BEAN_IMAGE", "iec61850bean-ied-server"),
     ("dscsystems", "DSCSYSTEMS_IMAGE", "dscsystems-ied-server"),
     ("iec61850-rust", "IEC61850RUST_IMAGE", "iec61850-rust-ied-server"),
+    ("cbsigma", "CBSIGMA_IMAGE", "cbsigma-ied-server"),
 ]
 
 lines = []
@@ -29,13 +30,13 @@ lines.append(f"iec61850-interop: `{lock.get('source_tag', '?')}` · IED fixture:
 lines.append("See also [INTEROP.md](INTEROP.md) and [AUTOMATION.md](AUTOMATION.md).\n")
 
 lines.append("## Environment\n")
-lines.append("Against **external** adapter servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust):\n")
+lines.append("Against **external** adapter servers (libiec61850, IEC61850bean, dscsystems, iec61850-rust, cbsigma):\n")
 lines.append("```bash")
 lines.append("export IEC61850_HOST=127.0.0.1")
 lines.append("export IEC61850_PORT=1102")
 lines.append(f"export IEC61850_IED_NAME={data['ied_name']}")
 lines.append("```\n")
-lines.append("Against **`iec61850ctl server start` (self-server)**, leave `IEC61850_IED_NAME` **unset** — Go domains are bare LD names.\n")
+lines.append("Against **`iec61850ctl server start` (self-server)**, set `IEC61850_IED_NAME=InteropIED` as well: the server names its domains IED name + LD inst (`InteropIEDInteropLD`), like the reference servers. Only a server started with `--instance-domain-names` needs it unset.\n")
 
 lines.append("## Starting adapters\n")
 lines.append("### Local images\n")

@@ -28,6 +28,7 @@ Stop with Ctrl+C.
 | `--host` | Bind address (default `0.0.0.0`) |
 | `--port` / `-p` | MMS port (default `102`; `0` binds an ephemeral port, printed on stderr and in `--ready-json`) |
 | `--files-dir` | Directory served read-only over MMS file services (`list files`, `get file`); not recursive, delete/rename are denied |
+| `--instance-domain-names` | Name each MMS domain by its LDevice@inst alone (`InteropLD`), as before v0.9.0. Off by default: domains follow IEC 61850-8-1, LDevice@ldName if set, else the IED name followed by the LD inst (`InteropIEDInteropLD`), like other IEC 61850 servers; GoCB, dataset and SVCB references use the same domain. `--values` files keyed by LD inst still apply |
 | `--allow-readonly-fc-writes` | Accept client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`). Off by default: IEC 61850-7-2 makes them read-only to clients, and the server answers such a write with object-access-denied. For simulators and test fixtures only |
 | `--max-connections` | Reserved for future use (default `5`; not enforced by the current go-mms listener) |
 | `--ready-json` | After bind, emit one readiness JSON line on **stdout** |
