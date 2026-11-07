@@ -34,6 +34,9 @@ func TestVersion(t *testing.T) {
 	// list none (it depends on the Go version); their formatting with zero,
 	// one and two libraries is tested in internal/buildinfo.
 	libs := buildinfo.Resolve("x", "1", "", "c", "").Libraries
+	if libs == nil {
+		libs = []buildinfo.Library{}
+	}
 	libsJSON, _ := json.Marshal(libs)
 	plat := runtime.Version() + ", " + runtime.GOOS + "/" + runtime.GOARCH
 	for _, l := range slices.Backward(libs) {
