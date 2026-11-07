@@ -153,6 +153,7 @@ func Execute() {
 func ExecuteContext(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	runState.entered = false
 	runState.logger = nil
+	registerCompletions()
 	rootCmd.SetArgs(args)
 	rootCmd.SetOut(stdout)
 	rootCmd.SetErr(stderr)
