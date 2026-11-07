@@ -84,6 +84,8 @@ func TestCompletionFlagValues(t *testing.T) {
 		{[]string{"server", "generate-config", "--output", ""}, []string{"cfg"}, ":8"},
 		{[]string{"find", "bulk", "--mapping", ""}, []string{"json"}, ":8"},
 		{[]string{"server", "start", "--files-dir", ""}, nil, ":16"},
+		// get file --output saves any file: default file completion.
+		{[]string{"get", "file", "--output", ""}, nil, ":0"},
 		{[]string{"--host", ""}, nil, noFile},
 		{[]string{"list", "lns", "--ld", ""}, nil, noFile},
 	}
