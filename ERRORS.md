@@ -21,7 +21,7 @@ listed in [docs/exitcodes.md](docs/exitcodes.md); the full API is in
 | `errs.ErrPermissionDenied` | Access denied by the server | 9 |
 | `errs.ErrNotFound` | The requested LD, LN, DO, DA, dataset, report, IED or file does not exist | 11 |
 | `errs.ErrVerifyMismatch` | A read-back after a write did not match the requested value | 12 |
-| `errs.ErrSafety` | A safety guard rail refused the operation (`goose`/`sv publish` without `--yes`, or unmarked frames without `--live`) | 13 |
+| `errs.ErrSafety` | A safety guard rail refused the operation (organisation safety code 13) (`goose`/`sv publish` without `--yes`, or unmarked frames without `--live`) | 13 |
 
 The go-iec61850, go-mms, `context`, `io/fs` and `net` errors that `errs.ExitCode`
 also recognises map to the same codes (for example `context.DeadlineExceeded` to

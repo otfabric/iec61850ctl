@@ -9,8 +9,10 @@
 
 Two script-facing changes; the mapping is also in [docs/exitcodes.md](docs/exitcodes.md).
 
-- `goose publish` and `sv publish` refused by a safety guard rail exit `13` (safety), was `2`: without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`. A missing `--iface` stays `2`. Nothing is sent in either case. `errs.ExitSafety`, `errs.ErrSafety` and `errs.Safetyf` are new in `pkg/errs`.
+- `goose publish` and `sv publish` refused by a safety guard rail exit `13`, the organisation safety code (otfabric/engineering `standards/api-design.md`), was `2`: without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`. A missing `--iface` stays `2`. Nothing is sent in either case. `errs.ExitSafety`, `errs.ErrSafety` and `errs.Safetyf` are new in `pkg/errs`.
 - `control operate` and `set object` change device state and now need `--yes`; without it they refuse before connecting and exit `2` (missing confirmation), where they used to operate or write. `control operate --dry-run` plans the sequence without `--yes`. Add `--yes` to scripts that operate or write.
+- `goose gocb set` and `sv svcb set` now need `--yes`; without it they refuse before connecting and exit `2`, where they used to write the control block.
+- `subscribe report --purge-buf` now needs `--yes`; without it the command refuses before connecting and exits `2`, where it used to purge the BRCB buffer. Subscriptions without `--purge-buf` are unchanged.
 
 ---
 

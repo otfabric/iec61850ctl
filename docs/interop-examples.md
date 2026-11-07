@@ -218,10 +218,10 @@ iec61850ctl set object --yes --object InteropLD/GGIO1.SetInt1.setVal --fc SP --v
 
 Stacks: `libiec61850`, `iec61850bean`, `dscsystems`, `iec61850-rust`
 
-Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable.
+Replace REPORT_INSTANCE with discovered brcb01*. --purge-buf/--entry-id require --type BR and run before enable; --purge-buf needs --yes.
 
 ```bash
-iec61850ctl subscribe report --ld InteropLD --ln LLN0 --report REPORT_INSTANCE --type BR --purge-buf --interrogation --max-reports 1 --duration 15s --format jsonl
+iec61850ctl subscribe report --ld InteropLD --ln LLN0 --report REPORT_INSTANCE --type BR --purge-buf --yes --interrogation --max-reports 1 --duration 15s --format jsonl
 ```
 
 Discover the instance name first:

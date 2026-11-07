@@ -102,7 +102,7 @@ func TestSubscribeReport(t *testing.T) {
 		}
 	})
 	t.Run("brcb jsonl sync", func(t *testing.T) {
-		r := runSrv(t, append(base, "--report", "brcb01", "--type", "BR", "--purge-buf", "--entry-id", "0000000000000000", "--sync", "--format", "jsonl")...)
+		r := runSrv(t, append(base, "--report", "brcb01", "--type", "BR", "--purge-buf", "--yes", "--entry-id", "0000000000000000", "--sync", "--format", "jsonl")...)
 		expectCode(t, r, errs.ExitOK)
 		var events []string
 		sc := bufio.NewScanner(strings.NewReader(r.stdout))

@@ -263,6 +263,7 @@ Write GoCB attributes (GoEna written last).
 | `--go-id` | string | new GoID (only while disabled) |
 | `--gocb` | string | GoCB name (gcb1) or item (LLN0$GO$gcb1) (required) |
 | `--ld` | string | logical device (required) |
+| `--yes` | bool | confirm that the GoCB write may change device state (required) |
 
 ### `iec61850ctl goose list`
 
@@ -499,12 +500,13 @@ Subscribe to RCB notifications with auto-cleanup.
 | `--ld` | string | Logical device name (required) |
 | `--ln` | string | Logical node name (required) |
 | `--max-reports` | int | Exit after receiving this many reports (0 = no limit) |
-| `--purge-buf` | bool | BRCB: purge buffer before enable |
+| `--purge-buf` | bool | BRCB: purge buffer before enable (requires --yes) |
 | `--report` | string | Report control block name (required) |
 | `--resv-tms` | int | BRCB: write ResvTms before enable |
 | `--show-values` | bool | Show data set values in each report |
 | `--sync` | bool | Read the report dataset once to obtain a full baseline snapshot (one-shot state sync) |
 | `--type` | string | Report type: BR (buffered/BRCB) or RP (unbuffered/URCB) (default "BR") |
+| `--yes` | bool | confirm that --purge-buf may discard the BRCB buffer on the device (required with --purge-buf) |
 
 ### `iec61850ctl sv list`
 
@@ -598,6 +600,7 @@ Write MSVCB attributes (SvEna written last).
 | `--smp-mod` | string | new SmpMod: SmpPerPeriod, SmpPerSec, SecPerSmp (only while disabled) |
 | `--smp-rate` | uint16 | new SmpRate (only while disabled) |
 | `--svcb` | string | MSVCB name (MSVCB01) or item (LLN0$MS$MSVCB01) (required) |
+| `--yes` | bool | confirm that the MSVCB write may change device state (required) |
 
 ### `iec61850ctl tree`
 

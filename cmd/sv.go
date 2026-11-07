@@ -118,6 +118,7 @@ var svSvcbFlags struct {
 	smpRate uint16
 	optFlds string
 	smpMod  string
+	yes     bool
 }
 
 var svSvcbGetCmd = &cobra.Command{
@@ -130,8 +131,12 @@ var svSvcbGetCmd = &cobra.Command{
 var svSvcbSetCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Write MSVCB attributes (SvEna written last)",
-	Example: `  iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable
-  iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --opt-flds refresh-time,sample-rate --enable`,
+	Long: `Write MSVCB attributes (SvEna written last).
+
+Writing an MSVCB changes device state, so --yes is required; without it the
+command refuses (exit 2) before contacting the device.`,
+	Example: `  iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable --yes
+  iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --opt-flds refresh-time,sample-rate --enable --yes`,
 	RunE: runSVSvcbSet,
 }
 
@@ -199,6 +204,7 @@ func init() {
 	sf.Uint16Var(&svSvcbFlags.smpRate, "smp-rate", 0, "new SmpRate (only while disabled)")
 	sf.StringVar(&svSvcbFlags.optFlds, "opt-flds", "", "new OptFlds: comma list of refresh-time, sample-synchronized, sample-rate, data-set, security, or none (only while disabled)")
 	sf.StringVar(&svSvcbFlags.smpMod, "smp-mod", "", "new SmpMod: SmpPerPeriod, SmpPerSec, SecPerSmp (only while disabled)")
+	sf.BoolVar(&svSvcbFlags.yes, "yes", false, "confirm that the MSVCB write may change device state (required)")
 	svSvcbSetCmd.MarkFlagsMutuallyExclusive("enable", "disable")
 	svSvcbSetCmd.MarkFlagsOneRequired("enable", "disable", "msv-id", "dat-set", "smp-rate", "opt-flds", "smp-mod")
 
@@ -611,6 +617,9 @@ func runSVSvcbSet(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 		upd.SmpMod = &m
+	}
+	if !svSvcbFlags.yes {
+		return errs.Invalidf("refusing to write MSVCB %s without --yes: the write changes device state (missing confirmation)", svSvcbFlags.svcb)
 	}
 	s, err := openClientSession(cmd, clientSessionOptions{})
 	if err != nil {

@@ -65,6 +65,11 @@ func TestExitCodes(t *testing.T) {
 		{"set without --yes", []string{"--host", "127.0.0.1", "--port", "1", "set", "object", "--object", "a/b.c", "--fc", "SP", "--value", "1", "--type", "int"}, false, errs.ExitUsage, "refusing to write a/b.c without --yes"},
 		{"control without --yes", []string{"--host", "127.0.0.1", "--port", "1", "control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true"}, false, errs.ExitUsage, "refusing to operate a/b.c without --yes"},
 		{"control --test without --yes", []string{"--host", "127.0.0.1", "--port", "1", "control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true", "--test"}, false, errs.ExitUsage, "without --yes"},
+		{"gocb set without --yes", []string{"--host", "127.0.0.1", "--port", "1", "goose", "gocb", "set", "--ld", "LD0", "--gocb", "gcb1", "--disable"}, false, errs.ExitUsage, "refusing to write GoCB gcb1 without --yes"},
+		{"svcb set without --yes", []string{"--host", "127.0.0.1", "--port", "1", "sv", "svcb", "set", "--ld", "LD0", "--svcb", "MSVCB01", "--enable"}, false, errs.ExitUsage, "refusing to write MSVCB MSVCB01 without --yes"},
+		{"purge-buf without --yes", []string{"--host", "127.0.0.1", "--port", "1", "subscribe", "report", "--ld", "a", "--ln", "b", "--report", "c", "--type", "BR", "--purge-buf"}, false, errs.ExitUsage, "refusing to purge the buffer of c without --yes"},
+		// --yes is only required with --purge-buf: a plain subscription dials (port 1: exit 4).
+		{"subscribe without purge needs no --yes", []string{"--host", "127.0.0.1", "--port", "1", "--connect-timeout", "200ms", "subscribe", "report", "--ld", "a", "--ln", "b", "--report", "c", "--type", "BR"}, false, errs.ExitConnection, ""},
 		{"control FC in object", []string{"control", "inspect", "--object", "InteropLD/GGIO1.SPCSO1[CO]"}, true, errs.ExitUsage, "must not include FC"},
 		{"journal bad from", []string{"get", "journal", "--domain", "InteropLD", "--journal", "j", "--from", "yesterday"}, true, errs.ExitUsage, "--from"},
 		{"journal bad to", []string{"get", "journal", "--domain", "InteropLD", "--journal", "j", "--from", "0", "--to", "later"}, true, errs.ExitUsage, "--to"},

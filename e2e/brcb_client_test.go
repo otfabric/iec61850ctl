@@ -51,7 +51,7 @@ func TestBRCB_ClientPurgeAndResume(t *testing.T) {
 				requireBRCBUnreadable(t, get, h)
 				sub := runCtl(t, h.ctlEnv(), 30*time.Second,
 					"subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", brcbName,
-					"--type", "BR", "--purge-buf", "--interrogation", "--max-reports", "1",
+					"--type", "BR", "--purge-buf", "--yes", "--interrogation", "--max-reports", "1",
 					"--duration", "5s", "--format", "jsonl")
 				requireBRCBUnreadable(t, sub, h)
 				return
@@ -83,7 +83,7 @@ func TestBRCB_ClientPurgeAndResume(t *testing.T) {
 				"--ln", "LLN0",
 				"--report", brcbName,
 				"--type", "BR",
-				"--purge-buf",
+				"--purge-buf", "--yes",
 				"--interrogation",
 				"--max-reports", "1",
 				"--duration", "15s",

@@ -25,7 +25,7 @@ const (
 	ExitFailure      = 10  // unclassified failure
 	ExitNotFound     = 11  // object, file, dataset, report or IED does not exist
 	ExitMismatch     = 12  // write verification read-back mismatch
-	ExitSafety       = 13  // refused by a safety guard rail (live GOOSE/SV publication)
+	ExitSafety       = 13  // organisation safety code: refused by a safety guard rail (live GOOSE/SV publication)
 	ExitInterrupted  = 130 // cancelled by SIGINT/SIGTERM (128 + SIGINT)
 )
 ```

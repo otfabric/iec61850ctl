@@ -249,7 +249,7 @@ A BRCB run with `--sync --interrogation --show-values --max-reports 1`:
 
 - `--show-values` controls inclusion of `values`.
 - BRCB `entry_id` is hex when the indication includes EntryID.
-- BRCB pre-enable: `--purge-buf`, `--entry-id HEX`, `--resv-tms N` (require `--type BR`); written before `RptEna`.
+- BRCB pre-enable: `--purge-buf`, `--entry-id HEX`, `--resv-tms N` (require `--type BR`); written before `RptEna`. `--purge-buf` requires `--yes`; without it the command exits `2` before dial.
 - The `summary` event is emitted only after subscription cleanup completes.
 - Reason tokens include `gi`, `dchg`, `qchg`, `dupd`, `integrity`.
 

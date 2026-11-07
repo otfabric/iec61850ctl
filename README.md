@@ -240,10 +240,10 @@ iec61850ctl subscribe report \
 # BRCB: purge buffer or resume from EntryID (hex) before enable
 iec61850ctl subscribe report \
   --ld MNSREF615LD0 --ln LLN0 --report rcbMeasFlt01 --type BR \
-  --purge-buf --interrogation --max-reports 1 --format jsonl
+  --purge-buf --yes --interrogation --max-reports 1 --format jsonl
 ```
 
-`--interrogation` triggers GI after enable. `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically so a dropped association ends the subscription with exit code `4` instead of waiting silently for reports. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`.
+`--interrogation` triggers GI after enable. `--keepalive` (default `5s`, `0` disables) re-reads the RCB periodically so a dropped association ends the subscription with exit code `4` instead of waiting silently for reports. `--sync` reads the RCB dataset once for a baseline snapshot. Use `--type RP` for unbuffered (URCB). `--purge-buf` / `--entry-id` / `--resv-tms` apply only to `--type BR`; `--purge-buf` discards buffered reports and needs `--yes`.
 
 ### Control and scalar write
 
@@ -313,7 +313,7 @@ iec61850ctl goose subscribe --iface eth0 --scl station.scd --gocb IED1/LD0/gcb1 
 iec61850ctl goose publish --iface eth0 --scl device.cid --gocb gcb1 --value 0=true --changes 3 --interval 1s --yes
 
 iec61850ctl goose gocb get --host 192.0.2.10 --ld LD0 --gocb gcb1
-iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable
+iec61850ctl goose gocb set --host 192.0.2.10 --ld LD0 --gocb gcb1 --disable --yes
 ```
 
 Raw sockets need `CAP_NET_RAW` on Linux or access to `/dev/bpf*` on macOS/BSD. Details and example sessions: [docs/GOOSE.md](docs/GOOSE.md).
@@ -330,7 +330,7 @@ iec61850ctl sv publish --iface eth0 --scl merging-unit.cid --svcb MSVCB01 --yes 
   --waveform IA=100 --waveform IB=100,50,-120 --waveform IC=100,50,120 --waveform VA=325
 
 iec61850ctl sv svcb get --host 192.0.2.10 --ld LD0 --svcb MSVCB01
-iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable
+iec61850ctl sv svcb set --host 192.0.2.10 --ld LD0 --svcb MSVCB01 --disable --yes
 ```
 
 Details and example sessions: [docs/SV.md](docs/SV.md).
@@ -381,7 +381,7 @@ Retries apply only to establishing the connection; invalid input, authentication
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `2` | Usage error: invalid flag, argument or value, a `goose`/`sv publish` without `--iface`, and a missing confirmation: `control operate` (unless `--dry-run`) or `set object` without `--yes`, refused before the device is contacted |
+| `2` | Usage error: invalid flag, argument or value, a `goose`/`sv publish` without `--iface`, and a missing confirmation: `control operate` (unless `--dry-run`), `set object`, `goose gocb set`, `sv svcb set` or `subscribe report --purge-buf` without `--yes`, refused before the device is contacted |
 | `3` | Invalid reference, configuration or SCL |
 | `4` | Connection failed or lost (including a dropped report subscription) |
 | `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
@@ -391,7 +391,7 @@ Retries apply only to establishing the connection; invalid input, authentication
 | `10` | Failure (unclassified) |
 | `11` | Not found (object, file, dataset, IED, RCB, journal, control block, network interface), including a server answer of MMS *object-non-existent* |
 | `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or GoCB/MSVCB enable read-back mismatch |
-| `13` | Safety refusal: `goose publish` / `sv publish` without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`; nothing is sent |
+| `13` | Safety refusal (organisation code): `goose publish` / `sv publish` without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`; nothing is sent |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
 The full contract per command is in [docs/AUTOMATION.md](docs/AUTOMATION.md).
@@ -418,10 +418,10 @@ Several commands change the state of real equipment or inject traffic on a live 
 |---------|--------|------------|
 | `control operate` | operates a controllable object (possibly switchgear) | `--yes` (not needed with `--dry-run`); explicit `--object` and `--value`; `--confirm-ref` to verify |
 | `set object` | writes a data attribute | `--yes`; `FC=CO` rejected; `--verify` reads back |
-| `subscribe report` | writes RCB settings; `--purge-buf` clears a BRCB's buffer | the RCB is disabled again on exit |
-| `goose publish` | sends GOOSE frames | explicit `--iface`, `--yes`; test flag set unless `--test=false --live` (refusals exit `13`) |
-| `sv publish` | sends SV frames at the configured rate | explicit `--iface`, `--yes`; simulation bit set unless `--simulation=false --live` (refusals exit `13`) |
-| `goose gocb set`, `sv svcb set` | enables, disables or reconfigures a control block | changes only what you pass |
+| `subscribe report` | writes RCB settings; `--purge-buf` clears a BRCB's buffer | `--purge-buf` needs `--yes`; the RCB is disabled again on exit |
+| `goose publish` | sends GOOSE frames | explicit `--iface`, `--yes`; test flag set unless `--test=false --live` (refusals exit `13`, the organisation safety code) |
+| `sv publish` | sends SV frames at the configured rate | explicit `--iface`, `--yes`; simulation bit set unless `--simulation=false --live` (refusals exit `13`, the organisation safety code) |
+| `goose gocb set`, `sv svcb set` | enables, disables or reconfigures a control block | `--yes`; changes only what you pass |
 
 Run these against test equipment first, and only on networks you are authorised to work on. See [SECURITY.md](SECURITY.md) for the threat model and how to report a vulnerability.
 

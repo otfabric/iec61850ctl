@@ -374,14 +374,14 @@ func TestSVSvcb(t *testing.T) {
 	}
 
 	// Attributes other than SvEna are writable only while disabled.
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--msv-id", "X")...), errs.ExitRejected)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--msv-id", "X")...), errs.ExitRejected)
 
-	r = runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable", "--format", "json")...)
+	r = runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable", "--format", "json")...)
 	expectCode(t, r, errs.ExitOK)
 	if err := json.Unmarshal([]byte(r.stdout), &v); err != nil || v.SvEna {
 		t.Fatalf("after disable: %q", r.stdout)
 	}
-	r = runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--msv-id", "renamed", "--opt-flds", "refresh-time,sample-rate",
+	r = runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--msv-id", "renamed", "--opt-flds", "refresh-time,sample-rate",
 		"--smp-rate", "80", "--smp-mod", "SmpPerPeriod", "--enable")...)
 	expectCode(t, r, errs.ExitOK)
 	for _, want := range []string{"MsvID:      renamed", "SvEna:      true", "OptFlds:    refresh-time,sample-rate", "SmpRate:    80 SmpPerPeriod"} {
@@ -390,29 +390,29 @@ func TestSVSvcb(t *testing.T) {
 		}
 	}
 	// SvEna is written last: disable in its own call before changing attributes.
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable")...), errs.ExitOK)
-	r = runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--opt-flds", "none", "--dat-set", "InteropLD/LLN0$PhsMeas1")...)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable")...), errs.ExitOK)
+	r = runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--opt-flds", "none", "--dat-set", "InteropLD/LLN0$PhsMeas1")...)
 	expectCode(t, r, errs.ExitOK)
 	if !strings.Contains(r.stdout, "OptFlds:    none") {
 		t.Fatal(r.stdout)
 	}
 
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01")...), errs.ExitUsage)
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--disable")...), errs.ExitUsage)
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--opt-flds", "bogus")...), errs.ExitUsage)
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--smp-mod", "hourly")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--disable")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--opt-flds", "bogus")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--smp-mod", "hourly")...), errs.ExitUsage)
 	expectCode(t, runCLI(t, args("get", "--ld", "InteropLD", "--svcb", "MSVCB01", "--format", "yaml")...), errs.ExitUsage)
-	expectCode(t, runCLI(t, args("set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--format", "yaml")...), errs.ExitUsage)
+	expectCode(t, runCLI(t, args("set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--format", "yaml")...), errs.ExitUsage)
 	if r := runCLI(t, args("get", "--ld", "InteropLD", "--svcb", "nope")...); r.code == errs.ExitOK {
 		t.Fatal("unknown MSVCB read succeeded")
 	}
 	expectCode(t, runCLI(t, "--port", "1", "--host", "127.0.0.1", "--connect-timeout", "200ms", "sv", "svcb", "get", "--ld", "X", "--svcb", "s"), errs.ExitConnection)
-	expectCode(t, runCLI(t, "--port", "1", "--host", "127.0.0.1", "--connect-timeout", "200ms", "sv", "svcb", "set", "--ld", "X", "--svcb", "s", "--enable"), errs.ExitConnection)
+	expectCode(t, runCLI(t, "--port", "1", "--host", "127.0.0.1", "--connect-timeout", "200ms", "sv", "svcb", "set", "--yes", "--ld", "X", "--svcb", "s", "--enable"), errs.ExitConnection)
 
 	// A connection without MSVCB support.
 	withFakeConn(t, emptyConn{})
 	expectCode(t, runCLI(t, "--host", "fake", "sv", "svcb", "get", "--ld", "X", "--svcb", "s"), errs.ExitUnsupported)
-	expectCode(t, runCLI(t, "--host", "fake", "sv", "svcb", "set", "--ld", "X", "--svcb", "s", "--enable"), errs.ExitUnsupported)
+	expectCode(t, runCLI(t, "--host", "fake", "sv", "svcb", "set", "--yes", "--ld", "X", "--svcb", "s", "--enable"), errs.ExitUnsupported)
 }
 
 func TestSvcbItem(t *testing.T) {
@@ -433,9 +433,9 @@ func TestSVSvcbEnableNotPublishing(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = srv.Close() })
 
-	r := runCLI(t, gooseSrvArgs(srv, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable")...)
+	r := runCLI(t, gooseSrvArgs(srv, "sv", "svcb", "set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--disable")...)
 	expectCode(t, r, errs.ExitOK)
-	r = runCLI(t, gooseSrvArgs(srv, "sv", "svcb", "set", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--format", "json")...)
+	r = runCLI(t, gooseSrvArgs(srv, "sv", "svcb", "set", "--yes", "--ld", "InteropLD", "--svcb", "MSVCB01", "--enable", "--format", "json")...)
 	expectCode(t, r, errs.ExitMismatch)
 	if !strings.Contains(r.stdout, `"sv_ena": false`) || !strings.Contains(r.stderr, "SvEna reads back false") {
 		t.Fatalf("stdout:\n%s\nstderr:\n%s", r.stdout, r.stderr)
