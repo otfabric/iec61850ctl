@@ -93,13 +93,6 @@ type docExample struct {
 	usageError bool // the session ends with exit code 2
 }
 
-func walkCommands(c *cobra.Command, fn func(*cobra.Command)) {
-	fn(c)
-	for _, sub := range c.Commands() {
-		walkCommands(sub, fn)
-	}
-}
-
 func readRepoFile(t *testing.T, rel string) string {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(repoRoot(), rel))
@@ -169,6 +162,12 @@ func commandArgs(line string) ([]string, bool) {
 		return nil, false
 	}
 	words, err := shellWords(strings.TrimPrefix(s, "iec61850ctl "))
+	// The command ends at a redirection, pipe or list operator.
+	for i, w := range words {
+		if w == ">" || w == ">>" || w == "|" || w == "&&" || w == ";" {
+			return words[:i], err == nil
+		}
+	}
 	return words, err == nil
 }
 

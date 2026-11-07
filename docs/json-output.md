@@ -8,7 +8,6 @@ The machine-readable output of `iec61850ctl`. Streams, exit codes and the format
 - `IEC61850CTL_FORMAT` (or the older `IEC61850CTL_OUTPUT_FORMAT`) sets the format when `--format` is not given.
 - Field names are snake_case.
 - A failure has no JSON form: the message goes to stderr, stdout stays empty and the exit code classifies the cause. Only `control operate` and `set object` print a document on failure (below). This differs from the organisation's `{"error":{...}}` convention. The HTTP API has its own `{"error","code"}` body ([HTTP.md](HTTP.md)).
-- `version` has text output only.
 - Records carry no `schemaVersion`.
 
 ## `list lds --format json`
@@ -256,6 +255,14 @@ A BRCB run with `--sync --interrogation --show-values --max-reports 1`:
 ## GOOSE and Sampled Values
 
 Event names per command are in [AUTOMATION.md](AUTOMATION.md#goose-and-sampled-values); full records, with captured examples, in [GOOSE.md](GOOSE.md) and [SV.md](SV.md).
+
+## `version --json`
+
+One line (also with `--format json` or `IEC61850CTL_FORMAT=json`), keys always in this order. `tag` is `""` when the binary was not built from a tag; `version` is `dev` and `commit`/`built` are `unknown` when not known.
+
+```json
+{"name":"iec61850ctl","version":"0.11.0","tag":"v0.11.0","commit":"1802d0f9afe8642d1e278120b76fcdfac967cb9e","built":"2026-11-05T15:41:49Z","go":"go1.26.10","platform":"linux/amd64"}
+```
 
 ## Server readiness
 

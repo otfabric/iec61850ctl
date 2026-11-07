@@ -1,5 +1,21 @@
 # iec61850ctl Releases
 
+## v0.11.0
+
+**Date:** 2026-11-07
+**Previous release:** v0.10.0
+
+### Added
+
+- `version --json` (also `--format json` or `IEC61850CTL_FORMAT=json`) prints the build metadata as one JSON object with the keys `name`, `version`, `tag`, `commit`, `built`, `go`, `platform` in that order ([docs/json-output.md](docs/json-output.md#version---json)).
+- Shell completion for flag values in bash, zsh, fish and PowerShell: every fixed-value flag (`--format`, `--log-level`, `--log-format`, `--fc`, `--type`, `--mode`, `--or-cat`, `--include`, `--layout`, `--opt-flds`, `--smp-mod`) completes its values, SCL, JSON, CSV and `.cfg` file flags complete files of that type, `--files-dir` directories and `--iface` the network interfaces. Other value flags no longer offer file names.
+
+### Changed
+
+- `version` prints one line in the organisation format, `iec61850ctl 0.11.0 (tag v0.11.0, commit <full sha>, built <date>, go1.26.10, linux/amd64)`, was a multi-line `iec61850ctl version: v0.11.0` block. The version has no leading `v`; the tag part is left out when the binary was not built from a tag. A `go install …@vX.Y.Z` build reports that version, and a development build `dev` with the VCS revision (`-dirty` for uncommitted changes); `make build` injects the full commit SHA.
+
+---
+
 ## v0.10.0
 
 **Date:** 2026-11-07

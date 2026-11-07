@@ -39,6 +39,8 @@ From source (Go 1.26+): `go install github.com/otfabric/iec61850ctl@latest`
 
 ### Shell completion
 
+Commands, subcommands and flag values complete: every `--format`, `--log-level`, `--fc`, `--type`, `--mode`, `--or-cat` and other fixed-value flag, SCL files for `--scl`/`--input`, and network interfaces for `--iface`.
+
 ```sh
 # bash (needs the bash-completion package)
 mkdir -p ~/.local/share/bash-completion/completions
@@ -201,7 +203,7 @@ iec61850ctl
 │   ├── publish         Publish an SVCB (--iface --yes; simulation frames unless --simulation=false --live; --waveform)
 │   └── svcb get|set    Read/write an MSVCB over MMS (--ld --svcb)
 ├── http                Read-only HTTP/JSON API fronting one IEC 61850 device
-├── version             Print version / build metadata
+├── version             Print version / build metadata on one line (--json)
 └── completion          Shell completion (bash|zsh|fish|powershell)
 ```
 

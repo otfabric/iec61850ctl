@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -26,17 +27,44 @@ import (
 )
 
 func TestVersion(t *testing.T) {
-	SetBuildMeta("v9.9.9", "v9.9.9", "abc123", "2026-01-01T00:00:00Z")
+	const sha = "1802d0f9afe8642d1e278120b76fcdfac967cb9e"
+	plat := runtime.Version() + ", " + runtime.GOOS + "/" + runtime.GOARCH
+	jsonTail := `","go":"` + runtime.Version() + `","platform":"` + runtime.GOOS + "/" + runtime.GOARCH + `"}` + "\n"
+	SetBuildMeta("v9.9.9", "v9.9.9", sha, "2026-01-01T00:00:00Z")
 	t.Cleanup(func() { SetBuildMeta("", "", "", "") })
+
 	r := runCLI(t, "version")
 	expectCode(t, r, errs.ExitOK)
-	for _, want := range []string{"iec61850ctl version: v9.9.9", "tag:         v9.9.9", "commit:      abc123", "build date:", "go version:", "platform:"} {
-		if !strings.Contains(r.stdout, want) {
-			t.Errorf("version output lacks %q:\n%s", want, r.stdout)
+	if want := "iec61850ctl 9.9.9 (tag v9.9.9, commit " + sha + ", built 2026-01-01T00:00:00Z, " + plat + ")\n"; r.stdout != want {
+		t.Errorf("version:\n got %q\nwant %q", r.stdout, want)
+	}
+	wantJSON := `{"name":"iec61850ctl","version":"9.9.9","tag":"v9.9.9","commit":"` + sha + `","built":"2026-01-01T00:00:00Z` + jsonTail
+	for _, args := range [][]string{{"version", "--json"}, {"version", "--format", "json"}} {
+		r := runCLI(t, args...)
+		expectCode(t, r, errs.ExitOK)
+		if r.stdout != wantJSON {
+			t.Errorf("%v:\n got %q\nwant %q", args, r.stdout, wantJSON)
 		}
 	}
+
+	// The shared IEC61850CTL_FORMAT: json prints JSON, other values text.
+	t.Setenv("IEC61850CTL_FORMAT", "json")
+	if r := runCLI(t, "version"); r.stdout != wantJSON {
+		t.Errorf("IEC61850CTL_FORMAT=json:\n got %q\nwant %q", r.stdout, wantJSON)
+	}
+	t.Setenv("IEC61850CTL_FORMAT", "table")
+	if r := runCLI(t, "version"); !strings.HasPrefix(r.stdout, "iec61850ctl 9.9.9 (tag v9.9.9,") {
+		t.Errorf("IEC61850CTL_FORMAT=table: %q", r.stdout)
+	}
+	t.Setenv("IEC61850CTL_FORMAT", "")
+	expectCode(t, runCLI(t, "version", "--format", "yaml"), errs.ExitUsage)
+
+	SetBuildMeta("", "", sha, "")
+	if r := runCLI(t, "version"); r.stdout != "iec61850ctl dev (commit "+sha+", built unknown, "+plat+")\n" {
+		t.Errorf("version without tag:\n%q", r.stdout)
+	}
 	SetBuildMeta("", "", "", "")
-	if r := runCLI(t, "version"); !strings.Contains(r.stdout, "version: dev") || strings.Contains(r.stdout, "tag:") {
+	if r := runCLI(t, "version"); !strings.HasPrefix(r.stdout, "iec61850ctl dev (commit ") || strings.Contains(r.stdout, "tag ") {
 		t.Errorf("dev version output:\n%s", r.stdout)
 	}
 }

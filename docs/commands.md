@@ -619,4 +619,14 @@ Display the complete IEC 61850 device tree.
 
 Display version information.
 
-No flags of its own.
+| Flag | Type | Meaning |
+|---|---|---|
+| `--format` | string | Output format: text, json (default "text") |
+| `--json` | bool | print the build metadata as one JSON object |
+
+```text
+$ iec61850ctl version
+iec61850ctl 0.11.0 (tag v0.11.0, commit 1802d0f9afe8642d1e278120b76fcdfac967cb9e, built 2026-11-05T15:41:49Z, go1.26.10, linux/amd64)
+```
+
+A development build (`go build`, `go run`) prints `dev` and the VCS revision, with `-dirty` for uncommitted changes, and no tag part: `iec61850ctl dev (commit 1802d0f…-dirty, built unknown, go1.26.10, darwin/arm64)`. `go install …@vX.Y.Z` reports that version.
