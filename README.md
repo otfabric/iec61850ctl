@@ -456,6 +456,7 @@ make e2e-docs              # regenerate docs/interop-examples.md
 
 | Doc | Contents |
 |-----|----------|
+| [docs/commands.md](docs/commands.md) | Every command and flag, as `--help` prints them |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | IEC 61850 hierarchy, object refs, FCs |
 | [docs/SERVER.md](docs/SERVER.md) | SCL server, readiness JSON, value seeding, `.cfg` export |
 | [docs/HTTP.md](docs/HTTP.md) | HTTP API endpoints, errors, deployment |
@@ -463,6 +464,9 @@ make e2e-docs              # regenerate docs/interop-examples.md
 | [docs/SV.md](docs/SV.md) | Sampled Values list/sniff/subscribe/publish, 9-2LE waveforms, MSVCB access, safety rules, example sessions |
 | [docs/AUTOMATION.md](docs/AUTOMATION.md) | Machine-facing stdout/stderr, exit code and flag contract |
 | [docs/json-output.md](docs/json-output.md) | JSON and JSONL output shapes |
+| [docs/exitcodes.md](docs/exitcodes.md) | Process exit codes |
+| [ERRORS.md](ERRORS.md) | Sentinel errors of `pkg/errs` and the exit code each maps to |
+| [docs/api/](docs/api/README.md) | Generated reference of the public `pkg/` packages |
 | [docs/INTEROP.md](docs/INTEROP.md) | Client/reverse matrices, fixtures, CI stacks |
 | [docs/interop-examples.md](docs/interop-examples.md) | Generated operator examples against the interop fixture |
 | [RELEASE.md](RELEASE.md) | Release notes |
