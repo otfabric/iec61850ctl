@@ -37,6 +37,26 @@ Linux (amd64, arm64, armv7), macOS (Intel, Apple silicon) and Windows (amd64, ar
 
 From source (Go 1.26+): `go install github.com/otfabric/iec61850ctl@latest`
 
+### Shell completion
+
+```sh
+# bash (needs the bash-completion package)
+mkdir -p ~/.local/share/bash-completion/completions
+iec61850ctl completion bash > ~/.local/share/bash-completion/completions/iec61850ctl
+
+# zsh: a directory on your fpath, then restart the shell
+mkdir -p ~/.zsh/completions && iec61850ctl completion zsh > ~/.zsh/completions/_iec61850ctl
+# and once in ~/.zshrc:  fpath=(~/.zsh/completions $fpath); autoload -U compinit && compinit
+
+# fish
+mkdir -p ~/.config/fish/completions && iec61850ctl completion fish > ~/.config/fish/completions/iec61850ctl.fish
+```
+
+```powershell
+# PowerShell: add this line to your profile ($PROFILE)
+iec61850ctl completion powershell | Out-String | Invoke-Expression
+```
+
 ## Table of Contents
 
 - [Install](#install)
