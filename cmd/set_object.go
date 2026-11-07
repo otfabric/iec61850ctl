@@ -23,6 +23,7 @@ var (
 	setTypeFlag   string
 	setVerifyFlag bool
 	setFormatFlag string
+	setYesFlag    bool
 )
 
 var setCmd = &cobra.Command{
@@ -36,8 +37,12 @@ var setObjectCmd = &cobra.Command{
 	Long: `Write an explicit scalar MMS value to a data attribute.
 
 FC=CO is rejected; use control operate for controllable objects.
-Type is never inferred: --type must be provided.`,
-	RunE: runSetObject,
+Type is never inferred: --type must be provided.
+
+Writing changes device state, so --yes is required; without it the command
+refuses (exit 2) before contacting the device.`,
+	Example: `  iec61850ctl set object --object LD/GGIO1.SetInt1.setVal --fc SP --value 5 --type int --verify --yes`,
+	RunE:    runSetObject,
 }
 
 func init() {
@@ -47,6 +52,7 @@ func init() {
 	setObjectCmd.Flags().StringVar(&setTypeFlag, "type", "", "value type: bool|int|uint|float|enum|string (required)")
 	setObjectCmd.Flags().BoolVar(&setVerifyFlag, "verify", false, "read back the same reference after write")
 	setObjectCmd.Flags().StringVar(&setFormatFlag, "format", "text", "Output format: text, json")
+	setObjectCmd.Flags().BoolVar(&setYesFlag, "yes", false, "confirm that the write may change device state (required)")
 	_ = setObjectCmd.MarkFlagRequired("object")
 	_ = setObjectCmd.MarkFlagRequired("fc")
 	_ = setObjectCmd.MarkFlagRequired("value")
@@ -75,6 +81,9 @@ func runSetObject(cmd *cobra.Command, _ []string) error {
 	val, err := service.ParseScalarValue(setValueFlag, kind)
 	if err != nil {
 		return err
+	}
+	if !setYesFlag {
+		return errs.Invalidf("refusing to write %s without --yes: the write changes device state (missing confirmation)", setObjectFlag)
 	}
 
 	session, err := openClientSession(cmd, clientSessionOptions{})

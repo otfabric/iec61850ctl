@@ -61,6 +61,10 @@ func TestExitCodes(t *testing.T) {
 		{"control long or-ident", []string{"control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true", "--or-ident", strings.Repeat("x", 65)}, true, errs.ExitUsage, "or-ident"},
 		{"control bad mode", []string{"control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true", "--mode", "fast"}, true, errs.ExitUsage, "invalid control mode"},
 		{"control bad or-cat", []string{"control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true", "--or-cat", "alien"}, true, errs.ExitUsage, "or-cat"},
+		// Missing confirmation: refused before any connection (port 1 would be exit 4).
+		{"set without --yes", []string{"--host", "127.0.0.1", "--port", "1", "set", "object", "--object", "a/b.c", "--fc", "SP", "--value", "1", "--type", "int"}, false, errs.ExitUsage, "refusing to write a/b.c without --yes"},
+		{"control without --yes", []string{"--host", "127.0.0.1", "--port", "1", "control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true"}, false, errs.ExitUsage, "refusing to operate a/b.c without --yes"},
+		{"control --test without --yes", []string{"--host", "127.0.0.1", "--port", "1", "control", "operate", "--object", "a/b.c", "--type", "bool", "--value", "true", "--test"}, false, errs.ExitUsage, "without --yes"},
 		{"control FC in object", []string{"control", "inspect", "--object", "InteropLD/GGIO1.SPCSO1[CO]"}, true, errs.ExitUsage, "must not include FC"},
 		{"journal bad from", []string{"get", "journal", "--domain", "InteropLD", "--journal", "j", "--from", "yesterday"}, true, errs.ExitUsage, "--from"},
 		{"journal bad to", []string{"get", "journal", "--domain", "InteropLD", "--journal", "j", "--from", "0", "--to", "later"}, true, errs.ExitUsage, "--to"},
@@ -81,8 +85,8 @@ func TestExitCodes(t *testing.T) {
 		{"get file missing", []string{"get", "file", "--name", "nope.bin"}, true, errs.ExitRejected, "failed to download file"},
 
 		// Server-side rejections.
-		{"set rejected", []string{"set", "object", "--object", "InteropLD/MMXU1.Nope.x", "--fc", "MX", "--value", "1", "--type", "float"}, true, errs.ExitRejected, "write failed"},
-		{"control status-only", []string{"control", "operate", "--object", "InteropLD/GGIO1.SPS1", "--type", "bool", "--value", "true"}, true, errs.ExitRejected, ""},
+		{"set rejected", []string{"set", "object", "--object", "InteropLD/MMXU1.Nope.x", "--fc", "MX", "--value", "1", "--type", "float", "--yes"}, true, errs.ExitRejected, "write failed"},
+		{"control status-only", []string{"control", "operate", "--object", "InteropLD/GGIO1.SPS1", "--type", "bool", "--value", "true", "--yes"}, true, errs.ExitRejected, ""},
 		{"journals unsupported", []string{"list", "journals", "--ld", "InteropLD"}, true, errs.ExitRejected, "list journals"},
 	}
 	for _, tc := range cases {

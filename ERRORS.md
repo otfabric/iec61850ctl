@@ -1,7 +1,7 @@
 # Errors
 
 `iec61850ctl` classifies every failure by wrapping one of the sentinel errors of
-`pkg/errs` (with `%w`, or through `errs.Mark`, `errs.Newf` and `errs.Invalidf`).
+`pkg/errs` (with `%w`, or through `errs.Mark`, `errs.Newf`, `errs.Invalidf` and `errs.Safetyf`).
 `errs.ExitCode` maps the error chain to the process exit code with
 `errors.Is`/`errors.As`; error strings are never inspected. The exit codes are
 listed in [docs/exitcodes.md](docs/exitcodes.md); the full API is in
@@ -21,6 +21,7 @@ listed in [docs/exitcodes.md](docs/exitcodes.md); the full API is in
 | `errs.ErrPermissionDenied` | Access denied by the server | 9 |
 | `errs.ErrNotFound` | The requested LD, LN, DO, DA, dataset, report, IED or file does not exist | 11 |
 | `errs.ErrVerifyMismatch` | A read-back after a write did not match the requested value | 12 |
+| `errs.ErrSafety` | A safety guard rail refused the operation (`goose`/`sv publish` without `--yes`, or unmarked frames without `--live`) | 13 |
 
 The go-iec61850, go-mms, `context`, `io/fs` and `net` errors that `errs.ExitCode`
 also recognises map to the same codes (for example `context.DeadlineExceeded` to

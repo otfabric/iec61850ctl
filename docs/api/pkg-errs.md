@@ -25,6 +25,7 @@ const (
 	ExitFailure      = 10  // unclassified failure
 	ExitNotFound     = 11  // object, file, dataset, report or IED does not exist
 	ExitMismatch     = 12  // write verification read-back mismatch
+	ExitSafety       = 13  // refused by a safety guard rail (live GOOSE/SV publication)
 	ExitInterrupted  = 130 // cancelled by SIGINT/SIGTERM (128 + SIGINT)
 )
 ```
@@ -64,6 +65,11 @@ var (
 
 	// ErrUnsupported indicates the server, platform or this tool does not support the request.
 	ErrUnsupported = errors.New("unsupported")
+
+	// ErrSafety indicates the tool refused an operation that a safety guard
+	// rail does not allow, such as publishing GOOSE/SV frames without --yes
+	// or without the IEC test marker unless --live is given.
+	ErrSafety = errors.New("safety refusal")
 )
 ```
 
@@ -118,6 +124,14 @@ func Newf(sentinel error, format string, args ...any) error
 ```
 
 Newf formats a message and classifies it as sentinel. The message does not repeat the sentinel text.
+
+### func Safetyf
+
+```go
+func Safetyf(format string, args ...any) error
+```
+
+Safetyf is shorthand for Newf(ErrSafety, ...).
 
 ### func WithExitCode
 

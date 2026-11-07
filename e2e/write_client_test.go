@@ -26,6 +26,7 @@ func TestWrite_ClientSetInt1(t *testing.T) {
 
 			set := runCtl(t, h.ctlEnv(), commandTimeout,
 				"set", "object",
+				"--yes",
 				"--object", "InteropLD/GGIO1.SetInt1.setVal",
 				"--fc", "SP",
 				"--value", "5",

@@ -151,6 +151,7 @@ Atomically select (if required) and operate a controllable object.
 | `--test` | bool | set Test bit (also disables confirmation) |
 | `--type` | string | value type: bool\|int\|uint\|float\|enum\|string (required) |
 | `--value` | string | control value (required unless --dry-run with inspect-only planning) |
+| `--yes` | bool | confirm that the control may change device state (required unless --dry-run) |
 
 ### `iec61850ctl discover`
 
@@ -482,6 +483,7 @@ Write a scalar data attribute.
 | `--type` | string | value type: bool\|int\|uint\|float\|enum\|string (required) |
 | `--value` | string | value to write (required) |
 | `--verify` | bool | read back the same reference after write |
+| `--yes` | bool | confirm that the write may change device state (required) |
 
 ### `iec61850ctl subscribe report`
 

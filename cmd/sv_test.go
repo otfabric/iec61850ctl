@@ -78,16 +78,17 @@ func TestSVPublishSafety(t *testing.T) {
 		name string
 		args []string
 		msg  string
+		code int
 	}{
-		{"no iface", append(base, "--yes"), "iface"},
-		{"empty iface", append(base, "--iface", " ", "--yes"), "explicit --iface"},
-		{"no yes", append(base, "--iface", "hub0"), "without --yes"},
-		{"live frames without --live", append(base, "--iface", "hub0", "--yes", "--simulation=false"), "without --live"},
+		{"no iface", append(base, "--yes"), "iface", errs.ExitUsage},
+		{"empty iface", append(base, "--iface", " ", "--yes"), "explicit --iface", errs.ExitUsage},
+		{"no yes", append(base, "--iface", "hub0"), "without --yes", errs.ExitSafety},
+		{"live frames without --live", append(base, "--iface", "hub0", "--yes", "--simulation=false"), "without --live", errs.ExitSafety},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := runCLI(t, c.args...)
-			expectCode(t, r, errs.ExitUsage)
+			expectCode(t, r, c.code)
 			if !strings.Contains(r.stderr, c.msg) {
 				t.Fatalf("stderr %q lacks %q", r.stderr, c.msg)
 			}

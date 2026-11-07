@@ -218,7 +218,7 @@ For **buffered** RCBs, the nested `report` may also include BRCB runtime fields 
 Status values: `planned` | `operated` | `confirmed` | `operated-unconfirmed` | `confirmation-mismatch` | `failed`.  
 Non-zero exit: `failed`, `operated-unconfirmed`, `confirmation-mismatch`.
 
-Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[ST]`). `--test` / `--no-confirm` → status `operated` (not `operated-unconfirmed`). Best-effort `cleanup` after select-without-complete-operate is **not** a rollback. Optional `last_appl_error` appears only when the control-object reference matches the failed target.
+Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[ST]`). `--test` / `--no-confirm` → status `operated` (not `operated-unconfirmed`). Best-effort `cleanup` after select-without-complete-operate is **not** a rollback. Without `--yes` (and without `--dry-run`) the command refuses before dial with exit `2` and prints no document. Optional `last_appl_error` appears only when the control-object reference matches the failed target.
 
 ## `set object --format json`
 
@@ -233,7 +233,7 @@ Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[S
 }
 ```
 
-`FC=CO` is rejected client-side before dial (`use control operate`). Types are never inferred: `--type` is required (`bool|int|uint|float|enum|string`).
+`FC=CO` is rejected client-side before dial (`use control operate`). Without `--yes` the write is refused before dial with exit `2` and no document. Types are never inferred: `--type` is required (`bool|int|uint|float|enum|string`).
 
 ## `subscribe report --format jsonl`
 

@@ -256,15 +256,15 @@ iec61850ctl control operate \
   --object InteropLD/GGIO1.SPCSO2 \
   --value true --type bool --mode auto \
   --confirm-ref 'InteropLD/GGIO1.SPCSO2.stVal[ST]' \
-  --format json
+  --yes --format json
 
 # Scalar write (not a control bypass; FC=CO rejected)
 iec61850ctl set object \
   --object InteropLD/GGIO1.SetInt1.setVal --fc SP \
-  --value 5 --type int --verify --format json
+  --value 5 --type int --verify --yes --format json
 ```
 
-Selection cannot survive across CLI processes. Prefer `--mode auto`. Confirmation is off unless `--confirm-ref` is set.
+Both commands change device state and refuse to run without `--yes` (exit `2`, before connecting); `control operate --dry-run` plans the sequence without it. Selection cannot survive across CLI processes. Prefer `--mode auto`. Confirmation is off unless `--confirm-ref` is set.
 
 ### Files and journals
 
@@ -381,7 +381,7 @@ Retries apply only to establishing the connection; invalid input, authentication
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `2` | Usage error: invalid flag, argument or value, including a refused `goose`/`sv publish` without `--yes`, `--iface` or `--live` |
+| `2` | Usage error: invalid flag, argument or value, a `goose`/`sv publish` without `--iface`, and a missing confirmation: `control operate` (unless `--dry-run`) or `set object` without `--yes`, refused before the device is contacted |
 | `3` | Invalid reference, configuration or SCL |
 | `4` | Connection failed or lost (including a dropped report subscription) |
 | `5` | Timeout (connect or request), or `--count` not reached before `--duration` |
@@ -391,6 +391,7 @@ Retries apply only to establishing the connection; invalid input, authentication
 | `10` | Failure (unclassified) |
 | `11` | Not found (object, file, dataset, IED, RCB, journal, control block, network interface), including a server answer of MMS *object-non-existent* |
 | `12` | Write verification (`--verify`), control confirmation (`--confirm-ref`), or GoCB/MSVCB enable read-back mismatch |
+| `13` | Safety refusal: `goose publish` / `sv publish` without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`; nothing is sent |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
 The full contract per command is in [docs/AUTOMATION.md](docs/AUTOMATION.md).
@@ -415,11 +416,11 @@ Several commands change the state of real equipment or inject traffic on a live 
 
 | Command | Effect | Guard rail |
 |---------|--------|------------|
-| `control operate` | operates a controllable object (possibly switchgear) | explicit `--object` and `--value`; `--confirm-ref` to verify |
-| `set object` | writes a data attribute | `FC=CO` rejected; `--verify` reads back |
+| `control operate` | operates a controllable object (possibly switchgear) | `--yes` (not needed with `--dry-run`); explicit `--object` and `--value`; `--confirm-ref` to verify |
+| `set object` | writes a data attribute | `--yes`; `FC=CO` rejected; `--verify` reads back |
 | `subscribe report` | writes RCB settings; `--purge-buf` clears a BRCB's buffer | the RCB is disabled again on exit |
-| `goose publish` | sends GOOSE frames | explicit `--iface`, `--yes`; test flag set unless `--test=false --live` |
-| `sv publish` | sends SV frames at the configured rate | explicit `--iface`, `--yes`; simulation bit set unless `--simulation=false --live` |
+| `goose publish` | sends GOOSE frames | explicit `--iface`, `--yes`; test flag set unless `--test=false --live` (refusals exit `13`) |
+| `sv publish` | sends SV frames at the configured rate | explicit `--iface`, `--yes`; simulation bit set unless `--simulation=false --live` (refusals exit `13`) |
 | `goose gocb set`, `sv svcb set` | enables, disables or reconfigures a control block | changes only what you pass |
 
 Run these against test equipment first, and only on networks you are authorised to work on. See [SECURITY.md](SECURITY.md) for the threat model and how to report a vulnerability.

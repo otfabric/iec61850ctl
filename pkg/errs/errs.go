@@ -44,6 +44,11 @@ var (
 
 	// ErrUnsupported indicates the server, platform or this tool does not support the request.
 	ErrUnsupported = errors.New("unsupported")
+
+	// ErrSafety indicates the tool refused an operation that a safety guard
+	// rail does not allow, such as publishing GOOSE/SV frames without --yes
+	// or without the IEC test marker unless --live is given.
+	ErrSafety = errors.New("safety refusal")
 )
 
 // marked carries a sentinel classification while keeping the original message.
@@ -77,4 +82,9 @@ func Newf(sentinel error, format string, args ...any) error {
 // Invalidf is shorthand for Newf(ErrInvalidInput, ...).
 func Invalidf(format string, args ...any) error {
 	return Newf(ErrInvalidInput, format, args...)
+}
+
+// Safetyf is shorthand for Newf(ErrSafety, ...).
+func Safetyf(format string, args ...any) error {
+	return Newf(ErrSafety, format, args...)
 }

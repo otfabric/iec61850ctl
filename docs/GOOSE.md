@@ -274,14 +274,14 @@ The checks run before the interface is opened, so a refused publish sends nothin
 $ iec61850ctl goose publish --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool
 refusing to publish GOOSE on eth0 without --yes: frames reach every subscriber on that LAN
 $ echo $?
-2
+13
 ```
 
 ```console
 $ iec61850ctl goose publish --iface eth0 --scl pkg/gooseops/testdata/interop-goose.cid --gocb gcbBool --yes --test=false
 refusing to publish with test=false without --live: subscribers would act on these frames
 $ echo $?
-2
+13
 ```
 
 ### Values and state changes
@@ -431,13 +431,14 @@ The codes are the same as for the rest of the CLI ([AUTOMATION.md](AUTOMATION.md
 
 | Code | GOOSE cases |
 |------|-------------|
-| `2` | missing `--yes`, `--iface` or `--live`; bad APPID or MAC |
+| `2` | missing `--iface`; bad APPID or MAC |
 | `3` | bad `--value`; an SCL that cannot be parsed |
 | `5` | `--count` not reached before `--duration` (sniff and subscribe) |
 | `6` | GoCB write rejected |
 | `9` | raw socket permission denied |
 | `8` | platform without a raw transport; a connection without GoCB access |
 | `11` | interface or control block not found |
+| `13` | safety refusal: `publish` without `--yes`, or `--test=false` without `--live` |
 
 ## Limitations
 

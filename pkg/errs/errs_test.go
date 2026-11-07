@@ -43,6 +43,9 @@ func TestMark(t *testing.T) {
 	if n := Newf(ErrRejected, "x"); !errors.Is(n, ErrRejected) {
 		t.Fatal("Newf")
 	}
+	if s := Safetyf("live %s", "GOOSE"); s.Error() != "live GOOSE" || !errors.Is(s, ErrSafety) || errors.Is(s, ErrInvalidInput) {
+		t.Fatalf("Safetyf: %v", s)
+	}
 }
 
 type timeoutErr struct{}
@@ -69,6 +72,8 @@ func TestExitCode(t *testing.T) {
 		{Mark(wrap(context.DeadlineExceeded), ErrConnectionFailed), ExitTimeout},
 		{wrap(ErrVerifyMismatch), ExitMismatch},
 		{Invalidf("x"), ExitUsage},
+		{Safetyf("x"), ExitSafety},
+		{wrap(ErrSafety), ExitSafety},
 		{wrap(ErrInvalidReference), ExitInvalidInput},
 		{wrap(ErrInvalidConfig), ExitInvalidInput},
 		{wrap(iec61850.ErrInvalidReference), ExitInvalidInput},

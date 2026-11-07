@@ -1,5 +1,19 @@
 # iec61850ctl Releases
 
+## v0.10.0
+
+**Date:** unreleased
+**Previous release:** v0.9.0
+
+### Breaking
+
+Two script-facing changes; the mapping is also in [docs/exitcodes.md](docs/exitcodes.md).
+
+- `goose publish` and `sv publish` refused by a safety guard rail exit `13` (safety), was `2`: without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`. A missing `--iface` stays `2`. Nothing is sent in either case. `errs.ExitSafety`, `errs.ErrSafety` and `errs.Safetyf` are new in `pkg/errs`.
+- `control operate` and `set object` change device state and now need `--yes`; without it they refuse before connecting and exit `2` (missing confirmation), where they used to operate or write. `control operate --dry-run` plans the sequence without `--yes`. Add `--yes` to scripts that operate or write.
+
+---
+
 ## v0.9.0
 
 **Date:** 2026-11-07
