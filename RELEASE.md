@@ -1,5 +1,17 @@
 # iec61850ctl Releases
 
+## v0.11.1
+
+**Date:** 2026-11-08
+**Previous release:** v0.11.0
+
+### Changed
+
+- Built on go-iec61850 v1.9.1 (was v1.7.0). v1.8.0 to v1.9.1 change only go-iec61850's bundled `sclparse` and `sclgen` tools (organisation exit codes, the one-line `version` and `version --json`, shell completion); the library code iec61850ctl uses is the same, so iec61850ctl behaves as before. `version` lists `go-iec61850 1.9.1`.
+- Release binaries are built with the latest Go 1.26 patch release (otfabric/.github release workflow v3.6.0); they were built with the exact Go version in `go.mod` (1.26.0).
+
+---
+
 ## v0.11.0
 
 **Date:** 2026-11-07
