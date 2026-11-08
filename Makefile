@@ -18,7 +18,10 @@ TAG           := $(shell git describe --tags --exact-match HEAD 2>/dev/null)
 VERSION       := $(patsubst v%,%,$(TAG))
 # Version in the build-all/release-all archive names.
 ARTIFACT_VERSION := $(or $(VERSION),dev)
-COMMIT        := $(shell git rev-parse HEAD 2>/dev/null)
+# -dirty when the working tree has changes, as Go itself marks vcs.modified
+# (git status --porcelain, untracked files included); empty outside git.
+DIRTY := $(shell [ -z "$$(git status --porcelain 2>/dev/null)" ] || echo -dirty)
+COMMIT        := $(shell git rev-parse HEAD 2>/dev/null)$(DIRTY)
 BUILD_DATE    := $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 LDFLAGS       := -ldflags "-s -w \
   -X 'main.version=$(VERSION)' \
