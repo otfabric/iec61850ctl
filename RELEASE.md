@@ -1,5 +1,21 @@
 # iec61850ctl Releases
 
+## v0.11.3
+
+**Date:** 2026-11-10
+**Previous release:** v0.11.2
+
+### Changed
+
+- **Built on go-iec61850 v1.16.2** (was v1.9.1). The changes iec61850ctl users see:
+- Control errors: `add_cause` of a LastApplError names the IEC 61850-7-2 AddCause (values 8 to 17 followed no standard before; `blocked-by-interlocking` is 10, for example), and the LastApplError is decoded from all five members a server sends, so `add_cause` is no longer read from the control number (go-iec61850 v1.10.0).
+- Controls: the two bits of the Check attribute (synchrocheck, interlock-check) are sent in IEC 61850-8-1 order; they were swapped (go-iec61850 v1.10.1).
+- Server (`serve`): a refused control write is preceded by a LastApplError InformationReport, as libiec61850 does; a data set member that names a data object or constructed attribute is reported as the whole value, and an attribute without a value yet is reported with its type's default (go-iec61850 v1.9.4, v1.10.0).
+- SCL: files that declare UTF-8 as `utf8` or US-ASCII are read; an address `<P type="IP" xsi:type="tP_IP">` keeps its type; an optional boolean whose schema default is true reads true when absent; an Edition 1 report control block allows general interrogation (go-iec61850 v1.12.0, v1.16.1).
+- `version` lists `go-iec61850 1.16.2`.
+
+---
+
 ## v0.11.2
 
 **Date:** 2026-11-10
