@@ -12,6 +12,7 @@
 - Controls: the two bits of the Check attribute (synchrocheck, interlock-check) are sent in IEC 61850-8-1 order; they were swapped (go-iec61850 v1.10.1).
 - Server (`serve`): a refused control write is preceded by a LastApplError InformationReport, as libiec61850 does; a data set member that names a data object or constructed attribute is reported as the whole value, and an attribute without a value yet is reported with its type's default (go-iec61850 v1.9.4, v1.10.0).
 - SCL: files that declare UTF-8 as `utf8` or US-ASCII are read; an address `<P type="IP" xsi:type="tP_IP">` keeps its type; an optional boolean whose schema default is true reads true when absent; an Edition 1 report control block allows general interrogation (go-iec61850 v1.12.0, v1.16.1).
+- Report control blocks loaded from SCL (`serve`, and `get report` / `list reports` against such a server): an `OptFields` element without `bufOvfl` now has buffer overflow set, the IEC 61850-6 schema default (go-iec61850 v1.16.1). The golden outputs for the unbuffered `urcb01` of the test fixture change accordingly.
 - `version` lists `go-iec61850 1.16.2`.
 
 ---
