@@ -1,5 +1,17 @@
 # iec61850ctl Releases
 
+## v0.11.3
+
+**Date:** 2026-11-10
+**Previous release:** v0.11.2
+
+### Changed
+
+- **Built on go-mms v1.7.2** (was v1.4.0). A TimeOfDay (BinaryTime) whose millisecond field is one day or more now decodes instead of failing the whole PDU: ISO 9506-2:2003 §7.5.1 only requires bits 28–31 to be zero, so a 4-octet value keeps the field as is (up to 2^28−1 ms, a deadline past midnight) and a 6-octet value carries it into the following days. A field with bits 28–31 set is rejected (otfabric/go-mms#30).
+- From go-mms v1.5.0 to v1.7.1: a GetVariableAccessAttributes response with the optional `address` encoded primitive, as some servers send it, no longer fails to decode; and closing a client connection is bounded by its context when a request write is stalled. `version` lists `go-mms 1.7.2`.
+
+---
+
 ## v0.11.1
 
 **Date:** 2026-11-08
