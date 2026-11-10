@@ -1,9 +1,9 @@
 # iec61850ctl Releases
 
-## v0.11.3
+## v0.11.2
 
 **Date:** 2026-11-10
-**Previous release:** v0.11.2
+**Previous release:** v0.11.1
 
 ### Changed
 
