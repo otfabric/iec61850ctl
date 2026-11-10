@@ -26,7 +26,7 @@
       "reason_code": true,
       "data_set_name": false,
       "data_reference": false,
-      "buffer_overflow": false,
+      "buffer_overflow": true,
       "entry_id": false,
       "config_revision": false
     }
