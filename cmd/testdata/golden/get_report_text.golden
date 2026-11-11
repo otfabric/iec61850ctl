@@ -1,5 +1,5 @@
-Report Control Block: urcb01 (Unbuffered)
-Reference: InteropLD/LLN0.urcb01
+Report Control Block: urcb0101 (Unbuffered)
+Reference: InteropLD/LLN0.urcb0101
 Enabled: false
 Report ID: interop_urcb01
 Dataset: InteropLD/LLN0$dsInterop
@@ -19,6 +19,6 @@ Optional Fields:
   Reason Code: ✓
   Dataset Name: ✗
   Data Reference: ✗
-  Buffer Overflow: ✓
+  Buffer Overflow: ✗
   Entry ID: ✗
   Config Revision: ✗

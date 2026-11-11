@@ -13,7 +13,7 @@
     {
       "operation": "select",
       "ok": true,
-      "detail": "InteropLD/GGIO1.SPCSO2"
+      "detail": "InteropLD/GGIO1$CO$SPCSO2"
     },
     {
       "operation": "operate",

@@ -92,7 +92,8 @@ func TestExitCodes(t *testing.T) {
 		// Server-side rejections.
 		{"set rejected", []string{"set", "object", "--object", "InteropLD/MMXU1.Nope.x", "--fc", "MX", "--value", "1", "--type", "float", "--yes"}, true, errs.ExitRejected, "write failed"},
 		{"control status-only", []string{"control", "operate", "--object", "InteropLD/GGIO1.SPS1", "--type", "bool", "--value", "true", "--yes"}, true, errs.ExitRejected, ""},
-		{"journals unsupported", []string{"list", "journals", "--ld", "InteropLD"}, true, errs.ExitRejected, "list journals"},
+		// A model without logs answers an empty journal list (go-iec61850 v1.17).
+		{"journals none", []string{"list", "journals", "--ld", "InteropLD"}, true, errs.ExitOK, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

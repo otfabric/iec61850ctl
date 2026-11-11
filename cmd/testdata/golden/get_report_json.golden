@@ -1,10 +1,10 @@
 {
   "report": {
-    "name": "urcb01",
+    "name": "urcb0101",
     "ld": "InteropLD",
     "ln": "LLN0",
     "buffered": false,
-    "ref": "InteropLD/LLN0.RP.urcb01",
+    "ref": "InteropLD/LLN0.RP.urcb0101",
     "rpt_id": "interop_urcb01",
     "dat_set": "InteropLD/LLN0$dsInterop",
     "enabled": false,
@@ -26,7 +26,7 @@
       "reason_code": true,
       "data_set_name": false,
       "data_reference": false,
-      "buffer_overflow": true,
+      "buffer_overflow": false,
       "entry_id": false,
       "config_revision": false
     }

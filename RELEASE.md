@@ -1,5 +1,22 @@
 # iec61850ctl Releases
 
+## v0.12.0
+
+**Date:** 2026-11-11
+**Previous release:** v0.11.3
+
+### Changed
+
+- **Built on go-iec61850 v1.17.1 and go-mms v1.8.0** (were v1.16.2 and v1.7.2): their IEC 61850 and ISO 9506 spec reviews. The changes iec61850ctl users see:
+- Server (`serve`): SCL ReportControl instances follow IEC 61850-6 `indexed`, which defaults to true. `<ReportControl name="urcb">` is served as `urcb01`, and a control block already named `urcb01` becomes `urcb0101`; set `indexed="false"` to keep the name as written. The fixtures locked to iec61850-interop keep their SCL, so their RCBs are now `urcb0101` and `brcb0101`; the other test fixtures set `indexed="false"`.
+- Server: journals are named after their `Log`, as IEC 61850-8-1 §17.3 specifies (`LLN0$EventLog`, was the LCB name); a model without logs answers `list journals` with an empty list instead of an error. A URCB reads `OptFlds` buffer-overflow and entryID back as false (8-1 Table 63). Control blocks are no longer counted as data objects in `list lns` (LLN0 of the fixture: 2, was 5).
+- `list journals` suggests `--journal LLN0.EventLog`, and `get journal` accepts that dotted form as well as `LLN0$EventLog`; the old hint named only the log, which a standard server does not find.
+- Controls: Select followed by Operate reuses one ctlNum, and a granted SBO read shows the server's `LD/LN$CO$DO` reference. Refusals carry the IEC 61850-8-1 codes.
+- Disconnecting performs an orderly release (Conclude, then A-RELEASE) instead of only closing the connection.
+- `version` lists `go-iec61850 1.17.1` and `go-mms 1.8.0`.
+
+---
+
 ## v0.11.3
 
 **Date:** 2026-11-10

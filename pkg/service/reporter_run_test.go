@@ -135,7 +135,7 @@ func TestReporterRun_Integration(t *testing.T) {
 		{
 			name: "urcb gi max-reports text",
 			cfg: ReporterConfig{
-				ReportRef:     "InteropLD/LLN0.RP.urcb01",
+				ReportRef:     "InteropLD/LLN0.RP.urcb0101",
 				Interrogation: true,
 				MaxReports:    1,
 				ShowValues:    true,
@@ -159,7 +159,7 @@ func TestReporterRun_Integration(t *testing.T) {
 		{
 			name: "brcb gi max-reports jsonl with sync",
 			cfg: ReporterConfig{
-				ReportRef:     "InteropLD/LLN0.BR.brcb01",
+				ReportRef:     "InteropLD/LLN0.BR.brcb0101",
 				Interrogation: true,
 				MaxReports:    1,
 				ShowValues:    true,
@@ -201,7 +201,7 @@ func TestReporterRun_Integration(t *testing.T) {
 		{
 			name: "duration elapses without reports",
 			cfg: ReporterConfig{
-				ReportRef: "InteropLD/LLN0.RP.urcb01",
+				ReportRef: "InteropLD/LLN0.RP.urcb0101",
 				Duration:  150 * time.Millisecond,
 				Format:    "jsonl",
 			},
@@ -218,7 +218,7 @@ func TestReporterRun_Integration(t *testing.T) {
 		{
 			name: "context cancellation stops run",
 			cfg: ReporterConfig{
-				ReportRef: "InteropLD/LLN0.RP.urcb01",
+				ReportRef: "InteropLD/LLN0.RP.urcb0101",
 			},
 			cancelCtx: 150 * time.Millisecond,
 			check: func(t *testing.T, out, _ string, _ *Reporter) {
@@ -230,7 +230,7 @@ func TestReporterRun_Integration(t *testing.T) {
 		{
 			name: "sync with unparsable dataset ref continues",
 			cfg: ReporterConfig{
-				ReportRef:  "InteropLD/LLN0.RP.urcb01",
+				ReportRef:  "InteropLD/LLN0.RP.urcb0101",
 				Sync:       true,
 				DatasetRef: "not-a-dataset",
 				Duration:   50 * time.Millisecond,
@@ -244,7 +244,7 @@ func TestReporterRun_Integration(t *testing.T) {
 		{
 			name: "text sync baseline",
 			cfg: ReporterConfig{
-				ReportRef:  "InteropLD/LLN0.RP.urcb01",
+				ReportRef:  "InteropLD/LLN0.RP.urcb0101",
 				Sync:       true,
 				DatasetRef: "InteropLD/LLN0.dsInterop",
 				Duration:   50 * time.Millisecond,
@@ -304,7 +304,7 @@ func TestReporterRun_StreamClosedByPeer(t *testing.T) {
 	var out, diag syncWriter
 	var once sync.Once
 	r := NewReporter(NewClientAdapter(client)).WithConfig(ReporterConfig{
-		ReportRef:     "InteropLD/LLN0.RP.urcb01",
+		ReportRef:     "InteropLD/LLN0.RP.urcb0101",
 		Interrogation: true,
 		Format:        "jsonl",
 		Duration:      15 * time.Second,
@@ -465,7 +465,7 @@ func TestReporterRun_KeepAliveDetectsLoss(t *testing.T) {
 	conn := &probeFailConn{IEC61850Connection: NewClientAdapter(startInteropServer(t))}
 	var out syncWriter
 	r := NewReporter(conn).WithConfig(ReporterConfig{
-		ReportRef: "InteropLD/LLN0.RP.urcb01",
+		ReportRef: "InteropLD/LLN0.RP.urcb0101",
 		Duration:  15 * time.Second,
 		KeepAlive: 20 * time.Millisecond,
 		Writer:    &out,
@@ -489,7 +489,7 @@ func TestReporterRun_KeepAliveCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	var out syncWriter
 	r := NewReporter(NewClientAdapter(startInteropServer(t))).WithConfig(ReporterConfig{
-		ReportRef: "InteropLD/LLN0.RP.urcb01",
+		ReportRef: "InteropLD/LLN0.RP.urcb0101",
 		KeepAlive: 10 * time.Millisecond,
 		Context:   ctx,
 		Writer:    &out,

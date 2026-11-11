@@ -66,6 +66,10 @@ func runListJournal(cmd *cobra.Command, args []string) error {
 	for i, j := range journals {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %d. %s (in %s)\n", i+1, j.Name, j.LogicalNode)
 	}
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nUse '--journal %s' with 'get journal' to read entries.\n", journals[0].Name)
+	hint := journals[0].Name
+	if journals[0].LogicalNode != "" {
+		hint = journals[0].LogicalNode + "." + hint
+	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nUse '--journal %s' with 'get journal' to read entries.\n", hint)
 	return nil
 }
