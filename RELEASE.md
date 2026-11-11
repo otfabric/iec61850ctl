@@ -1,5 +1,20 @@
 # iec61850ctl Releases
 
+## v0.13.0
+
+**Date:** 2026-11-11
+**Previous release:** v0.12.0
+
+### Changed
+
+- **Built on go-iec61850 v1.19.0 and go-mms v1.9.0** (were v1.17.1 and v1.8.0). The changes iec61850ctl users see:
+- Controls: the client sends the control `T` with TimeQuality 0x2a (clock not synchronised; was 0x0a), and the `serve` server stamps the operate `t` and `LActTm` with the same quality. The host time is unchanged.
+- Server (`serve`): reports leave as soon as a trigger fires, without the fixed delay of about 100 ms; members that change at the same moment go in one report, and an RCB's `BufTm` now holds a report for that time to collect further changes. A BRCB sends its buffered entries right after the RptEna response. `subscribe report` registers its handler before it enables the RCB, so no entries are lost.
+- Client: requests beyond the negotiated number of outstanding requests wait for a free slot, and data deeper than the negotiated nesting level is refused (ISO 9506-2 clause 8.2).
+- `version` lists `go-iec61850 1.19.0` and `go-mms 1.9.0`.
+
+---
+
 ## v0.12.0
 
 **Date:** 2026-11-11
