@@ -1,5 +1,21 @@
 # iec61850ctl Releases
 
+## v0.13.1
+
+**Date:** 2026-11-12
+**Previous release:** v0.13.0
+
+### Changed
+
+- **Built on go-iec61850 v1.19.1 and go-mms v1.9.1** (were v1.19.0 and v1.9.0): bug fixes, no API change. The changes iec61850ctl users see:
+- Server (`serve`): shutting down while journal or setting-group requests are in flight no longer races with them.
+- R-GOOSE/R-SV: sending on a session that is being closed returns an error instead of racing with the close.
+- Integer conversions in the MMS, GOOSE, SV and R-GOOSE/R-SV codecs are range-checked, so out-of-range values are refused instead of wrapping.
+- `version` lists `go-iec61850 1.19.1` and `go-mms 1.9.1`.
+- CI: the otfabric/.github reusable workflows are pinned at v3.6.0, the engineering policy at v1.5.0, and golangci-lint at v2.15.0.
+
+---
+
 ## v0.13.0
 
 **Date:** 2026-11-11

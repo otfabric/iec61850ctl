@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   ci:
-    uses: otfabric/.github/.github/workflows/go-ci.yml@v3.3.1
+    uses: otfabric/.github/.github/workflows/go-ci.yml@v3.6.0
     with:
       run-govulncheck: true
       coverage-min: "90"
@@ -23,7 +23,9 @@ jobs:
       test-exclude-regex: "/example(s)?($|/)"
       codecov-name: iec61850ctl
       go-versions: '["1.26", "1.27"]'
-      policy-version: v1.4.2
+      policy-version: v1.5.0
+      # The shared default (v2.1.6) predates Go 1.26; the version `make lint` is checked with.
+      golangci-lint-version: v2.15.0
     secrets: inherit
 
   # Stricter than go-ci's total: every package must reach 90 %.
