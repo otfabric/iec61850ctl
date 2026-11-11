@@ -23,8 +23,8 @@
             </DOI>
             <DataSet name="DS1"><FCDA ldInst="LD0" lnClass="LLN0" doName="Mod" fc="ST"/></DataSet>
             <DataSet name="DS2"/>
-            <ReportControl name="brcb01" datSet="DS1" buffered="true"/>
-            <ReportControl name="urcb01" datSet="DS2" buffered="false"/>
+            <ReportControl indexed="false" name="brcb01" datSet="DS1" buffered="true"/>
+            <ReportControl indexed="false" name="urcb01" datSet="DS2" buffered="false"/>
           </LN0>
           <LN prefix="Q0" lnClass="XCBR" inst="1" lnType="XCBRT" desc="Breaker">
             <DOI name="Pos"><DAI name="stVal"><Val>2</Val></DAI></DOI>

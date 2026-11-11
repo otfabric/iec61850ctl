@@ -383,7 +383,7 @@ func TestJournals(t *testing.T) {
 	r = runCLI(t, "--host", h, "--port", p, "list", "journals", "--domain", "InteropLD")
 	expectCode(t, r, errs.ExitOK)
 	golden(t, "list_journals", r.stdout)
-	r = runCLI(t, "--host", h, "--port", p, "get", "journal", "--domain", "InteropLD", "--journal", "lcb01", "--from", "0")
+	r = runCLI(t, "--host", h, "--port", p, "get", "journal", "--domain", "InteropLD", "--journal", "LLN0.EventLog", "--from", "0")
 	expectCode(t, r, errs.ExitOK)
 	golden(t, "get_journal_empty", r.stdout)
 	r = runCLI(t, "--host", h, "--port", p, "list", "journals", "--ld", "InteropLD", "--domain", "InteropLD")

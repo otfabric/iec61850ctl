@@ -57,7 +57,7 @@
               <FCDA ldInst="OtherLD" prefix="" lnClass="LLN0" lnInst=""
                     doName="Mod"  daName="stVal" fc="ST"/>
             </DataSet>
-            <ReportControl name="urcb01"
+            <ReportControl indexed="false" name="urcb01"
                            rptID="interop_urcb01"
                            datSet="dsInterop"
                            confRev="1"
@@ -66,7 +66,7 @@
                       period="false" gi="true"/>
               <OptFields seqNum="true" timeStamp="true" reasonCode="true"/>
             </ReportControl>
-            <ReportControl name="brcb01"
+            <ReportControl indexed="false" name="brcb01"
                            rptID="interop_brcb01"
                            datSet="dsInterop"
                            confRev="1"

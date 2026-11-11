@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/otfabric/iec61850ctl/pkg/errs"
@@ -34,7 +35,7 @@ With --to: entries in [from, to]. Without --to: entries after --from (ReadJourna
 
 func init() {
 	getJournalCmd.Flags().StringVar(&journalGetDomain, "domain", "", "MMS domain (required); use 'list journals' or try an LD name from 'list lds'")
-	getJournalCmd.Flags().StringVar(&journalGetItem, "journal", "", "journal/log name within the domain (required)")
+	getJournalCmd.Flags().StringVar(&journalGetItem, "journal", "", "journal name within the domain as 'list journals' shows it, e.g. LLN0.EventLog (required)")
 	getJournalCmd.Flags().StringVar(&journalGetFrom, "from", "", "start time (required): RFC3339, 2006-01-02 15:04:05.000 UTC, or ms since epoch")
 	getJournalCmd.Flags().StringVar(&journalGetTo, "to", "", "end time (optional): same format as --from; if omitted, entries after --from are returned")
 	_ = getJournalCmd.MarkFlagRequired("domain")
@@ -72,7 +73,7 @@ func runGetJournal(cmd *cobra.Command, args []string) error {
 	a := app.New(conn)
 	result, err := a.GetJournalEntries(app.GetJournalEntriesInput{
 		DomainID:    journalGetDomain,
-		JournalName: journalGetItem,
+		JournalName: mmsJournalName(journalGetItem),
 		FromMs:      fromMs,
 		ToMs:        toMs,
 	})
@@ -103,3 +104,10 @@ func runGetJournal(cmd *cobra.Command, args []string) error {
 
 // binaryTimeEpochMs is 1984-01-01T00:00:00Z, the MMS BinaryTime epoch.
 const binaryTimeEpochMs = uint64(441763200000)
+
+// mmsJournalName turns the dotted form "LLN0.EventLog" that 'list journals'
+// prints into the MMS journal name "LLN0$EventLog" (IEC 61850-8-1 §17.3.3).
+// MMS names contain no ".", so other names pass unchanged.
+func mmsJournalName(name string) string {
+	return strings.Replace(name, ".", "$", 1)
+}

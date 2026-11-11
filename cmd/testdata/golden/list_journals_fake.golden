@@ -1,4 +1,4 @@
 Journals in 'LD' (1):
   1. EventLog (in LLN0)
 
-Use '--journal EventLog' with 'get journal' to read entries.
+Use '--journal LLN0.EventLog' with 'get journal' to read entries.
