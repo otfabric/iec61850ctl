@@ -1,9 +1,9 @@
 Found 2 report(s) in 'InteropLD/LLN0':
 
 Unbuffered Reports (1):
-  1. urcb01
-Report Control Block: urcb01 (Unbuffered)
-Reference: InteropLD/LLN0.urcb01
+  1. urcb0101
+Report Control Block: urcb0101 (Unbuffered)
+Reference: InteropLD/LLN0.urcb0101
 Enabled: false
 Report ID: interop_urcb01
 Dataset: InteropLD/LLN0$dsInterop
@@ -28,9 +28,9 @@ Optional Fields:
   Config Revision: ✗
 
 Buffered Reports (1):
-  1. brcb01
-Report Control Block: brcb01 (Buffered)
-Reference: InteropLD/LLN0.brcb01
+  1. brcb0101
+Report Control Block: brcb0101 (Buffered)
+Reference: InteropLD/LLN0.brcb0101
 Enabled: false
 Report ID: interop_brcb01
 Dataset: InteropLD/LLN0$dsInterop

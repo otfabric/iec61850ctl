@@ -253,7 +253,7 @@ func TestApp_SubscribeReport_Integration(t *testing.T) {
 		client := startInteropServer(t)
 		var out lockedBuf
 		r, err := New(service.NewClientAdapter(client)).SubscribeReport(SubscribeReportInput{
-			ReportRef:     "InteropLD/LLN0.RP.urcb01",
+			ReportRef:     "InteropLD/LLN0.RP.urcb0101",
 			Interrogation: true,
 			MaxReports:    1,
 			Duration:      10 * time.Second,
@@ -277,7 +277,7 @@ func TestApp_SubscribeReport_Integration(t *testing.T) {
 		defer cancel()
 		time.AfterFunc(200*time.Millisecond, func() { _ = client.Close(context.Background()) })
 		r, err := New(service.NewClientAdapter(client)).SubscribeReport(SubscribeReportInput{
-			ReportRef: "InteropLD/LLN0.RP.urcb01",
+			ReportRef: "InteropLD/LLN0.RP.urcb0101",
 			Context:   ctx,
 			Writer:    &out,
 		})

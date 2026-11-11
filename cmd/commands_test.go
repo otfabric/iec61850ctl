@@ -131,19 +131,19 @@ func TestControlOperate(t *testing.T) {
 func TestSubscribeReport(t *testing.T) {
 	base := []string{"subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--interrogation", "--max-reports", "1", "--duration", "10s"}
 	t.Run("urcb text", func(t *testing.T) {
-		r := runSrv(t, append(base, "--report", "urcb01", "--type", "RP", "--show-values")...)
+		r := runSrv(t, append(base, "--report", "urcb0101", "--type", "RP", "--show-values")...)
 		expectCode(t, r, errs.ExitOK)
 		for _, want := range []string{"[Report #1]", "Values:", "Total reports: 1", "Connection closed."} {
 			if !strings.Contains(r.stdout, want) {
 				t.Errorf("stdout lacks %q:\n%s", want, r.stdout)
 			}
 		}
-		if !strings.Contains(r.stdout+r.stderr, "Subscribing to: InteropLD/LLN0.RP.urcb01") {
+		if !strings.Contains(r.stdout+r.stderr, "Subscribing to: InteropLD/LLN0.RP.urcb0101") {
 			t.Errorf("no subscribe banner:\n%s\n%s", r.stdout, r.stderr)
 		}
 	})
 	t.Run("brcb jsonl sync", func(t *testing.T) {
-		r := runSrv(t, append(base, "--report", "brcb01", "--type", "BR", "--purge-buf", "--yes", "--entry-id", "0000000000000000", "--sync", "--format", "jsonl")...)
+		r := runSrv(t, append(base, "--report", "brcb0101", "--type", "BR", "--purge-buf", "--yes", "--entry-id", "0000000000000000", "--sync", "--format", "jsonl")...)
 		expectCode(t, r, errs.ExitOK)
 		var events []string
 		sc := bufio.NewScanner(strings.NewReader(r.stdout))
@@ -159,7 +159,7 @@ func TestSubscribeReport(t *testing.T) {
 		}
 	})
 	t.Run("duration elapses without max", func(t *testing.T) {
-		r := runSrv(t, "subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb01", "--type", "RP", "--duration", "200ms")
+		r := runSrv(t, "subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb0101", "--type", "RP", "--duration", "200ms")
 		expectCode(t, r, errs.ExitOK)
 	})
 	t.Run("missing rcb", func(t *testing.T) {
@@ -171,7 +171,7 @@ func TestSubscribeReport(t *testing.T) {
 	t.Run("ctrl-c", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		time.AfterFunc(300*time.Millisecond, cancel)
-		r := runCLIContext(t, ctx, srvArgs("subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb01", "--type", "RP")...)
+		r := runCLIContext(t, ctx, srvArgs("subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb0101", "--type", "RP")...)
 		expectCode(t, r, errs.ExitOK)
 		if !strings.Contains(r.stderr+r.stdout, "Shutting down gracefully") {
 			t.Fatalf("no graceful shutdown:\n%s\n%s", r.stdout, r.stderr)

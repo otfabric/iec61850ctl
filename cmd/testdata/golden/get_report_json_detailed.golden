@@ -1,10 +1,10 @@
 {
   "report": {
-    "name": "brcb01",
+    "name": "brcb0101",
     "ld": "InteropLD",
     "ln": "LLN0",
     "buffered": true,
-    "ref": "InteropLD/LLN0.BR.brcb01",
+    "ref": "InteropLD/LLN0.BR.brcb0101",
     "rpt_id": "interop_brcb01",
     "dat_set": "InteropLD/LLN0$dsInterop",
     "enabled": false,

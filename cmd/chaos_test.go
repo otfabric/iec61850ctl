@@ -233,7 +233,7 @@ func TestChaosSubscribeConnectionLoss(t *testing.T) {
 	defer trip.Stop()
 	start := time.Now()
 	r := runCLI(t, "--host", "127.0.0.1", "--port", p.port(), "--timeout", "500ms",
-		"subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb01", "--type", "RP", "--duration", "20s", "--keepalive", "200ms")
+		"subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb0101", "--type", "RP", "--duration", "20s", "--keepalive", "200ms")
 	if r.code == errs.ExitOK {
 		t.Fatalf("subscription survived connection loss\nstdout:\n%s\nstderr:\n%s", r.stdout, r.stderr)
 	}

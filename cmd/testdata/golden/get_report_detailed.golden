@@ -1,5 +1,5 @@
-Report Control Block: brcb01 (Buffered)
-Reference: InteropLD/LLN0.brcb01
+Report Control Block: brcb0101 (Buffered)
+Reference: InteropLD/LLN0.brcb0101
 Enabled: false
 Report ID: interop_brcb01
 Dataset: InteropLD/LLN0$dsInterop

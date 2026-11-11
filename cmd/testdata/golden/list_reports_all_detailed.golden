@@ -3,9 +3,9 @@ Found 2 report(s) across all logical devices:
 
 --- InteropLD/LLN0 ---
 
-  - brcb01 (BRCB)
-Report Control Block: brcb01 (Buffered)
-Reference: InteropLD/LLN0.brcb01
+  - brcb0101 (BRCB)
+Report Control Block: brcb0101 (Buffered)
+Reference: InteropLD/LLN0.brcb0101
 Enabled: false
 Report ID: interop_brcb01
 Dataset: InteropLD/LLN0$dsInterop
@@ -31,9 +31,9 @@ Optional Fields:
   Entry ID: ✓
   Config Revision: ✗
 
-  - urcb01 (URCB)
-Report Control Block: urcb01 (Unbuffered)
-Reference: InteropLD/LLN0.urcb01
+  - urcb0101 (URCB)
+Report Control Block: urcb0101 (Unbuffered)
+Reference: InteropLD/LLN0.urcb0101
 Enabled: false
 Report ID: interop_urcb01
 Dataset: InteropLD/LLN0$dsInterop

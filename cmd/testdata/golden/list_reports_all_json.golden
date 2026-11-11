@@ -2,15 +2,15 @@
   {
     "ld": "InteropLD",
     "ln": "LLN0",
-    "name": "brcb01",
+    "name": "brcb0101",
     "buffered": true,
-    "ref": "InteropLD/LLN0.BR.brcb01"
+    "ref": "InteropLD/LLN0.BR.brcb0101"
   },
   {
     "ld": "InteropLD",
     "ln": "LLN0",
-    "name": "urcb01",
+    "name": "urcb0101",
     "buffered": false,
-    "ref": "InteropLD/LLN0.RP.urcb01"
+    "ref": "InteropLD/LLN0.RP.urcb0101"
   }
 ]
