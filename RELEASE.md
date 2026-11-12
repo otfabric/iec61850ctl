@@ -1,5 +1,23 @@
 # iec61850ctl Releases
 
+## v0.13.3
+
+**Date:** 2026-11-12
+**Previous release:** v0.13.2
+
+No change to commands or output.
+
+### Changed
+
+- The e2e lock (`e2e/testdata/interop.lock.json`) pins iec61850-interop v1.6.1 (was v1.4.0), the release go-iec61850 and go-mms pin: `source_commit` 4fcb6c1, and the five adapter images by the digests of the v1.6.1 release. The fixtures (IED `iec61850-v3`, GOOSE `goose-v1`, SV `sv-v1`) and their hashes are unchanged. docs/INTEROP.md and the generated docs/interop-examples.md name v1.6.1 and its digests.
+- go-iec61850 v1.19.4 and go-mms v1.9.2 are still the latest releases.
+
+### Verified
+
+- e2e locally (Docker linux/arm64, `CI=1`, the pinned v1.6.1 images) with all 23 stacks of the e2e workflow (client journeys, reverse server, server reader, GOOSE, SV): 34 top-level tests, 155 subtests passed, 0 skipped, 0 failed.
+
+---
+
 ## v0.13.2
 
 **Date:** 2026-11-12
