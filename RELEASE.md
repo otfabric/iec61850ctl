@@ -1,5 +1,18 @@
 # iec61850ctl Releases
 
+## v0.13.2
+
+**Date:** 2026-11-12
+**Previous release:** v0.13.1
+
+No change to commands or output.
+
+### Changed
+
+- go-iec61850 v1.19.4 and go-mms v1.9.2 (were v1.19.1 and v1.9.1): a custom dialer that returns neither a connection nor an error fails the dial instead of panicking.
+
+---
+
 ## v0.13.1
 
 **Date:** 2026-11-12
