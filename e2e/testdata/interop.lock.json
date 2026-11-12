@@ -1,7 +1,7 @@
 {
   "source_repository": "otfabric/iec61850-interop",
-  "source_commit": "4309b39f057bb111b5df0fb213bfa631a6e582e9",
-  "source_tag": "v1.4.0",
+  "source_commit": "4fcb6c111351c5f85e4e408e2e5713bf46147d47",
+  "source_tag": "v1.6.1",
   "fixture_revision": "iec61850-v3",
   "goose_fixture_revision": "goose-v1",
   "sv_fixture_revision": "sv-v1",
@@ -22,11 +22,11 @@
     "sv.json": "sha256:fd4a6c6238c7b6d23383e2a66b1a9be1e91838f177c56db75a3570804ea1e50a"
   },
   "images": {
-    "libiec61850": "ghcr.io/otfabric/iec61850-interop-libiec61850@sha256:5f865e1917f246763e992701c688a58d157d641ca91674e51bbc342ef945adad",
-    "iec61850bean": "ghcr.io/otfabric/iec61850-interop-iec61850bean@sha256:df9b48b5f903ec55f7bcb7baabe651ae204c685702d77979e89165fad00c6416",
-    "dscsystems": "ghcr.io/otfabric/iec61850-interop-dscsystems@sha256:bba8bc1653b4c5bb51c4b8766f0bd99d77dd3523574ed2630b09695212618f2e",
-    "iec61850-rust": "ghcr.io/otfabric/iec61850-interop-iec61850-rust@sha256:c961c039384b0ea968e786a259e1f7a3a4781f2b544ff50d794bd965e991314c",
-    "cbsigma": "ghcr.io/otfabric/iec61850-interop-cbsigma@sha256:bf0597703e7d1495ab3aa144d481bc92a0a4aef87a2bfafcbd75f7c1fbb4aa16"
+    "libiec61850": "ghcr.io/otfabric/iec61850-interop-libiec61850@sha256:dbace896592c139991ec07c9975830e170499ccabb5fc172ec2f92f992f73714",
+    "iec61850bean": "ghcr.io/otfabric/iec61850-interop-iec61850bean@sha256:2b7c328c77155027447253fc04e9b854ae21349793185084fa6cf3824964db90",
+    "dscsystems": "ghcr.io/otfabric/iec61850-interop-dscsystems@sha256:be96477983b4105e6709af8a731a274f05e74e5d465dee1e5f3aec753688f73e",
+    "iec61850-rust": "ghcr.io/otfabric/iec61850-interop-iec61850-rust@sha256:19a0cc7099e6c044b2823e4747bd4c7f75fbe1a5f0e91779cb418517df9c99c5",
+    "cbsigma": "ghcr.io/otfabric/iec61850-interop-cbsigma@sha256:99f7dad5ea19bf6c69d9c5931bcc017bbe5b98ec8b18147083d06f964af2cd4a"
   },
   "required_commands": {
     "libiec61850-ied-server": true,
