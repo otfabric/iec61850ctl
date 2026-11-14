@@ -1,5 +1,21 @@
 # iec61850ctl Releases
 
+## v0.13.8
+
+**Date:** 2026-11-14
+**Previous release:** v0.13.7
+
+No command or flag is added or changed.
+
+### Changed
+
+- Built on go-iec61850 v1.23.0 (was v1.22.0) and go-mms v1.11.0 (was v1.10.0) (go-iec61850 RELEASE.md, v1.23.0; go-mms RELEASE.md, v1.11.0).
+- `server start`: the server holds at most 1024 associations at once, as many as the connections it serves; go-mms's own default of 100 does not apply.
+- Every MMS connection, of the client commands and of `server start`, carries TSDUs of up to the MMS PDU size and its framing (65,539 octets at the least); a longer one ends the connection, where up to 4 MiB were taken before. A peer that keeps to the negotiated PDU size is not affected.
+- `server start` answers a request larger than the negotiated PDU size from its invokeID alone.
+
+---
+
 ## v0.13.7
 
 **Date:** 2026-11-14
