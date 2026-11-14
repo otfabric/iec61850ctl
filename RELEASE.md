@@ -1,5 +1,18 @@
 # iec61850ctl Releases
 
+## v0.13.6
+
+**Date:** 2026-11-14
+**Previous release:** v0.13.5
+
+No change to commands or output.
+
+### Changed
+
+- Built on go-mms v1.9.3 (was v1.9.2) and go-iec61850 v1.20.2 (was v1.20.1). go-mms v1.9.3 bounds counts, indexes and REAL exponents that come from a server when they are decoded (go-mms RELEASE.md, v1.9.3); the go-iec61850 library code is unchanged.
+
+---
+
 ## v0.13.5
 
 **Date:** 2026-11-14
