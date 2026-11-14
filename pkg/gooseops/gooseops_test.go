@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/otfabric/go-iec61850/goose"
@@ -400,6 +401,56 @@ func TestSubscribeErrors(t *testing.T) {
 	if _, err := Subscribe(context.Background(), SubscribeConfig{Transport: rx, Duration: time.Second, Output: Output{Out: &syncBuf{}}}); err == nil {
 		t.Fatal("closed transport accepted")
 	}
+}
+
+// slowStop is a transport whose Recv, once its context has ended, returns
+// only after release is closed: a receive goroutine that is slow to stop.
+type slowStop struct {
+	*goose.HubPort
+	release chan struct{}
+}
+
+func (s *slowStop) Recv(ctx context.Context) ([]byte, error) {
+	f, err := s.HubPort.Recv(ctx)
+	if err != nil && ctx.Err() != nil {
+		<-s.release
+	}
+	return f, err
+}
+
+// TestSubscribeWaitsForReceiver checks that Subscribe returns only after
+// the receive goroutine it started has stopped, so that nothing it
+// reports (OnDecodeError) is written after the return.
+func TestSubscribeWaitsForReceiver(t *testing.T) {
+	t.Parallel()
+	sc := loadCB(t, "gcbBool").SubscriptionConfig()
+	synctest.Test(t, func(t *testing.T) {
+		_, rx := pair(t)
+		tr := &slowStop{HubPort: rx, release: make(chan struct{})}
+		release := sync.OnceFunc(func() { close(tr.release) })
+		defer release()
+		ctx, cancel := context.WithCancel(context.Background())
+		done := make(chan error, 1)
+		go func() {
+			_, err := Subscribe(ctx, SubscribeConfig{
+				Transport: tr, Subscription: sc, Count: 1,
+				Output: Output{Out: &syncBuf{}, Err: &syncBuf{}},
+			})
+			done <- err
+		}()
+		synctest.Wait()
+		cancel()
+		synctest.Wait() // the receive goroutine is in Recv, waiting for release
+		select {
+		case err := <-done:
+			t.Fatalf("Subscribe returned (%v) while its receive goroutine was running", err)
+		default:
+		}
+		release()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Fatalf("err = %v", err)
+		}
+	})
 }
 
 func TestPublish(t *testing.T) {

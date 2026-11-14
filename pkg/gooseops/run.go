@@ -228,8 +228,24 @@ func Subscribe(ctx context.Context, cfg SubscribeConfig) (SubscribeSummary, erro
 
 	ctx, cancel := withDuration(ctx, cfg.Duration)
 	defer cancel()
+	runCtx, stopRun := context.WithCancel(ctx)
+	defer stopRun()
 	runErr := make(chan error, 1)
-	go func() { runErr <- subscriber.Run(ctx) }()
+	go func() { runErr <- subscriber.Run(runCtx) }()
+	// Subscribe owns the receive goroutine: stop ends it and waits for it,
+	// so that no diagnostic (OnDecodeError) is written after Subscribe
+	// returns. Run returns within the transport's receive poll interval
+	// of the cancel.
+	running := true
+	stop := func() error {
+		if !running {
+			return nil
+		}
+		running = false
+		stopRun()
+		return <-runErr // nil after the stop, or a failure that no longer matters
+	}
+	defer func() { _ = stop() }()
 
 loop:
 	for cfg.Count == 0 || sum.Messages < cfg.Count {
@@ -237,6 +253,7 @@ loop:
 		case <-ctx.Done():
 			break loop
 		case err := <-runErr:
+			running = false
 			if ctx.Err() != nil {
 				break loop
 			}
@@ -251,6 +268,7 @@ loop:
 			emitEvent(cfg.Output, ev)
 		}
 	}
+	_ = stop()
 	for _, s := range sub.Supervision() {
 		sum.Streams = append(sum.Streams, ViewSupervision(s))
 	}
