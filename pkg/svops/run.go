@@ -196,8 +196,24 @@ func Subscribe(ctx context.Context, cfg SubscribeConfig) (StatsView, error) {
 
 	ctx, cancel := withDuration(ctx, cfg.Duration)
 	defer cancel()
+	runCtx, stopRun := context.WithCancel(ctx)
+	defer stopRun()
 	runErr := make(chan error, 1)
-	go func() { runErr <- subscriber.Run(ctx) }()
+	go func() { runErr <- subscriber.Run(runCtx) }()
+	// Subscribe owns the receive goroutine: stop ends it and waits for it,
+	// so that the summary is final and no diagnostic (OnDecodeError) is
+	// written after Subscribe returns. Run returns within the transport's
+	// receive poll interval of the cancel.
+	running := true
+	stop := func() error {
+		if !running {
+			return nil
+		}
+		running = false
+		stopRun()
+		return <-runErr // nil after the stop, or a failure that no longer matters
+	}
+	defer func() { _ = stop() }()
 
 	var tick <-chan time.Time
 	if cfg.StatsInterval > 0 {
@@ -224,6 +240,7 @@ loop:
 		case <-ctx.Done():
 			break loop
 		case err := <-runErr:
+			running = false
 			if ctx.Err() != nil {
 				break loop
 			}
@@ -259,6 +276,7 @@ loop:
 			cfg.Output.emit(func(w io.Writer) { WriteStatsTable(w, s) }, s)
 		}
 	}
+	_ = stop()
 	sum = stats("summary")
 	cfg.Output.emit(func(w io.Writer) { WriteStatsTable(w, sum) }, sum)
 	return sum, countErr(ctx, cfg.Count, accepted, "SV ASDU(s)")

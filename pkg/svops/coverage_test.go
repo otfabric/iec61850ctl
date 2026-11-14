@@ -9,7 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/otfabric/go-iec61850/sv"
@@ -101,25 +103,80 @@ func TestFilterAndCountErr(t *testing.T) {
 	}
 }
 
+// TestSubscribeUndecodableAndCancel runs in a synctest bubble: the
+// frame is cancelled only once the subscriber has handled it and blocks
+// for the next one, however slowly its goroutine starts (iec61850ctl#41).
 func TestSubscribeUndecodableAndCancel(t *testing.T) {
 	t.Parallel()
-	pubPort, rx := pair(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		time.Sleep(50 * time.Millisecond)
-		_ = pubPort.Send([]byte{0x01, 0x0c, 0xcd, 0x04, 0, 0, 2, 0, 0, 0, 0, 1, 0x88, 0xba, 0, 1})
-		time.Sleep(100 * time.Millisecond)
-		cancel()
-	}()
-	var out, diag syncBuf
-	sum, err := Subscribe(ctx, SubscribeConfig{
-		Transport: rx, Subscription: loadCB(t, "MSVCB01").SubscriptionConfig(), Count: 1,
-		Output: Output{Out: &out, Err: &diag},
+	sc := loadCB(t, "MSVCB01").SubscriptionConfig()
+	synctest.Test(t, func(t *testing.T) {
+		pubPort, rx := pair(t)
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			_ = pubPort.Send([]byte{0x01, 0x0c, 0xcd, 0x04, 0, 0, 2, 0, 0, 0, 0, 1, 0x88, 0xba, 0, 1})
+			synctest.Wait() // the subscriber has read the frame and waits for more
+			cancel()
+		}()
+		var out, diag syncBuf
+		sum, err := Subscribe(ctx, SubscribeConfig{
+			Transport: rx, Subscription: sc, Count: 1,
+			Output: Output{Out: &out, Err: &diag},
+		})
+		if !errors.Is(err, context.Canceled) || sum.ASDUs != 0 {
+			t.Fatalf("sum=%+v err=%v", sum, err)
+		}
+		if !strings.Contains(diag.String(), "undecodable") {
+			t.Fatalf("diag=%s", diag.String())
+		}
 	})
-	if !errors.Is(err, context.Canceled) || sum.ASDUs != 0 {
-		t.Fatalf("sum=%+v err=%v", sum, err)
+}
+
+// slowStop is a transport whose Recv, once its context has ended, returns
+// only after release is closed: a receive goroutine that is slow to stop.
+type slowStop struct {
+	*sv.HubPort
+	release chan struct{}
+}
+
+func (s *slowStop) Recv(ctx context.Context) ([]byte, error) {
+	f, err := s.HubPort.Recv(ctx)
+	if err != nil && ctx.Err() != nil {
+		<-s.release
 	}
-	if !strings.Contains(diag.String(), "undecodable") {
-		t.Fatalf("diag=%s", diag.String())
-	}
+	return f, err
+}
+
+// TestSubscribeWaitsForReceiver checks that Subscribe returns only after
+// the receive goroutine it started has stopped, so that nothing it
+// reports (OnDecodeError) is written after the return.
+func TestSubscribeWaitsForReceiver(t *testing.T) {
+	t.Parallel()
+	sc := loadCB(t, "MSVCB01").SubscriptionConfig()
+	synctest.Test(t, func(t *testing.T) {
+		_, rx := pair(t)
+		tr := &slowStop{HubPort: rx, release: make(chan struct{})}
+		release := sync.OnceFunc(func() { close(tr.release) })
+		defer release()
+		ctx, cancel := context.WithCancel(context.Background())
+		done := make(chan error, 1)
+		go func() {
+			_, err := Subscribe(ctx, SubscribeConfig{
+				Transport: tr, Subscription: sc, Count: 1,
+				Output: Output{Out: &syncBuf{}, Err: &syncBuf{}},
+			})
+			done <- err
+		}()
+		synctest.Wait()
+		cancel()
+		synctest.Wait() // the receive goroutine is in Recv, waiting for release
+		select {
+		case err := <-done:
+			t.Fatalf("Subscribe returned (%v) while its receive goroutine was running", err)
+		default:
+		}
+		release()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Fatalf("err = %v", err)
+		}
+	})
 }

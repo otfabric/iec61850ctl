@@ -1,5 +1,20 @@
 # iec61850ctl Releases
 
+## v0.13.5
+
+**Date:** 2026-11-14
+**Previous release:** v0.13.4
+
+### Fixed
+
+- `sv subscribe` and `goose subscribe` (`pkg/svops`, `pkg/gooseops`): `Subscribe` returned while the goroutine that receives frames was still running, so an `undecodable frame` warning could be printed after the summary, and the summary could miss the last frames counted. `Subscribe` now stops that goroutine and waits for it before the summary; it returns at most one receive poll interval (100 ms on raw sockets) after the stop.
+
+### Tests
+
+- `TestSubscribeUndecodableAndCancel` failed under load (iec61850ctl#41): it sent the frame after 50 ms and cancelled 100 ms later, so a subscriber that started late was cancelled before it saw the frame. It runs in a `testing/synctest` bubble and cancels once the subscriber has handled the frame. New `TestSubscribeWaitsForReceiver` in both packages checks that `Subscribe` does not return before its receive goroutine has stopped.
+
+---
+
 ## v0.13.4
 
 **Date:** 2026-11-14
