@@ -1,5 +1,24 @@
 # iec61850ctl Releases
 
+## v0.13.7
+
+**Date:** 2026-11-14
+**Previous release:** v0.13.6
+
+No command or flag is added or changed. The libraries now refuse some input they accepted before; the defaults are above what a real substation uses, and no flag changes them.
+
+### Changed
+
+- Built on go-iec61850 v1.22.0 (was v1.20.2), go-mms v1.10.0 (was v1.9.3), go-cotp v1.4.1 (was v1.3.0) and go-tpkt v1.2.1 (was v1.1.0) (go-iec61850 RELEASE.md, v1.21.0 and v1.22.0; go-mms RELEASE.md, v1.10.0).
+- `get file` stops with an error when the server sends more than 64 MiB beyond the size it announced, or more than 64 answers in a row without data.
+- `subscribe report` drops a segmented report whose buffered segments grow beyond 64 MiB, or whose last segment has not arrived 60 seconds after its first.
+- `goose subscribe` and `sv subscribe` supervise at most 4096 streams; a frame of a further stream is dropped.
+- `sv publish`, `sv sniff` and `sv subscribe`: an svID or datSet longer than 129 octets (IEC 61850-9-2 Table 14) is refused; `sv publish` does not start, and the receiving commands count such a frame as undecodable.
+- `server start`: at most 1024 connections at once; a client write of a non-zero IntgPd below 100 ms to a BRCB, URCB or LCB is answered with object-value-invalid; NumOfSG, LActTm and ResvTms of an SGCB are read-only; an SCL file is refused at start beyond 1 GiB, 1024 nested elements, 64 type references on one path or 33,554,432 expanded instances; each association holds at most 32 open files and 256 named variable lists, and a write to a client that stops reading ends its association after 10 s. `--max-connections` is still not passed to the server. docs/SERVER.md has a new Limits section.
+- `get journal` reads one page per request and is not affected by the new journal read limits of go-iec61850.
+
+---
+
 ## v0.13.6
 
 **Date:** 2026-11-14

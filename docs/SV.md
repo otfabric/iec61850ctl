@@ -593,6 +593,8 @@ The codes are the same as for the rest of the CLI ([AUTOMATION.md](AUTOMATION.md
 These come from go-iec61850 v1.2:
 - No SV security (IEC 62351-6) and no unicast SVCBs (USVCB).
 - smpMod is encoded in two octets. libiec61850's subscriber drops such ASDUs (see [INTEROP.md](INTEROP.md)).
+- An svID or datSet longer than 129 octets (VisibleString129, IEC 61850-9-2 Table 14) is refused: `sv publish` does not start with such a control block, and `sv sniff` and `sv subscribe` count such a frame as undecodable.
+- `sv subscribe` supervises at most 4096 streams; a frame of a further stream is dropped.
 
 `server start` does not publish SV on a network interface. Its SV engine is
 only used in tests, through the in-memory hub.

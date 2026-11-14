@@ -30,7 +30,7 @@ Stop with Ctrl+C.
 | `--files-dir` | Directory served read-only over MMS file services (`list files`, `get file`); not recursive, delete/rename are denied |
 | `--instance-domain-names` | Name each MMS domain by its LDevice@inst alone (`InteropLD`), as before v0.9.0. Off by default: domains follow IEC 61850-8-1, LDevice@ldName if set, else the IED name followed by the LD inst (`InteropIEDInteropLD`), like other IEC 61850 servers; GoCB, dataset and SVCB references use the same domain. `--values` files keyed by LD inst still apply |
 | `--allow-readonly-fc-writes` | Accept client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`). Off by default: IEC 61850-7-2 makes them read-only to clients, and the server answers such a write with object-access-denied. For simulators and test fixtures only |
-| `--max-connections` | Reserved for future use (default `5`; not enforced by the current go-mms listener) |
+| `--max-connections` | Reserved for future use (default `5`; not passed to the server). The server accepts at most 1024 connections at once, the go-iec61850 default; a connection beyond that is closed at once |
 | `--ready-json` | After bind, emit one readiness JSON line on **stdout** |
 | `--fixture-id` | Fixture revision string included in the readiness event (e.g. `iec61850-v3`) |
 
@@ -177,6 +177,15 @@ interface: writing GoEna or SvEna is accepted, but the block reads back
 disabled and no frames are sent, so `gocb set --enable` / `svcb set --enable`
 exit `12`. To put frames on the wire, use `goose
 publish` or `sv publish` (see [GOOSE.md](GOOSE.md) and [SV.md](SV.md)).
+
+## Limits
+
+`server start` uses the defaults of go-iec61850 and go-mms; no flag changes them.
+
+- A client write of a non-zero IntgPd below 100 ms to a BRCB, URCB or LCB is answered with object-value-invalid. IntgPd 0 is accepted; the periods in the SCL file are not checked.
+- An SCL file larger than 1 GiB, nested deeper than 1024 elements, with more than 64 type references on one path (DOType, SDO DOType, DAType) or with more than 33,554,432 expanded DO, SDO, DA and BDA instances is refused at start.
+- NumOfSG, LActTm and ResvTms of an SGCB are read-only: a write gets object-access-denied.
+- go-mms bounds each association: 32 open files, 256 named variable lists (4,096 per server, 1,000 members each), and a write to a client that stops reading ends its association after 10 s.
 
 ## Requirements
 
