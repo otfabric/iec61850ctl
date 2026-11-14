@@ -1,13 +1,11 @@
+# Called by pr.yml on every pull request that is not documentation only;
+# dispatch it to run it on a branch without a pull request.
 name: E2E
 run-name: "E2E (${{ github.event_name }}) on ${{ github.ref_name }} by @${{ github.actor }}"
 
 on:
-  push:
-    branches: ["**"]
-    paths-ignore: ['**/*.md']
-  pull_request:
-    branches: ["**"]
-    paths-ignore: ['**/*.md']
+  workflow_call:
+  workflow_dispatch:
 
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
