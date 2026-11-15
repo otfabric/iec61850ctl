@@ -74,11 +74,14 @@ Environment Variables:
   IEC61850_PORT       Default port number (overridden by --port flag)
   IEC61850_IED_NAME   Default IED name for MMS domain normalisation (overridden by --ied-name)
 
-Exit codes:
-  0 success            4 timeout              7 write verification mismatch
-  1 failure            5 not found            8 unsupported service
-  2 usage/invalid      6 rejected/denied    130 interrupted (SIGINT/SIGTERM)
-  3 connection failed`,
+Exit codes (docs/exitcodes.md):
+    0 success                     8 unsupported service
+    2 usage or invalid value      9 permission denied
+    3 invalid ref, config, SCL   10 failure
+    4 connection failed or lost  11 not found
+    5 timeout                    12 verification mismatch
+    6 rejected by the server     13 safety refusal
+  130 interrupted (SIGINT/SIGTERM)`,
 	SilenceUsage:      true,
 	SilenceErrors:     true,
 	PersistentPreRunE: persistentPreRun,
@@ -148,12 +151,15 @@ func Execute() {
 
 // ExecuteContext runs the CLI in-process with the given arguments and writers
 // and returns the process exit code (see errs.ExitCode). Errors are printed
-// to stderr. Flag values persist between calls; callers that run several
-// invocations in one process must reset them (tests do).
+// to stderr. Control characters in what a command writes reach stdout and
+// stderr escaped (printableWriter); the bytes of get file do not. Flag
+// values persist between calls; callers that run several invocations in one
+// process must reset them (tests do).
 func ExecuteContext(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	runState.entered = false
 	runState.logger = nil
 	registerCompletions()
+	stdout, stderr = newPrintableWriter(stdout), newPrintableWriter(stderr)
 	rootCmd.SetArgs(args)
 	rootCmd.SetOut(stdout)
 	rootCmd.SetErr(stderr)
@@ -236,6 +242,12 @@ func requestTimeout() time.Duration {
 	return requestTimeoutFlag
 }
 
+// requestTimeoutGiven reports whether a positive --timeout was given on the
+// command line; it then replaces a command's default request timeout.
+func requestTimeoutGiven() bool {
+	return requestTimeoutFlag > 0 && rootCmd.PersistentFlags().Changed("timeout")
+}
+
 func init() {
 	pf := rootCmd.PersistentFlags()
 	pf.StringVar(&host, "host", "", "host address of the IEC 61850 server (env: IEC61850_HOST)")
@@ -245,7 +257,7 @@ func init() {
 	pf.StringVar(&logLevelFlag, "log-level", "warn", "structured log level on stderr: debug, info, warn, error, off")
 	pf.StringVar(&logFormatFlag, "log-format", "text", "structured log format: text, json")
 	pf.DurationVar(&connectTimeoutFlag, "connect-timeout", client.DefaultConnectTimeout, "timeout for each connect attempt (TCP + COTP + MMS association)")
-	pf.DurationVar(&requestTimeoutFlag, "timeout", client.DefaultRequestTimeout, "timeout for each MMS request")
+	pf.DurationVar(&requestTimeoutFlag, "timeout", client.DefaultRequestTimeout, "timeout for each MMS request, also each one inside a download or subscription; when not given, get file uses 60s and list files, get journal and subscribe report 30s")
 	pf.IntVar(&retryFlag, "retry", 0, "number of connect retries with exponential backoff and jitter")
 	pf.DurationVar(&retryMaxDelayFlag, "retry-max-delay", client.DefaultRetryMaxDelay, "maximum delay between connect retries")
 

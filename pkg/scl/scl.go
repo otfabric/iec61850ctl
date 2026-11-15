@@ -4,6 +4,7 @@ package scl
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 )
 
@@ -175,11 +176,17 @@ type BDA struct {
 	Fc    string `xml:"fc,attr"`
 }
 
-// Parse reads an SCL/CID document from r.
+// Parse reads an SCL/CID document from r. It reads at most 1 GiB of it: a
+// longer document is refused with an error.
 func Parse(r io.Reader) (*SCL, error) {
-	dec := xml.NewDecoder(r)
+	lr := &io.LimitedReader{R: r, N: maxSCLBytes + 1}
+	dec := xml.NewDecoder(lr)
 	var scl SCL
-	if err := dec.Decode(&scl); err != nil {
+	err := dec.Decode(&scl)
+	if lr.N <= 0 {
+		return nil, fmt.Errorf("scl: document larger than %d bytes", maxSCLBytes)
+	}
+	if err != nil {
 		return nil, err
 	}
 	return &scl, nil

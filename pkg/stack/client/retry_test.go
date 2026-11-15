@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	iec61850 "github.com/otfabric/go-iec61850"
@@ -100,21 +101,27 @@ func TestRetryDoContext(t *testing.T) {
 	})
 	t.Run("canceled during backoff", func(t *testing.T) {
 		t.Parallel()
-		ctx, cancel := context.WithCancel(context.Background())
-		p := RetryPolicy{Retries: 3, BaseDelay: time.Hour, MaxDelay: time.Hour}
-		done := make(chan error, 1)
-		go func() {
-			done <- p.Do(ctx, nil, func(context.Context) error { return errors.New("refused") })
-		}()
-		time.Sleep(20 * time.Millisecond)
-		cancel()
-		select {
-		case err := <-done:
-			if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "after 1 attempt(s)") {
-				t.Fatalf("err=%v", err)
+		// In the bubble, synctest.Wait returns once Do waits for its
+		// backoff timer of an hour, which does not fire while a goroutine
+		// of the bubble can still run.
+		synctest.Test(t, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			p := RetryPolicy{Retries: 3, BaseDelay: time.Hour, MaxDelay: time.Hour}
+			attempts := 0
+			done := make(chan error, 1)
+			go func() {
+				done <- p.Do(ctx, nil, func(context.Context) error { attempts++; return errors.New("refused") })
+			}()
+			synctest.Wait()
+			if attempts != 1 {
+				t.Fatalf("%d attempts before the backoff, want 1", attempts)
 			}
-		case <-time.After(5 * time.Second):
-			t.Fatal("Do did not return after cancel")
-		}
+			cancel()
+			err := <-done
+			if attempts != 1 || !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "after 1 attempt(s)") {
+				t.Fatalf("attempts=%d err=%v", attempts, err)
+			}
+		})
 	})
 }

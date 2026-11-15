@@ -101,6 +101,12 @@ $ curl -s -d '{"mappings":[{"controlledPropertyId":"sw1","baseLn":"GGIO","DoDaPa
 
 `call_count` is the number of MMS requests the search made.
 
+The body of either request is at most 1 MiB; a larger body is answered with
+`413` and code `invalid_input` before it is read further. `ln_pattern` is at
+most 256 bytes and a bulk request holds at most 10,000 mappings; beyond either
+the request is answered with `400`. `baseLn` matches every LN name that
+contains it, as in `find bulk`.
+
 ## Errors
 
 Errors are `{"error": "<message>", "code": "<code>"}`. The status and code
@@ -109,6 +115,7 @@ come from the same error classes as the CLI exit codes:
 | Status | `code` | Cause | CLI exit code |
 |--------|--------|-------|---------------|
 | `400` | `invalid_input` | missing or malformed parameter or body | `2`, `3` |
+| `413` | `invalid_input` | request body larger than 1 MiB | |
 | `403` | `rejected` | the device refused the request or denied access | `6`, `9` |
 | `404` | `not_found` | object, dataset, LD or RCB not found (including MMS *object-non-existent*) | `11` |
 | `405` | `method_not_allowed` | wrong HTTP method | |

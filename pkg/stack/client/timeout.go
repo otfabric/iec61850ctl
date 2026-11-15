@@ -202,7 +202,9 @@ func (t *timeoutConn) TriggerGI(ctx context.Context, ld, id string) error {
 }
 
 // SubscribeReport ties the subscription lifetime to ctx, so only base
-// cancellation is linked; no request deadline is applied.
+// cancellation is linked; no deadline is applied to the subscription. Each
+// RCB request of its setup is still bounded by the request timeout (go-mms
+// RequestTimeout).
 func (t *timeoutConn) SubscribeReport(ctx context.Context, rptID string, o iec61850.SubscribeReportOptions) (*iec61850.ReportSubscription, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -228,7 +230,8 @@ func (t *timeoutConn) ListFiles(ctx context.Context, pattern string) ([]iec61850
 }
 
 // DownloadFile may legitimately exceed a single request timeout, so only base
-// cancellation is linked.
+// cancellation is linked. Each FileOpen, FileRead and FileClose it sends is
+// still bounded by the request timeout (go-mms RequestTimeout).
 func (t *timeoutConn) DownloadFile(ctx context.Context, name string, w io.Writer) (*iec61850.FileEntry, error) {
 	ctx, cancel := t.bound(ctx, false)
 	defer cancel()

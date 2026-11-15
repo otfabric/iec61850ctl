@@ -217,7 +217,7 @@ For **buffered** RCBs, the nested `report` may also include BRCB runtime fields 
 Status values: `planned` | `operated` | `confirmed` | `operated-unconfirmed` | `confirmation-mismatch` | `failed`.  
 Non-zero exit: `failed`, `operated-unconfirmed`, `confirmation-mismatch`.
 
-Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[ST]`). `--test` / `--no-confirm` → status `operated` (not `operated-unconfirmed`). Best-effort `cleanup` after select-without-complete-operate is **not** a rollback. Without `--yes` (and without `--dry-run`) the command refuses before dial with exit `2` and prints no document. Optional `last_appl_error` appears only when the control-object reference matches the failed target.
+Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[ST]`). `--test` / `--no-confirm` → status `operated` (not `operated-unconfirmed`). Best-effort `cleanup` after select-without-complete-operate is **not** a rollback. The `cleanup` Cancel and the read of `last_appl_error` after a failed select or operate run for up to 2 s each, on a context of their own, so they are also sent when the journey ended by `--timeout` or Ctrl-C. A `float` value is confirmed at the attribute's precision: a FLOAT32 read-back must equal the value rounded to float32, a FLOAT64 read-back the value itself; NaN matches NaN and an infinity itself. Without `--yes` (and without `--dry-run`) the command refuses before dial with exit `2` and prints no document. Optional `last_appl_error` appears only when the control-object reference matches the failed target.
 
 ## `set object --format json`
 
@@ -232,7 +232,7 @@ Confirmation only via `--confirm-ref` (compact FC form allowed, e.g. `…stVal[S
 }
 ```
 
-`FC=CO` is rejected client-side before dial (`use control operate`). Without `--yes` the write is refused before dial with exit `2` and no document. Types are never inferred: `--type` is required (`bool|int|uint|float|enum|string`).
+`--verify` compares a `float` read-back as `--confirm-ref` does (at the attribute's precision). `FC=CO` is rejected client-side before dial (`use control operate`). Without `--yes` the write is refused before dial with exit `2` and no document. Types are never inferred: `--type` is required (`bool|int|uint|float|enum|string`).
 
 ## `subscribe report --format jsonl`
 

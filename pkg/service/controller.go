@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/otfabric/iec61850ctl/pkg/errs"
 
@@ -295,7 +296,24 @@ func cancelFromOperate(params iec61850.OperateParams) iec61850.CancelParams {
 	}
 }
 
+// cleanupTimeout bounds each step that follows a failed select or operate:
+// the Cancel of a selected control and the read of LastApplError. It is a
+// variable so that tests can lower it.
+var cleanupTimeout = 2 * time.Second
+
+// cleanupContext returns the context of a step after a failed select or
+// operate. It keeps the values of ctx but not its end, so that the step is
+// still sent when the journey failed because ctx ended (its deadline or
+// Ctrl-C), and it ends after cleanupTimeout.
+func cleanupContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(ctx), cleanupTimeout)
+}
+
+// tryCancel sends Cancel for a selected control whose operate failed, on a
+// context of its own (cleanupContext).
 func (c *Controller) tryCancel(ctx context.Context, ref iec61850.Ref, params iec61850.CancelParams) *domain.ControlCleanup {
+	ctx, cancel := cleanupContext(ctx)
+	defer cancel()
 	cleanup := &domain.ControlCleanup{Operation: "cancel", Attempted: true}
 	if err := c.conn.Cancel(ctx, ref, params); err != nil {
 		cleanup.OK = false
@@ -306,7 +324,11 @@ func (c *Controller) tryCancel(ctx context.Context, ref iec61850.Ref, params iec
 	return cleanup
 }
 
+// lookupLastApplError reads LastApplError after a failed select or operate,
+// on a context of its own (cleanupContext).
 func (c *Controller) lookupLastApplError(ctx context.Context, ref iec61850.Ref, object string) *domain.LastApplicationError {
+	ctx, cancel := cleanupContext(ctx)
+	defer cancel()
 	lae, err := c.conn.ReadLastApplError(ctx, ref)
 	if err != nil || lae == nil {
 		return nil

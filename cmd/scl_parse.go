@@ -43,13 +43,13 @@ func runSclParse(cmd *cobra.Command, args []string) error {
 
 	doc, err := scl.Parse(f)
 	if err != nil {
-		return errs.Mark(fmt.Errorf("parse SCL: %w", err), errs.ErrInvalidInput)
+		return errs.Mark(fmt.Errorf("parse SCL: %w", err), errs.ErrInvalidConfig)
 	}
 
 	if sclParseFlatten {
 		entries, err := doc.Flatten()
 		if err != nil {
-			return fmt.Errorf("flatten: %w", err)
+			return errs.Mark(fmt.Errorf("flatten: %w", err), errs.ErrInvalidConfig)
 		}
 		for _, e := range entries {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), scl.FormatEntry(e, sclParseDetail))
@@ -57,5 +57,8 @@ func runSclParse(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return doc.WriteTree(cmd.OutOrStdout(), sclParseDetail)
+	if err := doc.WriteTree(cmd.OutOrStdout(), sclParseDetail); err != nil {
+		return errs.Mark(fmt.Errorf("tree: %w", err), errs.ErrInvalidConfig)
+	}
+	return nil
 }

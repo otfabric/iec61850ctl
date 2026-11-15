@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -43,7 +44,57 @@ func seedValuesFromFile(srv *iec61850.Server, path string) error {
 	if err := json.Unmarshal(data, &ied); err != nil {
 		return fmt.Errorf("parse values JSON: %w", err)
 	}
+	if err := checkValueRanges(&ied); err != nil {
+		return err
+	}
 	SeedValues(srv, &ied)
+	return nil
+}
+
+// checkValueRanges refuses a values file in which the milliseconds or the
+// time quality of a UTC time, or the number of a bit string, is outside
+// the range of its field (0..65535, 0..255, 0..65535), as invalid
+// configuration (exit 3). SeedValues skips such a leaf.
+func checkValueRanges(ied *domain.IED) error {
+	for i := range ied.Leaves {
+		leaf := &ied.Leaves[i]
+		if leaf.Value == nil {
+			continue
+		}
+		var err error
+		switch leaf.Value.Type {
+		case domain.TypeUtcTime:
+			if m, ok := leaf.Value.Raw.(map[string]any); ok {
+				if err = inRange("milliseconds", m["milliseconds"], math.MaxUint16); err == nil {
+					err = inRange("time_quality", m["time_quality"], math.MaxUint8)
+				}
+			}
+		case domain.TypeBitString:
+			err = inRange("bit string", leaf.Value.Raw, math.MaxUint16)
+		default:
+		}
+		if err != nil {
+			return errs.Mark(fmt.Errorf("values file: leaf %s: %w", leaf.Ref, err), errs.ErrInvalidConfig)
+		}
+	}
+	return nil
+}
+
+// inRange reports an error when raw is a number outside 0..maxValue; any
+// other raw value (absent, a string) is not checked here.
+func inRange(field string, raw any, maxValue uint64) error {
+	var f float64
+	switch n := raw.(type) {
+	case float64:
+		f = n
+	case int64:
+		f = float64(n)
+	default:
+		return nil
+	}
+	if f < 0 || f > float64(maxValue) {
+		return fmt.Errorf("%s %v outside 0..%d", field, raw, maxValue)
+	}
 	return nil
 }
 
@@ -52,7 +103,8 @@ func seedValuesFromFile(srv *iec61850.Server, path string) error {
 // The LD of a ref is an MMS domain of the model or an LDevice@inst, which
 // maps to its domain ("InteropLD" → "InteropIEDInteropLD"), so a values
 // file keyed by LD instance seeds a server with IEC 61850-8-1 domain names.
-// Skips leaves without values, unsupported types, or keys that cannot be mapped.
+// Skips leaves without values, unsupported types, values outside the range
+// of their field, or keys that cannot be mapped.
 func SeedValues(srv *iec61850.Server, ied *domain.IED) {
 	if srv == nil || ied == nil {
 		return
@@ -210,6 +262,10 @@ func parseUtcTime(raw any) (time.Time, uint8, bool) {
 	case utcTimeValue:
 		return utcTimeFromParts(v.Seconds, v.Milliseconds, v.TimeQuality)
 	case map[string]any:
+		if inRange("milliseconds", v["milliseconds"], math.MaxUint16) != nil ||
+			inRange("time_quality", v["time_quality"], math.MaxUint8) != nil {
+			return time.Time{}, 0, false
+		}
 		sec, _ := asInt64(v["seconds"])
 		ms, _ := asUint64(v["milliseconds"])
 		tq, _ := asUint64(v["time_quality"])
@@ -240,9 +296,15 @@ func parseBitString(raw any) ([]byte, int, bool) {
 		}
 		return []byte{byte(n >> 8), byte(n)}, 16, true
 	case float64:
+		if inRange("bit string", v, math.MaxUint16) != nil {
+			return nil, 0, false
+		}
 		n := uint16(v)
 		return []byte{byte(n >> 8), byte(n)}, 16, true
 	case int64:
+		if inRange("bit string", v, math.MaxUint16) != nil {
+			return nil, 0, false
+		}
 		n := uint16(v)
 		return []byte{byte(n >> 8), byte(n)}, 16, true
 	default:

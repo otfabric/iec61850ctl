@@ -320,7 +320,7 @@ SCL is the root element of IEC 61850 System Configuration Language.
 func Parse(r io.Reader) (*SCL, error)
 ```
 
-Parse reads an SCL/CID document from r.
+Parse reads an SCL/CID document from r. It reads at most 1 GiB of it: a longer document is refused with an error.
 
 #### func (SCL) Flatten
 
@@ -328,7 +328,7 @@ Parse reads an SCL/CID document from r.
 func (s *SCL) Flatten() ([]FlattenEntry, error)
 ```
 
-Flatten walks the SCL and produces flattened LD/LN/DO/DA entries with fc and type.
+Flatten walks the SCL and produces flattened LD/LN/DO/DA entries with fc and type. It returns an error, and no entries, when the expansion of the type templates goes beyond 33,554,432 nodes (DO, SDO, DA and BDA instances, a path counting one more for each 256 bytes) or 64 nested type references.
 
 #### func (SCL) WriteTree
 
@@ -336,7 +336,7 @@ Flatten walks the SCL and produces flattened LD/LN/DO/DA entries with fc and typ
 func (s *SCL) WriteTree(w io.Writer, detailed bool) error
 ```
 
-WriteTree outputs the SCL in a tree format to w. If detailed is false, leaf lines are "path: value" only. If detailed is true, leaf lines include \[FC], \[type:BType], and \[enum:...].
+WriteTree outputs the SCL in a tree format to w. If detailed is false, leaf lines are "path: value" only. If detailed is true, leaf lines include \[FC], \[type:BType], and \[enum:...]. When the expansion of the type templates goes beyond the bounds of Flatten, it stops there and returns an error; what was written until then stays written.
 
 ### type SDI
 

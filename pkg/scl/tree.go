@@ -21,6 +21,9 @@ const (
 
 // WriteTree outputs the SCL in a tree format to w. If detailed is false, leaf lines are "path: value" only.
 // If detailed is true, leaf lines include [FC], [type:BType], and [enum:...].
+// When the expansion of the type templates goes beyond the bounds of
+// Flatten, it stops there and returns an error; what was written until then
+// stays written.
 func (s *SCL) WriteTree(w io.Writer, detailed bool) error {
 	lnTypes := make(map[string]*LNodeType)
 	for i := range s.DataTypeTemplates.LNodeType {
@@ -36,6 +39,7 @@ func (s *SCL) WriteTree(w io.Writer, detailed bool) error {
 	}
 	enumTypes := buildEnumTypes(s.DataTypeTemplates.EnumType)
 
+	exp := newExpansion()
 	for i := range s.IED {
 		ied := &s.IED[i]
 		for ap := range ied.AccessPoint {
@@ -68,14 +72,20 @@ func (s *SCL) WriteTree(w io.Writer, detailed bool) error {
 				if ln0 != nil {
 					lnName := buildLNName(ln0.Prefix, ln0.LnClass, ln0.Inst)
 					lastLN := len(lns) == 0
-					writeLNNode(w, lnName, "LLN0", ln0.LnType, ln0.DOI, "", ln0.DataSet, ln0.ReportControl, lastLN, lnTypes, doTypes, daTypes, enumTypes, detailed)
+					writeLNNode(w, lnName, "LLN0", ln0.LnType, ln0.DOI, "", ln0.DataSet, ln0.ReportControl, lastLN, lnTypes, doTypes, daTypes, enumTypes, detailed, exp)
+					if exp.stopped() {
+						return exp.err
+					}
 				}
 
 				// Other LNs
 				for idx, ln := range lns {
 					lnName := buildLNName(ln.Prefix, ln.LnClass, ln.Inst)
 					lastLN := (ln0 == nil && idx == len(lns)-1) || (ln0 != nil && idx == len(lns)-1)
-					writeLNNode(w, lnName, ln.LnClass, ln.LnType, ln.DOI, ln.Desc, nil, nil, lastLN, lnTypes, doTypes, daTypes, enumTypes, detailed)
+					writeLNNode(w, lnName, ln.LnClass, ln.LnType, ln.DOI, ln.Desc, nil, nil, lastLN, lnTypes, doTypes, daTypes, enumTypes, detailed, exp)
+					if exp.stopped() {
+						return exp.err
+					}
 				}
 			}
 		}
@@ -83,7 +93,7 @@ func (s *SCL) WriteTree(w io.Writer, detailed bool) error {
 	return nil
 }
 
-func writeLNNode(w io.Writer, lnName, lnClass, lnType string, doiList []DOI, desc string, dataSets []DataSet, reports []ReportControl, isLast bool, lnTypes map[string]*LNodeType, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool) {
+func writeLNNode(w io.Writer, lnName, lnClass, lnType string, doiList []DOI, desc string, dataSets []DataSet, reports []ReportControl, isLast bool, lnTypes map[string]*LNodeType, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, exp *expansion) {
 	prefix := treeBranch
 	if isLast && len(dataSets) == 0 && len(reports) == 0 {
 		prefix = treeLast
@@ -136,7 +146,10 @@ func writeLNNode(w io.Writer, lnName, lnClass, lnType string, doiList []DOI, des
 				doDesc = " (" + doi.Desc + ")"
 			}
 			lastDO := i == len(doNames)-1 && len(dataSets) == 0 && len(reports) == 0
-			writeDONode(w, innerPrefix, doName, doDesc, doType, doi, nil, lastDO, doTypes, daTypes, enumTypes, detailed)
+			writeDONode(w, innerPrefix, lnName, doName, doDesc, doType, doi, nil, lastDO, doTypes, daTypes, enumTypes, detailed, exp)
+			if exp.stopped() {
+				return
+			}
 		}
 	}
 
@@ -176,7 +189,10 @@ func writeLNNode(w io.Writer, lnName, lnClass, lnType string, doiList []DOI, des
 	}
 }
 
-func writeDONode(w io.Writer, prefix, doName, doDesc string, doType *DOType, doi *DOI, sdiPath []string, isLast bool, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool) {
+func writeDONode(w io.Writer, prefix, lnName, doName, doDesc string, doType *DOType, doi *DOI, sdiPath []string, isLast bool, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, exp *expansion) {
+	if !exp.take(lnName, doName, "") {
+		return
+	}
 	br := treeBranch
 	if isLast {
 		br = treeLast
@@ -190,7 +206,11 @@ func writeDONode(w io.Writer, prefix, doName, doDesc string, doType *DOType, doi
 
 	// Leaf DAs
 	var leaves []string
-	collectDOLeaves(doType, doi, sdiPath, "", doTypes, daTypes, enumTypes, detailed, typeStack{}, &leaves)
+	ref := lnName + "." + doName
+	collectDOLeaves(ref, doType, doi, sdiPath, "", doTypes, daTypes, enumTypes, detailed, typeStack{}, exp, &leaves)
+	if exp.stopped() {
+		return
+	}
 
 	subPrefix := childPrefix
 	for i, line := range leaves {
@@ -204,7 +224,11 @@ func writeDONode(w io.Writer, prefix, doName, doDesc string, doType *DOType, doi
 }
 
 // collectDOLeaves appends leaf lines (format depends on detailed) for all leaf attributes under a DO.
-func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix string, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, stack typeStack, out *[]string) {
+// ref (LN.DO) only names the place in the error of a stopped expansion.
+func collectDOLeaves(ref string, doType *DOType, doi *DOI, sdiPath []string, pathPrefix string, doTypes map[string]*DOType, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, stack typeStack, exp *expansion, out *[]string) {
+	if !exp.enter(stack, ref, pathPrefix) {
+		return
+	}
 	if !stack.push("DO:" + doType.ID) {
 		return // recursive DOType reference
 	}
@@ -216,6 +240,9 @@ func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix stri
 			fc = inferFC(da.BType)
 		}
 		path := pathPrefix + da.Name
+		if !exp.take(ref, path, "") {
+			return
+		}
 		if da.Type != "" && daTypes[da.Type] != nil {
 			structPath := pathPrefix + da.Name + "."
 			structSDI := appendPath(sdiPath, da.Name)
@@ -223,7 +250,7 @@ func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix stri
 			if parentFC == "" {
 				parentFC = fc
 			}
-			collectDATypeLeaves(daTypes[da.Type], doi, structSDI, structPath, parentFC, daTypes, enumTypes, detailed, stack, out)
+			collectDATypeLeaves(ref, daTypes[da.Type], doi, structSDI, structPath, parentFC, daTypes, enumTypes, detailed, stack, exp, out)
 			continue
 		}
 		val := getDAIValue(doi, sdiPath, da.Name)
@@ -239,6 +266,9 @@ func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix stri
 			continue
 		}
 		subPath := pathPrefix + sdo.Name + "."
+		if !exp.take(ref, subPath, "") {
+			return
+		}
 		var subDOI *DOI
 		if doi != nil {
 			for j := range doi.SDI {
@@ -250,11 +280,14 @@ func collectDOLeaves(doType *DOType, doi *DOI, sdiPath []string, pathPrefix stri
 				}
 			}
 		}
-		collectDOLeaves(sdoType, subDOI, nil, subPath, doTypes, daTypes, enumTypes, detailed, stack, out)
+		collectDOLeaves(ref, sdoType, subDOI, nil, subPath, doTypes, daTypes, enumTypes, detailed, stack, exp, out)
 	}
 }
 
-func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix string, parentFC string, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, stack typeStack, out *[]string) {
+func collectDATypeLeaves(ref string, dt *DAType, doi *DOI, sdiPath []string, pathPrefix string, parentFC string, daTypes map[string]*DAType, enumTypes map[string]string, detailed bool, stack typeStack, exp *expansion, out *[]string) {
+	if !exp.enter(stack, ref, pathPrefix) {
+		return
+	}
 	if !stack.push("DA:" + dt.ID) {
 		return // recursive DAType reference
 	}
@@ -262,6 +295,9 @@ func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix stri
 	for i := range dt.BDA {
 		bda := &dt.BDA[i]
 		path := pathPrefix + bda.Name
+		if !exp.take(ref, path, "") {
+			return
+		}
 		fc := bda.Fc
 		if fc == "" {
 			fc = parentFC
@@ -270,7 +306,7 @@ func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix stri
 			fc = inferFC(bda.BType)
 		}
 		if bda.Type != "" && daTypes[bda.Type] != nil {
-			collectDATypeLeaves(daTypes[bda.Type], doi, appendPath(sdiPath, bda.Name), path+".", fc, daTypes, enumTypes, detailed, stack, out)
+			collectDATypeLeaves(ref, daTypes[bda.Type], doi, appendPath(sdiPath, bda.Name), path+".", fc, daTypes, enumTypes, detailed, stack, exp, out)
 			continue
 		}
 		val := getDAIValue(doi, sdiPath, bda.Name)
@@ -282,6 +318,9 @@ func collectDATypeLeaves(dt *DAType, doi *DOI, sdiPath []string, pathPrefix stri
 	for i := range dt.DA {
 		dta := &dt.DA[i]
 		path := pathPrefix + dta.Name
+		if !exp.take(ref, path, "") {
+			return
+		}
 		fc := dta.Fc
 		if fc == "" {
 			fc = parentFC

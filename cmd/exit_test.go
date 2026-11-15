@@ -6,6 +6,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -74,10 +77,13 @@ func TestExitCodes(t *testing.T) {
 		{"journal bad from", []string{"get", "journal", "--domain", "InteropLD", "--journal", "j", "--from", "yesterday"}, true, errs.ExitUsage, "--from"},
 		{"journal bad to", []string{"get", "journal", "--domain", "InteropLD", "--journal", "j", "--from", "0", "--to", "later"}, true, errs.ExitUsage, "--to"},
 		{"discover bad spec", []string{"discover", "--host", "not-an-ip"}, false, errs.ExitUsage, "parse host"},
-		{"scl parse bad xml", []string{"scl", "parse", "--input", badJSON}, false, errs.ExitUsage, "parse SCL"},
 		{"generate-config bad json", []string{"server", "generate-config", "-i", badJSON, "-o", filepath.Join(tmp, "x.cfg")}, false, errs.ExitUsage, "decode IED JSON"},
 		{"find bulk bad json", []string{"find", "bulk", "--mapping", badJSON, "--output", filepath.Join(tmp, "o.json")}, false, errs.ExitUsage, "parse mapping"},
 		{"server start bad port", []string{"server", "start", "--scl", fixture("interop.icd"), "--port", "-5"}, false, errs.ExitUsage, "--port"},
+
+		// Invalid SCL, as for goose list --scl, sv and server start.
+		{"scl parse bad xml", []string{"scl", "parse", "--input", badJSON}, false, errs.ExitInvalidInput, "parse SCL"},
+		{"scl convert bad xml", []string{"scl", "convert", "--input", badJSON, "--output", filepath.Join(tmp, "bad.csv")}, false, errs.ExitInvalidInput, "parse SCL"},
 
 		// Not found: local files and server objects.
 		{"scl parse missing", []string{"scl", "parse", "--input", "/nonexistent.scd"}, false, errs.ExitNotFound, "no such file"},
@@ -107,6 +113,54 @@ func TestExitCodes(t *testing.T) {
 				t.Fatalf("stderr %q lacks %q", r.stderr, tc.stderr)
 			}
 		})
+	}
+}
+
+// TestRootHelpExitCodes: the exit codes of the root help are those of
+// docs/exitcodes.md and of pkg/errs, each once.
+func TestRootHelpExitCodes(t *testing.T) {
+	r := runCLI(t, "--help")
+	expectCode(t, r, errs.ExitOK)
+	_, block, ok := strings.Cut(strings.ReplaceAll(r.stdout, "\r\n", "\n"), "Exit codes")
+	if !ok {
+		t.Fatalf("root help has no exit-code table:\n%s", r.stdout)
+	}
+	_, block, _ = strings.Cut(block, "\n") // the heading line
+	block, _, _ = strings.Cut(block, "\n\n")
+	var help []int
+	for line := range strings.SplitSeq(block, "\n") {
+		for _, field := range regexp.MustCompile(`\s{2,}`).Split(strings.TrimSpace(line), -1) {
+			code, meaning, _ := strings.Cut(field, " ")
+			n, err := strconv.Atoi(code)
+			if err != nil || meaning == "" {
+				t.Fatalf("help line %q: field %q is not \"<code> <meaning>\"", line, field)
+			}
+			help = append(help, n)
+		}
+	}
+	slices.Sort(help)
+
+	doc, err := os.ReadFile(filepath.Join(repoRoot(), "docs", "exitcodes.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	table, _, _ := strings.Cut(strings.ReplaceAll(string(doc), "\r\n", "\n"), "\n## ")
+	var documented []int
+	for _, m := range regexp.MustCompile("(?m)^\\| `(\\d+)` \\|").FindAllStringSubmatch(table, -1) {
+		n, _ := strconv.Atoi(m[1])
+		documented = append(documented, n)
+	}
+	slices.Sort(documented)
+
+	constants := []int{
+		errs.ExitOK, errs.ExitUsage, errs.ExitInvalidInput, errs.ExitConnection, errs.ExitTimeout,
+		errs.ExitRejected, errs.ExitUnsupported, errs.ExitPermission, errs.ExitFailure,
+		errs.ExitNotFound, errs.ExitMismatch, errs.ExitSafety, errs.ExitInterrupted,
+	}
+	slices.Sort(constants)
+
+	if !slices.Equal(help, documented) || !slices.Equal(help, constants) {
+		t.Fatalf("exit codes: root help %v, docs/exitcodes.md %v, pkg/errs %v", help, documented, constants)
 	}
 }
 
@@ -157,5 +211,35 @@ func TestFormatEnv(t *testing.T) {
 	t.Setenv("IEC61850CTL_FORMAT", "text")
 	if r := runCLI(t, args...); r.code != errs.ExitOK {
 		t.Fatalf("FORMAT does not win: exit %d (%s)", r.code, r.stderr)
+	}
+}
+
+// TestResvTmsRange: --resv-tms is an INT16 of seconds, -1..32767; a value
+// outside it exits 2 before the device is contacted, a value inside it
+// reaches the dial (port 1: exit 4, or 5 where a refused connect is slow).
+func TestResvTmsRange(t *testing.T) {
+	for _, c := range []struct {
+		value string
+		ok    bool
+	}{
+		{"-2", false},
+		{"-1", true},
+		{"0", true},
+		{"32767", true},
+		{"32768", false},
+		{"4294967297", false},
+		{"-4294967297", false},
+	} {
+		r := runCLI(t, "--host", "127.0.0.1", "--port", "1", "--connect-timeout", "200ms",
+			"subscribe", "report", "--ld", "a", "--ln", "b", "--report", "c", "--type", "BR", "--resv-tms", c.value)
+		if c.ok {
+			if r.code != errs.ExitConnection && r.code != errs.ExitTimeout {
+				t.Errorf("--resv-tms %s: exit=%d, want the dial's %d or %d (stderr %q)", c.value, r.code, errs.ExitConnection, errs.ExitTimeout, r.stderr)
+			}
+			continue
+		}
+		if r.code != errs.ExitUsage || !strings.Contains(r.stderr, "out of range -1..32767") {
+			t.Errorf("--resv-tms %s: exit=%d want %d naming the range (stderr %q)", c.value, r.code, errs.ExitUsage, r.stderr)
+		}
 	}
 }

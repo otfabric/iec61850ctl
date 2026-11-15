@@ -30,7 +30,7 @@ Stop with Ctrl+C.
 | `--files-dir` | Directory served read-only over MMS file services (`list files`, `get file`); not recursive, delete/rename are denied |
 | `--instance-domain-names` | Name each MMS domain by its LDevice@inst alone (`InteropLD`), as before v0.9.0. Off by default: domains follow IEC 61850-8-1, LDevice@ldName if set, else the IED name followed by the LD inst (`InteropIEDInteropLD`), like other IEC 61850 servers; GoCB, dataset and SVCB references use the same domain. `--values` files keyed by LD inst still apply |
 | `--allow-readonly-fc-writes` | Accept client writes to status and measured values (FC `ST`, `MX`, `SG`, `SR`, `OR`, `EX`). Off by default: IEC 61850-7-2 makes them read-only to clients, and the server answers such a write with object-access-denied. For simulators and test fixtures only |
-| `--max-connections` | Reserved for future use (default `5`; not passed to the server). The server accepts at most 1024 connections at once, the go-iec61850 default; a connection beyond that is closed at once |
+| `--max-connections` | MMS connections served at once (default `5`; `0` or less also means 5). A connection beyond it is closed at once, before the association. Before v0.14.0 the flag was not applied and the server served up to 1024 connections |
 | `--ready-json` | After bind, emit one readiness JSON line on **stdout** |
 | `--fixture-id` | Fixture revision string included in the readiness event (e.g. `iec61850-v3`) |
 
@@ -99,7 +99,7 @@ iec61850ctl server start --scl device.cid --values device.json --port 102
 ```
 
 - **SCL** defines the model structure (`NewServerModelFromSCL`).
-- **JSON** best-effort seeds `ValueStore` keys of the form `LD/LN$FC$path`.
+- **JSON** best-effort seeds `ValueStore` keys of the form `LD/LN$FC$path`. A leaf whose UTC time has milliseconds outside 0..65535 or a time quality outside 0..255, or whose bit string number is outside 0..65535, refuses the whole file: `server start` exits 3 before it listens.
 
 ### Serialized JSON shape
 
@@ -180,7 +180,7 @@ publish` or `sv publish` (see [GOOSE.md](GOOSE.md) and [SV.md](SV.md)).
 
 ## Limits
 
-`server start` uses the defaults of go-iec61850 and go-mms; no flag changes them.
+`server start` uses the defaults of go-iec61850 and go-mms; only the number of connections is set by a flag (`--max-connections`, default 5).
 
 - A client write of a non-zero IntgPd below 100 ms to a BRCB, URCB or LCB is answered with object-value-invalid. IntgPd 0 is accepted; the periods in the SCL file are not checked.
 - An SCL file larger than 1 GiB, nested deeper than 1024 elements, with more than 64 type references on one path (DOType, SDO DOType, DAType) or with more than 33,554,432 expanded DO, SDO, DA and BDA instances is refused at start.

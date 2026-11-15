@@ -353,7 +353,7 @@ The API has no authentication or TLS and `--listen` defaults to `:8080` (all int
 | `--port` | `IEC61850_PORT` | MMS port (default `102`) |
 | `--ied-name` | `IEC61850_IED_NAME` | IED name for dial (domain prefix) and `server start` SCL selection |
 | `--connect-timeout` | — | Bound on each connect attempt: TCP + COTP + MMS association (default `10s`) |
-| `--timeout` | — | Bound on each MMS request (default `10s`) |
+| `--timeout` | — | Bound on each MMS request, also each one inside a download or subscription (default `10s`; without the flag, `get file` uses 60s and `list files`, `get journal`, `subscribe report` 30s) |
 | `--retry` | — | Connect retries with exponential backoff and jitter (default `0`) |
 | `--retry-max-delay` | — | Cap on the delay between connect retries (default `5s`) |
 | `--log-level` | — | Structured logs on stderr: `debug`, `info`, `warn` (default), `error`, `off` |

@@ -9,6 +9,8 @@ Authoritative machine-facing contract for scripting `iec61850ctl`: the MMS clien
 | **stdout** | Command results only (text, JSON, or JSON Lines) |
 | **stderr** | Connection status, warnings, diagnostics, structured logs (`--log-level`, `--log-format text|json`) |
 
+Text from a device, a GOOSE or SV frame or a file reaches both streams with its terminal controls escaped: a C0 control other than newline and tab, DEL and a C1 control as `\u00XX`, a byte that is not UTF-8 as `\xNN`. JSON stays valid and decodes to the device's strings. `get file` writes the file's bytes unchanged ([SECURITY.md](../SECURITY.md#text-from-devices-and-frames)).
+
 - Successful commands exit `0`.
 - Failures exit with a code that classifies the cause (stable contract):
 
@@ -109,7 +111,7 @@ Client commands open a session through a shared helper that:
 
 1. Resolves host/port/IED name and the ISO addressing flags (`--local-tsel`, `--remote-tsel`, `--ssel`, `--psel`, `--ap-title`, `--ae-qualifier`, `--tpdu-size`); an invalid value exits `2` before anything is dialled.
 2. Writes the connection target to stderr.
-3. Dials with `DialOptions.IEDName`, bounding each attempt by `--connect-timeout` and retrying `--retry` times with exponential backoff and jitter (capped by `--retry-max-delay`). Every request is bounded by `--timeout`.
+3. Dials with `DialOptions.IEDName`, bounding each attempt by `--connect-timeout` and retrying `--retry` times with exponential backoff and jitter (capped by `--retry-max-delay`). Every request is bounded by `--timeout`, also each request inside `get file`, `list files`, `get journal` and `subscribe report`; without `--timeout`, `get file` uses 60s and the other three 30s, and a given `--timeout` replaces those defaults.
 4. Defers bounded teardown: `Close` (≈2s) then `Abort` (≈2s) on failure/timeout.
 
 Automation should treat hang-free exit as part of the contract, especially against IEC61850bean.

@@ -44,12 +44,12 @@ func runSclConvert(cmd *cobra.Command, args []string) error {
 
 	doc, err := scl.Parse(f)
 	if err != nil {
-		return errs.Mark(fmt.Errorf("parse SCL: %w", err), errs.ErrInvalidInput)
+		return errs.Mark(fmt.Errorf("parse SCL: %w", err), errs.ErrInvalidConfig)
 	}
 
 	entries, err := doc.Flatten()
 	if err != nil {
-		return fmt.Errorf("flatten: %w", err)
+		return errs.Mark(fmt.Errorf("flatten: %w", err), errs.ErrInvalidConfig)
 	}
 
 	out, err := os.Create(sclConvertOutput)

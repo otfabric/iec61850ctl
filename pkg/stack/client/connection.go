@@ -40,7 +40,10 @@ type ConnectionInput struct {
 
 	// RequestTimeout bounds every MMS request whose context has no deadline.
 	// Zero uses DefaultRequestTimeout; a negative value disables the bound.
-	// Report subscriptions and file downloads are never bounded by it.
+	// A report subscription and a file download as a whole are not bounded
+	// by it, but each confirmed request they send is (the RCB writes of the
+	// subscription setup, every FileOpen, FileRead and FileClose): it is
+	// also passed to go-mms as DialOptions.MMS.RequestTimeout.
 	RequestTimeout time.Duration
 
 	// IEDName is the optional IED name used for MMS domain normalisation.
@@ -129,6 +132,11 @@ func newConnection(ctx context.Context, in ConnectionInput, dial dialFunc) (serv
 
 	addr := in.Addr()
 	opts := iec61850.DialOptions{IEDName: in.IEDName, Logger: in.Logger}
+	if requestTimeout > 0 {
+		// Bounds each confirmed request, also those inside DownloadFile and
+		// SubscribeReport, which timeoutConn leaves without a deadline.
+		opts.MMS.RequestTimeout = requestTimeout
+	}
 	in.Addressing.apply(&opts)
 	var c *iec61850.Client
 	attempt := 0

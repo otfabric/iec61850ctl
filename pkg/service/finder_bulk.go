@@ -7,7 +7,6 @@ package service
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 )
@@ -53,8 +52,10 @@ func (f *Finder) BulkFind(mapping []BulkMappingEntry) (*BulkFindResult, error) {
 
 	// wantMap: (baseLn, doName) -> list of (controlledPropertyId, daName)
 	wantMap := make(map[wantKey][]wantEntry)
-	// lnRegexMap: baseLn -> regex that matches LN names containing baseLn (e.g. MMXU matches FMMXU1)
-	lnRegexMap := make(map[string]*regexp.Regexp)
+	// baseLns: the distinct baseLn values; an LN matches a baseLn its name
+	// contains (e.g. MMXU matches FMMXU1). A substring test needs no
+	// compiled pattern per baseLn.
+	baseLns := make(map[string]bool)
 	// ordered controlledPropertyIds for stable output (first occurrence order)
 	ctrlIdOrder := make([]string, 0)
 	seenCtrl := make(map[string]bool)
@@ -63,9 +64,7 @@ func (f *Finder) BulkFind(mapping []BulkMappingEntry) (*BulkFindResult, error) {
 		doName, daName := parseDoDaPath(m.DoDaPath)
 		k := wantKey{baseLn: m.BaseLn, doName: doName}
 		wantMap[k] = append(wantMap[k], wantEntry{controlledPropertyId: m.ControlledPropertyId, daName: daName})
-		if lnRegexMap[m.BaseLn] == nil {
-			lnRegexMap[m.BaseLn] = regexp.MustCompile(".*" + regexp.QuoteMeta(m.BaseLn) + ".*")
-		}
+		baseLns[m.BaseLn] = true
 		if !seenCtrl[m.ControlledPropertyId] {
 			seenCtrl[m.ControlledPropertyId] = true
 			ctrlIdOrder = append(ctrlIdOrder, m.ControlledPropertyId)
@@ -95,8 +94,8 @@ func (f *Finder) BulkFind(mapping []BulkMappingEntry) (*BulkFindResult, error) {
 		for _, lnName := range lnNames {
 			// Which baseLn patterns does this LN match?
 			var matchedBaseLns []string
-			for baseLn, re := range lnRegexMap {
-				if re.MatchString(lnName) {
+			for baseLn := range baseLns {
+				if strings.Contains(lnName, baseLn) {
 					matchedBaseLns = append(matchedBaseLns, baseLn)
 				}
 			}

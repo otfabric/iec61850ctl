@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/otfabric/go-mms"
 
@@ -81,6 +82,39 @@ func TestAddressingFlagsInvalid(t *testing.T) {
 		}
 		if in.Host != "" || strings.Contains(r.stderr, "Connecting to") {
 			t.Errorf("%v: connected despite invalid addressing", args)
+		}
+	}
+}
+
+// TestRequestTimeoutPrecedence: a command's own request timeout is its
+// default; a --timeout given on the command line bounds each request
+// instead (docs/AUTOMATION.md: every request is bounded by --timeout).
+func TestRequestTimeoutPrecedence(t *testing.T) {
+	commands := []struct {
+		args []string
+		def  time.Duration
+	}{
+		{[]string{"list", "lds"}, client.DefaultRequestTimeout},
+		{[]string{"get", "file", "--name", "f"}, 60 * time.Second},
+		{[]string{"list", "files"}, 30 * time.Second},
+		{[]string{"get", "journal", "--domain", "LD", "--journal", "J", "--from", "0"}, 30 * time.Second},
+		{[]string{"subscribe", "report", "--ld", "LD", "--ln", "LLN0", "--report", "r", "--type", "RP"}, 30 * time.Second},
+	}
+	for _, c := range commands {
+		for _, tc := range []struct {
+			flags []string
+			want  time.Duration
+		}{
+			{nil, c.def},
+			{[]string{"--timeout", "0"}, c.def},
+			{[]string{"--timeout", "1ns"}, time.Nanosecond},
+			{[]string{"--timeout", "300ms"}, 300 * time.Millisecond},
+			{[]string{"--timeout", "2m"}, 2 * time.Minute},
+		} {
+			in, r := captureInput(t, append(tc.flags, c.args...)...)
+			if in.RequestTimeout != tc.want {
+				t.Errorf("%v %v: RequestTimeout %v, want %v (stderr %q)", tc.flags, c.args, in.RequestTimeout, tc.want, r.stderr)
+			}
 		}
 	}
 }

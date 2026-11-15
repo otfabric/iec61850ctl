@@ -140,14 +140,7 @@ func ScalarMatchesMMS(want domain.ScalarValue, got *mms.Value) bool {
 		return ok2 && i >= 0 && uint64(i) == want.Uint
 	case domain.ScalarFloat:
 		f, ok := got.Float64()
-		if !ok {
-			return false
-		}
-		diff := f - want.Float
-		if diff < 0 {
-			diff = -diff
-		}
-		return diff < 1e-6
+		return ok && floatMatches(want.Float, f, got.FloatWidth())
 	case domain.ScalarString:
 		if s, ok := got.VisibleString(); ok {
 			return s == want.String
@@ -159,6 +152,21 @@ func ScalarMatchesMMS(want domain.ScalarValue, got *mms.Value) bool {
 	default:
 		return false
 	}
+}
+
+// floatMatches reports whether a float read back with the given MMS width
+// (32 or 64 bits; 0 for a value without one, encoded as 32 bits) is the
+// requested value at the attribute's precision: a FLOAT32 read-back equals
+// the request rounded to float32, a FLOAT64 read-back equals it exactly.
+// NaN matches NaN, and each infinity matches itself.
+func floatMatches(want, got float64, width int) bool {
+	if math.IsNaN(want) || math.IsNaN(got) {
+		return math.IsNaN(want) && math.IsNaN(got)
+	}
+	if width == 64 {
+		return got == want
+	}
+	return float32(got) == float32(want)
 }
 
 // ScalarFromIECValue projects an iec61850.Value to a JSON-native any for confirmation.
