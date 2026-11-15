@@ -5,6 +5,7 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -30,7 +31,7 @@ var (
 	subscribeReportFormat        string
 	subscribeReportPurgeBuf      bool
 	subscribeReportEntryID       string
-	subscribeReportResvTms       int
+	subscribeReportResvTms       int64 // int64: pflag truncates an int flag to 32 bits on 32-bit platforms
 	subscribeReportYes           bool
 )
 
@@ -76,7 +77,7 @@ func init() {
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportPurgeBuf, "purge-buf", false, "BRCB: purge buffer before enable (requires --yes)")
 	subscribeReportCmd.Flags().BoolVar(&subscribeReportYes, "yes", false, "confirm that --purge-buf may discard the BRCB buffer on the device (required with --purge-buf)")
 	subscribeReportCmd.Flags().StringVar(&subscribeReportEntryID, "entry-id", "", "BRCB: resume EntryID as hex octets")
-	subscribeReportCmd.Flags().IntVar(&subscribeReportResvTms, "resv-tms", 0, "BRCB: write ResvTms before enable")
+	subscribeReportCmd.Flags().Int64Var(&subscribeReportResvTms, "resv-tms", 0, "BRCB: write ResvTms (seconds, -1..32767) before enable")
 	_ = subscribeReportCmd.MarkFlagRequired("ld")
 	_ = subscribeReportCmd.MarkFlagRequired("ln")
 	_ = subscribeReportCmd.MarkFlagRequired("report")
@@ -115,6 +116,11 @@ func runSubscribeReport(cmd *cobra.Command, args []string) error {
 	}
 	var resvTms *int32
 	if cmd.Flags().Changed("resv-tms") {
+		// ResvTms is an INT16 (IEC 61850-7-2); -1 is the reservation by
+		// configuration.
+		if subscribeReportResvTms < -1 || subscribeReportResvTms > math.MaxInt16 {
+			return errs.Invalidf("--resv-tms %d out of range -1..%d", subscribeReportResvTms, math.MaxInt16)
+		}
 		v := int32(subscribeReportResvTms)
 		resvTms = &v
 	}

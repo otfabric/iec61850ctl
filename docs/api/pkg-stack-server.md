@@ -48,7 +48,7 @@ RunContext starts the server, prints the status line (and readiness JSON), and b
 func SeedValues(srv *iec61850.Server, ied *domain.IED)
 ```
 
-SeedValues best-effort seeds the server ValueStore from IED JSON leaf entries. Leaf refs use dot notation (LD/LN.DO.attr); store keys use MMS format (LD/LN$FC$DO$attr). The LD of a ref is an MMS domain of the model or an LDevice@inst, which maps to its domain ("InteropLD" → "InteropIEDInteropLD"), so a values file keyed by LD instance seeds a server with IEC 61850-8-1 domain names. Skips leaves without values, unsupported types, or keys that cannot be mapped.
+SeedValues best-effort seeds the server ValueStore from IED JSON leaf entries. Leaf refs use dot notation (LD/LN.DO.attr); store keys use MMS format (LD/LN$FC$DO$attr). The LD of a ref is an MMS domain of the model or an LDevice@inst, which maps to its domain ("InteropLD" → "InteropIEDInteropLD"), so a values file keyed by LD instance seeds a server with IEC 61850-8-1 domain names. Skips leaves without values, unsupported types, values outside the range of their field, or keys that cannot be mapped.
 
 ## Types
 
@@ -168,7 +168,7 @@ type RunConfig struct {
 	InstanceDomainNames bool
 	Host                string       // bind address (e.g. "0.0.0.0")
 	Port                int          // MMS port; 0 binds an ephemeral port (see Running.Addr)
-	MaxConnections      int          // max MMS connections (reserved; not yet enforced by go-mms)
+	MaxConnections      int          // MMS connections served at once (go-iec61850 ServerOptions.MaxConnections; one beyond is closed at once); 0 or less means 5
 	ReadyJSON           bool         // emit one JSON readiness event on Stdout after bind
 	FixtureID           string       // optional fixture identifier for readiness JSON
 	Version             string       // build/version metadata for readiness JSON

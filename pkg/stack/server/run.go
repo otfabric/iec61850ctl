@@ -41,7 +41,7 @@ type RunConfig struct {
 	InstanceDomainNames bool
 	Host                string       // bind address (e.g. "0.0.0.0")
 	Port                int          // MMS port; 0 binds an ephemeral port (see Running.Addr)
-	MaxConnections      int          // max MMS connections (reserved; not yet enforced by go-mms)
+	MaxConnections      int          // MMS connections served at once (go-iec61850 ServerOptions.MaxConnections; one beyond is closed at once); 0 or less means 5
 	ReadyJSON           bool         // emit one JSON readiness event on Stdout after bind
 	FixtureID           string       // optional fixture identifier for readiness JSON
 	Version             string       // build/version metadata for readiness JSON
@@ -130,6 +130,7 @@ func Start(ctx context.Context, cfg RunConfig) (*Running, error) {
 	opts := iec61850.ServerOptions{
 		Logger:                cfg.Logger,
 		AllowReadOnlyFCWrites: cfg.AllowReadOnlyFCWrites,
+		MaxConnections:        cfg.MaxConnections,
 		Identity: &iec61850.ServerIdentity{
 			Vendor:   "OTFabric",
 			Model:    "iec61850ctl",

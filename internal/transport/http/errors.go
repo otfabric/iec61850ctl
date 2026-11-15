@@ -55,7 +55,7 @@ func statusForError(err error) (int, string) {
 // (request validation, method checks).
 func codeForStatus(status int) string {
 	switch status {
-	case http.StatusBadRequest:
+	case http.StatusBadRequest, http.StatusRequestEntityTooLarge:
 		return codeInvalidInput
 	case http.StatusMethodNotAllowed:
 		return codeMethodNotAllowed

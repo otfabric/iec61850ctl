@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/otfabric/go-mms"
@@ -48,5 +49,37 @@ func TestAddressingApply(t *testing.T) {
 	}
 	if !d.MMS.ISO.RemoteAPTitle.Equal(mms.APTitle{1, 3, 9999, 23}) || d.MMS.ISO.RemoteAEQualifier != 23 || d.MaxTPDULength != 2048 {
 		t.Fatalf("AP-title %v AE-qualifier %d TPDU %d", d.MMS.ISO.RemoteAPTitle, d.MMS.ISO.RemoteAEQualifier, d.MaxTPDULength)
+	}
+}
+
+// TestNewConnectionBoundsEachMMSRequest checks that the request timeout
+// reaches go-mms, which then bounds every confirmed request, those inside
+// DownloadFile and SubscribeReport included.
+func TestNewConnectionBoundsEachMMSRequest(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		name    string
+		timeout time.Duration
+		want    time.Duration
+	}{
+		{"zero uses the default", 0, DefaultRequestTimeout},
+		{"one nanosecond", time.Nanosecond, time.Nanosecond},
+		{"given", 300 * time.Millisecond, 300 * time.Millisecond},
+		{"long", time.Hour, time.Hour},
+		{"negative disables", -1, 0},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			var got iec61850.DialOptions
+			stop := errors.New("stop")
+			_, _ = newConnection(context.Background(), ConnectionInput{Host: "h", Port: 102, RequestTimeout: c.timeout},
+				func(_ context.Context, _ string, opts iec61850.DialOptions) (*iec61850.Client, error) {
+					got = opts
+					return nil, stop
+				})
+			if got.MMS.RequestTimeout != c.want {
+				t.Fatalf("DialOptions.MMS.RequestTimeout = %v, want %v", got.MMS.RequestTimeout, c.want)
+			}
+		})
 	}
 }

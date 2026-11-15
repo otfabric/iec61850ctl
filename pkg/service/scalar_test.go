@@ -127,3 +127,46 @@ func TestScalarFromIECValue(t *testing.T) {
 		t.Fatal("string")
 	}
 }
+
+// TestScalarMatchesMMSFloatPrecision: a float read-back is compared at the
+// attribute's precision: a FLOAT32 read-back with the request rounded to
+// float32, a FLOAT64 read-back exactly. NaN matches NaN and an infinity
+// itself.
+func TestScalarMatchesMMSFloatPrecision(t *testing.T) {
+	t.Parallel()
+	inf, nan := math.Inf(1), math.NaN()
+	for _, c := range []struct {
+		name string
+		want float64
+		got  *mms.Value
+		ok   bool
+	}{
+		{"100.1 as FLOAT32", 100.1, mms.NewFloat32(100.1), true},
+		{"230.4 as FLOAT32", 230.4, mms.NewFloat32(230.4), true},
+		{"1e6+0.1 as FLOAT32", 1e6 + 0.1, mms.NewFloat32(1e6 + 0.1), true},
+		{"1e-7 as FLOAT32", 1e-7, mms.NewFloat32(1e-7), true},
+		{"3.4e38 as FLOAT32", 3.4e38, mms.NewFloat32(3.4e38), true},
+		{"100.1 without width", 100.1, mms.NewFloat(100.1), true},
+		{"100.1 as FLOAT64", 100.1, mms.NewFloat64(100.1), true},
+		{"-0 for 0", 0, mms.NewFloat32(float32(math.Copysign(0, -1))), true},
+		{"+Inf", inf, mms.NewFloat32(float32(inf)), true},
+		{"-Inf", -inf, mms.NewFloat64(-inf), true},
+		{"NaN", nan, mms.NewFloat32(float32(nan)), true},
+		{"NaN as FLOAT64", nan, mms.NewFloat64(nan), true},
+
+		{"1e-7 read back as 0", 1e-7, mms.NewFloat32(0), false},
+		{"0 read back as 1e-7", 0, mms.NewFloat32(1e-7), false},
+		{"100.1 read back as 100.2", 100.1, mms.NewFloat32(100.2), false},
+		{"next FLOAT32 after 100.1", 100.1, mms.NewFloat32(math.Nextafter32(float32(100.1), 200)), false},
+		{"FLOAT64 read back at float32 precision", 100.1, mms.NewFloat64(float64(float32(100.1))), false},
+		{"+Inf read back as -Inf", inf, mms.NewFloat32(float32(-inf)), false},
+		{"+Inf read back as MaxFloat32", inf, mms.NewFloat32(math.MaxFloat32), false},
+		{"NaN read back as 0", nan, mms.NewFloat32(0), false},
+		{"0 read back as NaN", 0, mms.NewFloat32(float32(nan)), false},
+		{"not a float", 1, mms.NewInteger(1), false},
+	} {
+		if got := ScalarMatchesMMS(domain.ScalarValue{Kind: domain.ScalarFloat, Float: c.want}, c.got); got != c.ok {
+			t.Errorf("%s: ScalarMatchesMMS(%g, %v) = %v, want %v", c.name, c.want, c.got, got, c.ok)
+		}
+	}
+}

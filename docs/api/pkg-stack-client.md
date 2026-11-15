@@ -64,7 +64,10 @@ type ConnectionInput struct {
 
 	// RequestTimeout bounds every MMS request whose context has no deadline.
 	// Zero uses DefaultRequestTimeout; a negative value disables the bound.
-	// Report subscriptions and file downloads are never bounded by it.
+	// A report subscription and a file download as a whole are not bounded
+	// by it, but each confirmed request they send is (the RCB writes of the
+	// subscription setup, every FileOpen, FileRead and FileClose): it is
+	// also passed to go-mms as DialOptions.MMS.RequestTimeout.
 	RequestTimeout time.Duration
 
 	// IEDName is the optional IED name used for MMS domain normalisation.

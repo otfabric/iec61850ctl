@@ -30,9 +30,19 @@ const recursiveCID = `<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
 // FuzzParse feeds arbitrary bytes through every public SCL entry point:
 // Parse, Flatten, WriteTree (both modes), WriteCSV, FormatEntry and CSVRow.
 // None may panic or hang; errors from Parse are fine.
+//
+// The node budget is lowered to 65536 for the run: Flatten returns at most
+// that many entries, and Flatten and WriteTree fail only when the expansion
+// stops at a bound.
 func FuzzParse(f *testing.F) {
+	const budget = 1 << 16
+	prev := maxExpandedNodes
+	maxExpandedNodes = budget
+	f.Cleanup(func() { maxExpandedNodes = prev })
 	f.Add([]byte(minimalCID))
 	f.Add([]byte(recursiveCID))
+	f.Add(typeChain(20, 2, false, false))
+	f.Add(typeChain(maxTypeDepth+1, 1, true, true))
 	if b, err := os.ReadFile(filepath.Join("testdata", "rich.cid")); err == nil {
 		f.Add(b)
 	}
@@ -51,8 +61,11 @@ func FuzzParse(f *testing.F) {
 			return
 		}
 		flat, err := doc.Flatten()
-		if err != nil {
+		if err != nil && !strings.HasPrefix(err.Error(), "scl: type expansion stopped at ") {
 			t.Fatalf("Flatten: %v", err)
+		}
+		if len(flat) > budget {
+			t.Fatalf("Flatten returned %d entries, more than the budget of %d nodes", len(flat), budget)
 		}
 		for _, e := range flat {
 			_ = FormatEntry(e, false)
@@ -63,7 +76,7 @@ func FuzzParse(f *testing.F) {
 			t.Fatalf("WriteCSV: %v", err)
 		}
 		for _, detailed := range []bool{false, true} {
-			if err := doc.WriteTree(io.Discard, detailed); err != nil {
+			if err := doc.WriteTree(io.Discard, detailed); err != nil && !strings.HasPrefix(err.Error(), "scl: type expansion stopped at ") {
 				t.Fatalf("WriteTree: %v", err)
 			}
 		}

@@ -23,7 +23,7 @@ Accepted by every command.
 | `--retry` | int | number of connect retries with exponential backoff and jitter |
 | `--retry-max-delay` | duration | maximum delay between connect retries (default 5s) |
 | `--ssel` | string | called session selector in hex, the IED's OSI-SSEL ('' omits it) (default "0001") |
-| `--timeout` | duration | timeout for each MMS request (default 10s) |
+| `--timeout` | duration | timeout for each MMS request, also each one inside a download or subscription; when not given, get file uses 60s and list files, get journal and subscribe report 30s (default 10s) |
 | `--tpdu-size` | int | COTP TPDU size proposed in the connection request, 128..65531 (65531 omits it) (default 1024) |
 
 `-h`, `--help` prints the help of any command.
@@ -466,7 +466,7 @@ Start IEC 61850 MMS server from SCL file.
 | `--fixture-id` | string | optional fixture identifier included in readiness JSON |
 | `--host` | string | bind address (default "0.0.0.0") |
 | `--instance-domain-names` | bool | name each MMS domain by its LDevice@inst alone (InteropLD), as iec61850ctl before v0.9.0, instead of the IEC 61850-8-1 name (ldName, else IED name + inst: InteropIEDInteropLD) |
-| `--max-connections` | int | reserved; not enforced yet (default 5) |
+| `--max-connections` | int | MMS connections served at once; a connection beyond it is closed at once (0 or less = 5) (default 5) |
 | `--port` (`-p`) | int | MMS port (0 = ephemeral; the bound address is printed and included in --ready-json) (default 102) |
 | `--ready-json` | bool | emit one JSON readiness event on stdout after bind |
 | `--scl` | string | path to SCL/CID/ICD file (required) |
@@ -502,7 +502,7 @@ Subscribe to RCB notifications with auto-cleanup.
 | `--max-reports` | int | Exit after receiving this many reports (0 = no limit) |
 | `--purge-buf` | bool | BRCB: purge buffer before enable (requires --yes) |
 | `--report` | string | Report control block name (required) |
-| `--resv-tms` | int | BRCB: write ResvTms before enable |
+| `--resv-tms` | int | BRCB: write ResvTms (seconds, -1..32767) before enable |
 | `--show-values` | bool | Show data set values in each report |
 | `--sync` | bool | Read the report dataset once to obtain a full baseline snapshot (one-shot state sync) |
 | `--type` | string | Report type: BR (buffered/BRCB) or RP (unbuffered/URCB) (default "BR") |

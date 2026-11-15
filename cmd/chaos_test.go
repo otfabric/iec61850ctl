@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -152,21 +153,51 @@ func (p *chaosProxy) serverToClient(up, down net.Conn) {
 	}
 }
 
-// waitGoroutines fails the test unless the goroutine count drops back to
-// the baseline (CLI and proxy goroutines all exited).
-func waitGoroutines(t *testing.T, baseline int) {
+// goroutineStacks returns the stack of every live goroutine by its ID.
+// Goroutine IDs are never reused, so a goroutine that is not in an earlier
+// snapshot was started after it.
+func goroutineStacks() map[string]string {
+	buf := make([]byte, 1<<20)
+	for {
+		n := runtime.Stack(buf, true)
+		if n < len(buf) {
+			buf = buf[:n]
+			break
+		}
+		buf = make([]byte, 2*len(buf))
+	}
+	out := make(map[string]string)
+	for _, g := range strings.Split(string(buf), "\n\n") {
+		header, _, _ := strings.Cut(g, "\n")
+		if f := strings.Fields(header); len(f) >= 2 && f[0] == "goroutine" {
+			out[f[1]] = g
+		}
+	}
+	return out
+}
+
+// waitGoroutines fails the test unless every goroutine that is not in the
+// snapshot before (the CLI's, the proxy's, the server side of the
+// connection) has exited. It compares goroutines by ID, not by count, so
+// one that stays cannot hide behind one that ended. It polls until they
+// are gone, for at most 5 seconds, and prints the stacks of those left.
+func waitGoroutines(t *testing.T, before map[string]string) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
-	for {
-		n := runtime.NumGoroutine()
-		if n <= baseline {
+	for wait := time.Millisecond; ; wait = min(2*wait, 100*time.Millisecond) {
+		var left []string
+		for id, stack := range goroutineStacks() {
+			if _, ok := before[id]; !ok {
+				left = append(left, stack)
+			}
+		}
+		if len(left) == 0 {
 			return
 		}
 		if time.Now().After(deadline) {
-			buf := make([]byte, 1<<20)
-			t.Fatalf("goroutine leak: %d > baseline %d\n%s", n, baseline, buf[:runtime.Stack(buf, true)])
+			t.Fatalf("%d goroutine(s) started by the test still run:\n\n%s", len(left), strings.Join(left, "\n\n"))
 		}
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(wait)
 	}
 }
 
@@ -192,7 +223,7 @@ func TestChaos(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			baseline := runtime.NumGoroutine()
+			before := goroutineStacks()
 			p := newChaosProxy(t, c.fault, c.after, c.delay)
 			args := append([]string{"--host", "127.0.0.1", "--port", p.port()}, timeouts...)
 			start := time.Now()
@@ -208,7 +239,7 @@ func TestChaos(t *testing.T) {
 				t.Fatalf("took %v; timeouts not honoured", el)
 			}
 			p.close()
-			waitGoroutines(t, baseline)
+			waitGoroutines(t, before)
 		})
 	}
 }
@@ -219,7 +250,7 @@ func TestChaos(t *testing.T) {
 // keeps a URCB enabled for an owner that vanished without disabling it,
 // which would starve later subscribers on the shared server.
 func TestChaosSubscribeConnectionLoss(t *testing.T) {
-	baseline := runtime.NumGoroutine()
+	before := goroutineStacks()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	srv, err := server.Start(ctx, server.RunConfig{InstanceDomainNames: true, SclPath: fixture("interop.icd"), Host: "127.0.0.1"})
@@ -246,5 +277,64 @@ func TestChaosSubscribeConnectionLoss(t *testing.T) {
 	p.close()
 	_ = srv.Close()
 	cancel()
-	waitGoroutines(t, baseline)
+	waitGoroutines(t, before)
+}
+
+// TestChaosSilentPeerEachRequest stops the server's answers at one request
+// after the association: the FileOpen or FileRead of get file, the RCB read,
+// reservation or enable of a subscription setup. Each request is bounded by
+// --timeout, so the command ends with exit 5 within --timeout plus the
+// bounded close (2 s), and leaves no goroutine behind. The subscription
+// cases use their own server, so that an RCB left reserved by the silent
+// session does not reach other tests.
+func TestChaosSilentPeerEachRequest(t *testing.T) {
+	subscribe := []string{"subscribe", "report", "--ld", "InteropLD", "--ln", "LLN0", "--report", "urcb0101", "--type", "RP", "--duration", "10s", "--keepalive", "0"}
+	cases := []struct {
+		name  string
+		after int // server→client frames passed: 1 COTP CC, 2 initiate response
+		args  []string
+		own   bool // own server
+	}{
+		{"get_file_open", 2, []string{"get", "file", "--name", "events.log"}, false},
+		{"get_file_read", 3, []string{"get", "file", "--name", "events.log", "--output", filepath.Join(t.TempDir(), "events.log")}, false},
+		{"subscribe_rcb_read", 2, subscribe, true},
+		{"subscribe_reserve", 3, subscribe, true},
+		{"subscribe_enable", 4, subscribe, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			before := goroutineStacks()
+			target := testServer.addr
+			stopServer := func() {}
+			if c.own {
+				ctx, cancel := context.WithCancel(context.Background())
+				srv, err := server.Start(ctx, server.RunConfig{InstanceDomainNames: true, SclPath: fixture("interop.icd"), Host: "127.0.0.1"})
+				if err != nil {
+					cancel()
+					t.Fatal(err)
+				}
+				stopServer = func() { _ = srv.Close(); cancel() }
+				defer stopServer()
+				target = srv.Addr()
+			}
+			p := newChaosProxyTo(t, target, faultBlackhole, c.after, 0)
+			// The outer bound ends a command that waits for an answer that
+			// never comes (exit 130), so the test fails instead of hanging.
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			start := time.Now()
+			r := runCLIContext(t, ctx, append([]string{"--host", "127.0.0.1", "--port", p.port(), "--connect-timeout", "500ms", "--timeout", "300ms"}, c.args...)...)
+			el := time.Since(start)
+			expectCode(t, r, errs.ExitTimeout)
+			if !strings.Contains(r.stderr, "deadline exceeded") {
+				t.Fatalf("stderr %q does not name the request deadline", r.stderr)
+			}
+			if el > 6*time.Second {
+				t.Fatalf("took %v with --timeout 300ms", el)
+			}
+			p.close()
+			stopServer()
+			waitGoroutines(t, before)
+		})
+	}
 }

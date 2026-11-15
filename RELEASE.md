@@ -1,5 +1,42 @@
 # iec61850ctl Releases
 
+## v0.14.0
+
+**Date:** 2026-11-15
+**Previous release:** v0.13.8
+
+### Breaking
+
+Two script-facing changes; the exit codes are also in [docs/exitcodes.md](docs/exitcodes.md).
+
+- `scl parse` and `scl convert` exit `3` (invalid reference, configuration or SCL) for a file that is not valid SCL, was `2`, as docs/exitcodes.md documents. A script that tells a wrong command line (`2`) from a bad input file (`3`) now sees the file as the cause. Nothing else is needed: `3` is the documented code, and no flag restores `2`.
+- `server start --max-connections` is applied: the server serves 5 MMS connections at once by default, was up to 1024 (the go-iec61850 default) with the flag accepted and not applied. The connection of a further client is closed at once, before the association, and its dial fails. Give a larger `--max-connections` (for example `--max-connections 1024`) for the old number.
+
+### Changed
+
+- Each MMS request inside `get file`, `list files`, `get journal` and `subscribe report` (every file open, read and close, every RCB read and write of the subscription setup) is bounded by the request timeout; a server that does not answer ends the command with exit `5`. A given `--timeout` replaces the defaults of these commands, 60s for `get file` and 30s for the other three, which apply without the flag.
+- `get file` holds at most 256 MiB of a file in memory; a larger file stops the download, nothing is written to stdout or `--output`, and the command exits `10`.
+- `scl parse` and `scl convert` read at most 1 GiB of an SCL file, follow at most 64 nested type references on one path and expand at most 33,554,432 DO, SDO, DA and BDA instances (a path counting one more for each 256 bytes), the bounds go-iec61850 applies to `server start`, `goose` and `sv`. A file beyond them is refused with exit `3`.
+- `http`: the body of `/api/find/path` and `/api/find/bulk` is at most 1 MiB (`413` beyond it), `ln_pattern` at most 256 bytes and a bulk request at most 10,000 mappings (`400` beyond them). The `baseLn` of a bulk mapping matches as before: every LN name that contains it.
+- Text from a device, a GOOSE or SV frame or a file reaches stdout and stderr with its terminal controls escaped (`\u00XX`, and `\xNN` for a byte that is not UTF-8). JSON output decodes to the same strings, and `get file` writes the file's bytes unchanged ([SECURITY.md](SECURITY.md#text-from-devices-and-frames)).
+- `subscribe report --resv-tms` takes -1..32767 (ResvTms is an INT16 of seconds); a value outside it exits `2` before the device is contacted, also on 32-bit platforms, where a value beyond 32 bits is no longer cut to its low bits.
+- `server start --values` refuses a file in which the milliseconds (0..65535) or the time quality (0..255) of a UTC time, or the number of a bit string (0..65535), is outside its field, with exit `3`.
+- SECURITY.md lists every bound and what the command does beyond it.
+
+### Fixed
+
+- `control operate --confirm-ref` and `set object --verify` compare a float read-back at the attribute's precision: a FLOAT32 read-back with the value rounded to float32, a FLOAT64 read-back exactly; NaN matches NaN and an infinity itself. A FLOAT32 setpoint such as 100.1 or 230.4 is confirmed (exit `0`, was `12`), and a value that reads back different, such as 1e-7 read back as 0, is a mismatch (exit `12`, was `0`).
+- `control operate`: after a failed select or operate, the Cancel of a selected control and the read of LastApplError run for up to 2 s each on a context of their own, so they are also sent when the journey ended by `--timeout` or Ctrl-C.
+- The exit-code table of `iec61850ctl --help` lists the current codes, those of docs/exitcodes.md.
+- The help of `--max-connections`, the comment of `RunConfig.MaxConnections` and docs/api say what the flag does.
+
+### Tests
+
+- An allocation or work budget test for each bound, and `TESTING.md` with the lifecycle matrix of the long-running modes.
+- The retry and docs-capture tests wait without sleeps (`testing/synctest`, a probe frame), and the goroutine leak check of the chaos tests compares stacks rather than counts.
+
+---
+
 ## v0.13.8
 
 **Date:** 2026-11-14

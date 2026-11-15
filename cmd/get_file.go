@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	iec61850 "github.com/otfabric/go-iec61850"
 	"github.com/spf13/cobra"
 
 	"github.com/otfabric/iec61850ctl/internal/app"
@@ -21,12 +22,35 @@ var (
 	fileDetailedFlag bool
 )
 
+// getFileMaxBytes bounds the file get file holds in memory before it writes
+// it to stdout or --output (256 MiB, the limit of go-iec61850's ReadFile).
+// A larger file is stopped and closed on the server, nothing is written, and
+// the command exits 10. Tests lower it.
+var getFileMaxBytes = 256 << 20
+
+// boundedBuffer is a bytes.Buffer that holds at most max bytes: a Write
+// that would go beyond writes nothing and fails with
+// iec61850.ErrLimitExceeded.
+type boundedBuffer struct {
+	bytes.Buffer
+	max int
+}
+
+func (b *boundedBuffer) Write(p []byte) (int, error) {
+	if len(p) > b.max-b.Len() {
+		return 0, fmt.Errorf("%w: the file is larger than %d bytes, the most get file holds in memory", iec61850.ErrLimitExceeded, b.max)
+	}
+	return b.Buffer.Write(p)
+}
+
 var getFileCmd = &cobra.Command{
 	Use:   "file",
 	Short: "Download a file from the IEC 61850 server",
 	Long: `Download file contents from the server's file directory.
 If --output is not specified, the file content is written to stdout.
-Use --detailed to see download metadata including file size and checksum.`,
+Use --detailed to see download metadata including file size and checksum.
+The file is held in memory until it is complete, up to 256 MiB; a larger
+file is stopped and nothing is written (exit 10).`,
 	RunE: runGetFile,
 }
 
@@ -46,8 +70,8 @@ func runGetFile(cmd *cobra.Command, args []string) error {
 	defer session.Close()
 	conn := session.Conn()
 
-	var buf bytes.Buffer
-	entry, err := app.New(conn).DownloadFile(fileName, &buf)
+	buf := &boundedBuffer{max: getFileMaxBytes}
+	entry, err := app.New(conn).DownloadFile(fileName, buf)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
@@ -63,7 +87,8 @@ func runGetFile(cmd *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Size: %s\n", formatter.FormatFileSize(size))
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Checksum (SHA256): %x\n\n", sha256.Sum256(data))
 		}
-		if _, err = cmd.OutOrStdout().Write(data); err != nil {
+		// The file's bytes are data: they bypass the escaping of stdout.
+		if _, err = rawWriter(cmd.OutOrStdout()).Write(data); err != nil {
 			return fmt.Errorf("failed to write to stdout: %w", err)
 		}
 		return nil

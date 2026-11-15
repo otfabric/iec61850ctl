@@ -138,7 +138,16 @@ func TestCaptureDocExamples(t *testing.T) {
 		defer close(done)
 		_, _ = svops.Publish(ctx, svops.PublishConfig{Transport: pubPort, Publisher: pc, Output: svops.Output{Out: io.Discard}})
 	}()
-	time.Sleep(200 * time.Millisecond)
+	// The capture starts once the publisher sends: a probe port on the
+	// hub receives its first frame.
+	probe := pubHub.NewPort(sv.MAC{0x02, 0, 0, 0, 0, 0x02})
+	pctx, pcancel := context.WithTimeout(ctx, 10*time.Second)
+	_, err = probe.Recv(pctx)
+	pcancel()
+	_ = probe.Close()
+	if err != nil {
+		t.Fatalf("the publisher sent nothing: %v", err)
+	}
 	capture("sv_subscribe_waveform", "sv", "subscribe", "--iface", "eth0", "--scl", scid, "--svcb", "MSVCB01",
 		"--accept-simulation", "--sample-every", "10", "--stats-interval", "0", "--count", "80")
 	cancel()

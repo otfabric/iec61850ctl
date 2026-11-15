@@ -97,9 +97,11 @@ func openClientSession(cmd *cobra.Command, opts clientSessionOptions) (*clientSe
 }
 
 // openClientSessionTo dials a specific host:port using the shared IED-name
-// resolution and the global timeout/retry/logging flags. Non-zero opts
-// timeouts override the global flags. Cancelling ctx aborts the dial and
-// every in-flight request on the session.
+// resolution and the global timeout/retry/logging flags. A non-zero
+// opts.ConnectTimeout overrides --connect-timeout; a non-zero
+// opts.RequestTimeout is the command's default, which an explicit --timeout
+// replaces. Cancelling ctx aborts the dial and every in-flight request on
+// the session.
 func openClientSessionTo(ctx context.Context, cmd *cobra.Command, h string, p int, opts clientSessionOptions) (*clientSession, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -122,8 +124,11 @@ func openClientSessionTo(ctx context.Context, cmd *cobra.Command, h string, p in
 	if connectTimeout <= 0 {
 		connectTimeout = connectTimeoutFlag
 	}
+	// A command's own request timeout (get file 60s; list files, get
+	// journal and subscribe report 30s) is its default: a --timeout given on
+	// the command line bounds each request instead.
 	reqTimeout := opts.RequestTimeout
-	if reqTimeout <= 0 {
+	if reqTimeout <= 0 || requestTimeoutGiven() {
 		reqTimeout = requestTimeout()
 	}
 

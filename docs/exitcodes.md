@@ -18,6 +18,16 @@ iec61850ctl's exit codes are a script-facing contract, defined in `pkg/errs/exit
 | `13` | Safety refusal (organisation code): `goose publish` / `sv publish` without `--yes`, or with the test marker off (`--test=false` / `--simulation=false`) without `--live`; nothing is sent |
 | `130` | Interrupted (SIGINT / SIGTERM) |
 
+## Changes in v0.14.0
+
+| Case | Old | New |
+|---|---|---|
+| `scl parse` / `scl convert` with a file that is not valid SCL | 2 | 3 |
+| `scl parse` / `scl convert` with a file beyond a bound of [SECURITY.md](../SECURITY.md#resource-limits) | runs | 3 |
+| `subscribe report --resv-tms` outside -1..32767 | runs (value narrowed) | 2 |
+| `server start --values` with a time or bit string value outside its field | runs (value narrowed) | 3 |
+| `get file` of a file larger than 256 MiB | runs | 10 |
+
 ## Changes in v0.10.0
 
 | Case | Old | New |
