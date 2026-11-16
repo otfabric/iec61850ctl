@@ -62,7 +62,7 @@ vet: ## Run go vet on project packages
 # Minimum statement coverage per package, cmd/ included (TEST-012).
 COVER_PKG_MIN := 90
 # docsync release of docs-check (DOC-008).
-DOCSYNC_VERSION := v0.3.1
+DOCSYNC_VERSION := v0.4.0
 # Duration per fuzz target for `make fuzz`.
 FUZZTIME ?= 10s
 
